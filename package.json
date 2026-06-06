@@ -1,0 +1,63 @@
+{
+  "name": "@artinstack/migrator",
+  "version": "0.0.0",
+  "description": "Stateless content normalizer and migration framework — WordPress, SmugMug, Squarespace → platform-agnostic schema",
+  "license": "MIT",
+  "packageManager": "pnpm@9.15.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/naikondev/artinstack-migrator.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./normalizer": {
+      "types": "./dist/normalizer/index.d.ts",
+      "import": "./dist/normalizer/index.js"
+    },
+    "./sinks": {
+      "types": "./dist/sinks/index.d.ts",
+      "import": "./dist/sinks/index.js"
+    }
+  },
+  "bin": {
+    "artinstack-migrate": "./dist/cli/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "migrate": "node dist/cli/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.4.5",
+    "vitest": "^3.0.0"
+  }
+}
