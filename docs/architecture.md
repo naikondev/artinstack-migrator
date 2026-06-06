@@ -1,8 +1,10 @@
 # Architecture blueprint
 
-`@artinstack/migrator` is a **stateless, platform-agnostic** migration framework. It reads content from third-party sources (WordPress, SmugMug, Squarespace, and similar), normalizes it into portable data transfer objects (DTOs), and hands results to a **host application** through a small write interface called `MigrationSink`.
+`@artinstack/migrator` is a **stateless, platform-agnostic** migration framework. It reads content from third-party sources (WordPress, SmugMug, Squarespace, and similar) and normalizes it into portable data transfer objects (DTOs).
 
-This package owns **parsing and transformation only**. Job queues, authentication, storage credentials, dashboard UI, and database persistence are implemented by the host—not here.
+The design progresses in layers: **export** normalized JSON first, introduce a **`MigrationSink`** write abstraction, then let a host application implement the sink and—only when imports are proven—add jobs, queues, and UI. If normalized export is not reliable, nothing downstream matters.
+
+This package is **public from day one**. It has almost no coupling to any single CMS or cloud stack—the value is portable export and normalization. Orchestration, credentials, billing, and dashboard UI stay in the host application.
 
 ---
 
@@ -11,14 +13,29 @@ This package owns **parsing and transformation only**. Job queues, authenticatio
 | Goal | Approach |
 |------|----------|
 | Support multiple source platforms | Isolated adapters behind one normalizer |
+| Prove correctness before integration | CLI → JSON / files on disk |
 | Stay testable without a running backend | Adapters emit DTOs, not database rows |
-| Allow local dry-runs and OSS contributions | CLI + fixtures; no framework-specific imports |
-| Handle large imports safely | Stream assets; resume from checkpoints |
-| Defer hard layout translation | Phase 1 HTML snapshots; Phase 2+ structured page trees |
+| Allow local dry-runs and OSS contributions | Public repo + fixtures from the start |
+| Handle large imports safely | Stream assets through sinks; resume from checkpoints |
+| Defer hard layout translation | HTML snapshots first; structured page trees later |
 
 ---
 
 ## High-level data flow
+
+### Export path — parse and write JSON
+
+```mermaid
+flowchart LR
+  WP[WordPress WXR] --> P[Adapter]
+  SQ[Squarespace] --> P
+  SM[SmugMug] --> P
+  P --> N[Normalizer DTOs]
+  N --> FS[Filesystem output]
+  FS --> OUT["posts.json / pages.json / media.json"]
+```
+
+### Sink path — parser → normalizer → host writes
 
 ```mermaid
 flowchart TB
@@ -31,7 +48,6 @@ flowchart TB
   subgraph migrator ["@artinstack/migrator"]
     P[Platform adapters]
     N[Normalizer DTOs]
-    T[Transformers Phase 2+]
     R[runMigration loop]
   end
 
@@ -44,13 +60,14 @@ flowchart TB
   SQ --> P
   SM --> P
   P --> N
-  N --> T
-  T --> R
+  N --> R
   R --> S
   S --> ST
 ```
 
-**Typical production shape:** a host API enqueues a long-running job, a worker process loads `@artinstack/migrator`, and the worker calls a host-specific `MigrationSink` to create posts, pages, portfolios, and uploaded media. The migrator itself never holds admin tokens or talks to a CMS directly.
+The migrator **never** knows object storage, job queues, or CMS internals. It only calls `sink.createPost(...)`, `sink.createPage(...)`, and similar methods defined by the host.
+
+Long-running production imports are orchestrated by the host (job queue + worker)—not by this package.
 
 ---
 
@@ -60,14 +77,19 @@ flowchart TB
 src/
   parsers/          WordPress, SmugMug, Squarespace → normalizer DTOs
   normalizer/       Canonical types + portable idempotency helpers
-  transformers/     HtmlToGrapes (Phase 2+), css-to-styles
-  sinks/            MigrationSink interface + runMigration()
-  cli/              artinstack-migrate — validate and enumerate
+  cli/              artinstack-migrate
+  sinks/
+    filesystem.ts   Write JSON bundles to disk
+    types.ts        MigrationSink interface
+    run-migration.ts
+  transformers/     HtmlToGrapes, css-to-styles (later; optional)
   index.ts          Public API re-exports
 fixtures/           Sample exports and golden JSON for tests
 ```
 
-**Dependency rule:** no imports from Next.js, proprietary CMS SDKs, or host-specific libraries. Host apps depend on `@artinstack/migrator`; never the reverse.
+**Dependency rule:** no imports from web frameworks, proprietary CMS SDKs, or host-specific libraries. Host apps depend on `@artinstack/migrator`; never the reverse.
+
+**Public from day one:** parsers and normalizer DTOs are useful beyond any single host—"export WordPress as JSON", "convert SmugMug albums", "transform Squarespace content". Publish and iterate in the open; keep host sinks, jobs, and billing private.
 
 ---
 
@@ -95,7 +117,7 @@ Adapters emit **canonical entities**, not host-specific records:
 | Entity | Purpose |
 |--------|---------|
 | `NormalizedPost` | Blog posts and articles |
-| `NormalizedPage` | Static pages (HTML snapshot in Phase 1) |
+| `NormalizedPage` | Static pages (HTML snapshot in MVP layout strategy) |
 | `NormalizedAsset` | Remote file to stream into storage |
 | `NormalizedPortfolio` | Gallery or album grouping |
 | `NormalizedCategory` / `NormalizedTag` | Taxonomy |
@@ -134,7 +156,7 @@ interface MigrationSink {
 | Categories / tags | `NormalizedCategory`, `NormalizedTag` + slugs on post |
 | Featured image attachment | `NormalizedAsset` → link on post |
 | Inline `<img src>` | Resolve to assets; rewrite URLs in HTML during ingest |
-| Pages (`page` post type) | `NormalizedPage` — Phase 1: HTML snapshot; Phase 2: structured layout |
+| Pages (`page` post type) | `NormalizedPage` — MVP: HTML snapshot; later: structured layout |
 
 Strip shortcodes and unsafe inline styles according to host policy during sanitization.
 
@@ -155,14 +177,14 @@ Use a **bounded concurrency pool** (e.g. 4–8 parallel uploads) per job to resp
 |---------|-------------------|
 | Blog posts | `NormalizedPost` (same HTML path as WordPress) |
 | Static pages | `NormalizedPage` |
-| Block JSON (Text, Image, Spacer, …) | Phase 2: map to page builder components; Phase 1: flatten to `contentHtml` + minimal CSS |
+| Block JSON (Text, Image, Spacer, …) | Later: map to page builder components; MVP: flatten to `contentHtml` + minimal CSS |
 | Galleries | `NormalizedPortfolio` + linked assets |
 
 Squarespace exports often reference CDN URLs that require a **URL resolver** step before assets are streamed.
 
 ---
 
-## HTML → page builder (Phase 2+)
+## HTML → page builder (later)
 
 There is no reliable off-the-shelf npm package that converts arbitrary HTML exports into a full **GrapesJS-style** project tree (`content` components + detached root `styles[]`).
 
@@ -172,7 +194,7 @@ There is no reliable off-the-shelf npm package that converts arbitrary HTML expo
 |--------|-------------|
 | **Virtual DOM walk** (cheerio / jsdom) | Default for bulk migration — explicit component mapping |
 | **Headless browser** (Puppeteer / Playwright) | Spot-checks or pixel audits only — too heavy at scale |
-| **HTML snapshot** (Phase 1) | Ship readable pages immediately; refine in editor later |
+| **HTML snapshot** (MVP) | Ship readable pages immediately; refine in editor later |
 
 ### Edge cases for `HtmlToGrapesParser`
 
@@ -182,7 +204,7 @@ There is no reliable off-the-shelf npm package that converts arbitrary HTML expo
 | Layout (grid, flex, tables) | Structural mapping options — e.g. three-column section → flex row + columns |
 | Inline text (`<b>`, `<strong>` inside `<p>`) | Keep markup inside parent text components; do not over-split into child components |
 
-Phase 1 imports pages as **`contentHtml` (+ optional `contentCss`) snapshots** so public sites render without a perfect component tree.
+MVP page imports use **`contentHtml` (+ optional `contentCss`) snapshots** so public sites render without a perfect component tree.
 
 ---
 
@@ -205,7 +227,7 @@ For RAW or unknown MIME types, follow the host's existing RAW pipeline rather th
 
 | Layer | Mechanism |
 |-------|-----------|
-| **Production jobs** | Host persists job rows: `status`, `stage`, `progress`, `cursor`, `error_message`, `retry_count` |
+| **Production jobs** | Host persists job rows for orchestrated imports |
 | **Per-entity tracking** | `(job_id, source_id, entity_type)` with state `pending` / `done` / `failed` |
 | **CLI / local dev** | JSON or SQLite checkpoint under `~/.artinstack/migrate/` using the same portable key shape |
 
@@ -220,36 +242,66 @@ Portable helpers live in `src/normalizer/idempotency.ts`; they use `EntityKey` (
 ```bash
 pnpm build
 
-# Validate an export before running
-artinstack-migrate validate wordpress ./export.xml
+# Export normalized DTOs to a directory
+artinstack-migrate wordpress export.xml --out ./output
 
-# List normalized entities (dry-run)
+# Or emit a single combined JSON document
+artinstack-migrate wordpress export.xml --format json
+
+# Validate before running
+artinstack-migrate validate wordpress ./export.xml
 artinstack-migrate enumerate wordpress ./export.xml --dry-run
+
+# Run through a sink (filesystem or host plugin)
+artinstack-migrate wordpress export.xml --sink filesystem --out ./imported
+artinstack-migrate wordpress export.xml --sink <host-plugin>
 ```
 
-The CLI exercises adapters only—it does not call `MigrationSink` unless wired by a host integration.
+**Directory output:**
+
+```
+output/
+├── posts.json
+├── pages.json
+├── media.json
+└── portfolios.json   # when present
+```
+
+**Combined JSON:**
+
+```json
+{
+  "posts": [ /* NormalizedPost[] */ ],
+  "pages": [ /* NormalizedPage[] */ ],
+  "media": [ /* NormalizedAsset[] */ ]
+}
+```
+
+The CLI does not embed host credentials. Sink plugins are supplied by the host application.
 
 ---
 
 ## Integration guide for host applications
 
-1. **Enqueue** migration jobs asynchronously (return `202 Accepted` quickly; never run the import loop inside a web request handler).
-2. **Run a worker** that loads `@artinstack/migrator`, selects the adapter, and passes entities to `runMigration`.
-3. **Implement `MigrationSink`** against your content and media APIs—enforcing quotas, slug uniqueness, and thumbnail generation in one place.
-4. **Poll or push job status** to your UI from the host's job store.
-5. **Optional:** export a redirect map (CSV) when source URLs differ from destination paths.
+1. **Export first** — run the CLI against real source files and inspect normalized JSON before building sinks or workers.
+2. **Implement `MigrationSink`** against your content and media APIs—quotas, slug rules, and thumbnails belong in the sink.
+3. **Run locally** — wire the CLI or a script to your sink before adding job orchestration.
+4. **Productize later** — enqueue long-running jobs, persist progress, and expose UI only after local imports succeed at scale.
+5. **Optional** — export a redirect map (CSV) when source URLs differ from destination paths.
+
+The migrator never embeds host credentials. Sink plugins are supplied by the host application.
 
 ---
 
-## Implementation order
+## Adapter priority
 
-| Priority | Module | Complexity |
-|----------|--------|------------|
-| 1 | WordPress WXR | Medium — HTML + attachments |
-| 2 | SmugMug API | High — auth, rate limits, streaming |
-| 3 | Squarespace | High — block translation deferred to Phase 2 |
-| 4 | HtmlToGrapes transformer | Very high — custom virtual DOM mapping |
-| 5 | Redirect report export | Medium — host middleware is separate |
+| Priority | Source | Notes |
+|----------|--------|-------|
+| 1 | WordPress WXR | Editorial content + attachments |
+| 2 | SmugMug API | Albums, rate limits, large vaults |
+| 3 | Squarespace | Pages + blog; block flattening deferred |
+| 4 | HtmlToGrapes | After MVP HTML snapshots work |
+| 5 | Redirect report | Host routing layer is separate |
 
 ---
 
@@ -259,40 +311,28 @@ The CLI exercises adapters only—it does not call `MigrationSink` unless wired 
 |--------------|-----|
 | Writing CMS rows without uploading bytes to object storage | Breaks asset URLs, thumbnails, and billing |
 | Importing HTML only into editor JSON without a render snapshot | Public pages may be blank until manual save |
-| Running GrapesJS `Parser` on the server without a browser | Inaccurate; use cheerio/jsdom or Phase 1 snapshots |
+| Running GrapesJS `Parser` on the server without a browser | Inaccurate; use cheerio/jsdom or HTML snapshots |
 | Puppeteer for every page in bulk | Cost and memory risk |
 | Assuming `slug: "home"` means site root | Home page is often a separate flag on the host |
 | Downloading tens of GB to `/tmp` | OOM and slow; stream instead |
+| Building orchestration before JSON export is reliable | Unstable DTOs waste integration effort |
 | Running the import loop inside the job-creation HTTP handler | Timeouts and coupling to the web tier |
 | Embedding long-lived admin tokens in the public package | Credentials belong in the host worker only |
 
 ---
 
-## Phased roadmap (this repo)
+## What is public vs private
 
-### Phase 1 — Foundation
-
-- [ ] WordPress WXR adapter + HTML sanitization
-- [ ] Stable normalizer DTOs and `MigrationSink` contract
-- [ ] `runMigration` with idempotency helpers
-- [ ] CLI validate / enumerate
-- [ ] Fixture-based tests
-
-### Phase 2 — Scale and sources
-
-- [ ] SmugMug adapter + concurrency controls
-- [ ] Squarespace HTML fallback import
-- [ ] Asset URL resolver utilities
-- [ ] Redirect map export helper (CSV)
-
-### Phase 3 — Layout fidelity
-
-- [ ] `HtmlToGrapesParser` — cheerio/jsdom walk → `content` + root `styles`
-- [ ] `css-to-styles` for global rules
-- [ ] Publish stable `@artinstack/migrator` on npm
+| Piece | Public `@artinstack/migrator` | Host application |
+|-------|------------------------------|------------------|
+| Parsers + normalizer DTOs | Yes | No |
+| CLI + filesystem export | Yes | No |
+| `MigrationSink` interface | Yes | Implementation |
+| Host sink, jobs, worker, UI | No | Yes |
+| Storage credentials, billing | No | Yes |
 
 ---
 
 ## Summary
 
-`@artinstack/migrator` is the **portable core**: adapters, normalizer DTOs, optional HTML→page-builder transformers, and a sink-driven execution loop. Host applications own orchestration, credentials, and persistence. Phase 1 optimizes for **correct, readable imports** via HTML snapshots; Phase 2+ invests in **editable structured layouts** without coupling this package to any single CMS or cloud stack.
+`@artinstack/migrator` is the **portable core**: adapters, normalizer DTOs, CLI export, optional HTML→page-builder transformers, and a sink-driven execution loop. Prove correctness with **JSON export first**, then **`MigrationSink`**, then host integration. The package is **public from day one**—portable normalization has value beyond any single platform. Orchestration, credentials, and billing stay in the host.
