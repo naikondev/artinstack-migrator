@@ -1,22 +1,29 @@
-import type { AdapterContext, MigrationAdapter, NormalizedEntity } from "../../normalizer/types.js";
+import type { AdapterContext, MigrationAdapter, ValidationResult } from "../../normalizer/types.js";
+import { enumerateWxrEntities, validateWxrFile } from "./parse-wxr.js";
 
-/** WordPress WXR → normalizer DTOs (Phase 1 priority). */
+function resolvePath(input: unknown): string {
+  if (typeof input === "string") return input;
+  if (input && typeof input === "object" && "path" in input) {
+    return String((input as { path: string }).path);
+  }
+  throw new Error("WordPress adapter requires input path (string or { path })");
+}
+
 export const wordpressAdapter: MigrationAdapter = {
   platform: "wordpress",
 
-  validateInput(_input: unknown) {
+  async validateInput(input: unknown): Promise<ValidationResult> {
+    const path = resolvePath(input);
+    const result = await validateWxrFile(path);
     return {
-      ok: false,
-      issues: [
-        {
-          code: "not_implemented",
-          message: "WordPress WXR parser is not implemented yet",
-        },
-      ],
+      ok: result.ok,
+      issues: result.issues,
+      summary: result.summary,
     };
   },
 
-  async *enumerateEntities(_ctx: AdapterContext): AsyncIterable<NormalizedEntity> {
-    yield* [];
+  enumerateEntities(ctx: AdapterContext) {
+    const path = resolvePath(ctx.input);
+    return enumerateWxrEntities({ filePath: path });
   },
 };

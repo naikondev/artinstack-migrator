@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/"
+  xmlns:wp="http://wordpress.org/export/1.2/">
+<channel>
+  <title>Portfolio Archive</title>
+  <link>https://wedding.example.com</link>
+  <description>Fixture 2</description>
+  <wp:wxr_version>1.2</wp:wxr_version>
+
+  <item>
+    <title>Home</title>
+    <link>https://wedding.example.com/</link>
+    <content:encoded><![CDATA[<p>Welcome to our portfolio.</p>]]></content:encoded>
+    <wp:post_id>10</wp:post_id>
+    <wp:post_date>2022-06-01 10:00:00</wp:post_date>
+    <wp:post_name>home</wp:post_name>
+    <wp:status>publish</wp:status>
+    <wp:post_type>page</wp:post_type>
+    <wp:postmeta><wp:meta_key>_wp_show_on_front</wp:meta_key><wp:meta_value>1</wp:meta_value></wp:postmeta>
+  </item>
+
+  <item>
+    <title>Smith Wedding</title>
+    <link>https://wedding.example.com/smith-wedding/</link>
+    <content:encoded><![CDATA[
+      <p>Gallery:</p>
+      <img src="https://wedding.example.com/wp-content/uploads/smith-01.jpg" />
+      <img src="https://wedding.example.com/wp-content/uploads/smith-02.jpg" />
+      <img src="https://wedding.example.com/wp-content/uploads/smith-03.jpg" />
+    ]]></content:encoded>
+    <wp:post_id>20</wp:post_id>
+    <wp:post_date>2023-05-20 14:00:00</wp:post_date>
+    <wp:post_name>smith-wedding</wp:post_name>
+    <wp:status>publish</wp:status>
+    <wp:post_type>post</wp:post_type>
+  </item>
+
+  <item>
+    <title>Jones Wedding</title>
+    <link>https://wedding.example.com/jones-wedding/</link>
+    <content:encoded><![CDATA[<p>Another gallery.</p>]]></content:encoded>
+    <wp:post_id>21</wp:post_id>
+    <wp:post_date>2023-08-01 14:00:00</wp:post_date>
+    <wp:post_name>jones-wedding</wp:post_name>
+    <wp:status>publish</wp:status>
+    <wp:post_type>post</wp:post_type>
+  </item>
+
+  <item>
+    <title>smith-01.jpg</title>
+    <link>https://wedding.example.com/wp-content/uploads/smith-01.jpg</link>
+    <wp:post_id>501</wp:post_id>
+    <wp:post_type>attachment</wp:post_type>
+    <wp:attachment_url>https://wedding.example.com/wp-content/uploads/smith-01.jpg</wp:attachment_url>
+  </item>
+  <item>
+    <title>smith-02.jpg</title>
+    <link>https://wedding.example.com/wp-content/uploads/smith-02.jpg</link>
+    <wp:post_id>502</wp:post_id>
+    <wp:post_type>attachment</wp:post_type>
+    <wp:attachment_url>https://wedding.example.com/wp-content/uploads/smith-02.jpg</wp:attachment_url>
+  </item>
+  <item>
+    <title>smith-03.jpg</title>
+    <link>https://wedding.example.com/wp-content/uploads/smith-03.jpg</link>
+    <wp:post_id>503</wp:post_id>
+    <wp:post_type>attachment</wp:post_type>
+    <wp:attachment_url>https://wedding.example.com/wp-content/uploads/smith-03.jpg</wp:attachment_url>
+  </item>
+</channel>
+</rss>

@@ -4,9 +4,18 @@ export type EntityType = "post" | "page" | "asset" | "portfolio" | "category" | 
 
 export type PublishStatus = "draft" | "published" | "archived";
 
-/** Canonical post DTO — not a Directus shape. */
+export interface SourceMetadata {
+  platform: MigrationPlatform;
+  id: string;
+  url?: string;
+  path?: string;
+  exportedAt?: string;
+}
+
+/** Canonical post DTO — raw HTML; sanitize at host sink. */
 export interface NormalizedPost {
   type: "post";
+  source: SourceMetadata;
   sourceId: string;
   title: string;
   slug: string;
@@ -16,14 +25,17 @@ export interface NormalizedPost {
   status: PublishStatus;
   categorySlugs?: string[];
   tagSlugs?: string[];
+  /** WordPress attachment id before two-pass resolution. */
+  sourceFeaturedMediaId?: string;
   featuredAssetSourceId?: string;
   seoTitle?: string;
   seoDescription?: string;
 }
 
-/** Canonical page DTO — Grapes `content` is Phase 2+. */
+/** Canonical page DTO — raw HTML snapshot. */
 export interface NormalizedPage {
   type: "page";
+  source: SourceMetadata;
   sourceId: string;
   title: string;
   slug: string;
@@ -38,6 +50,7 @@ export interface NormalizedPage {
 /** Remote asset to stream into the host sink. */
 export interface NormalizedAsset {
   type: "asset";
+  source: SourceMetadata;
   sourceId: string;
   sourceUrl: string;
   filename: string;
@@ -50,6 +63,7 @@ export interface NormalizedAsset {
 
 export interface NormalizedPortfolio {
   type: "portfolio";
+  source: SourceMetadata;
   sourceId: string;
   title: string;
   slug: string;
@@ -59,6 +73,7 @@ export interface NormalizedPortfolio {
 
 export interface NormalizedCategory {
   type: "category";
+  source: SourceMetadata;
   sourceId: string;
   name: string;
   slug: string;
@@ -66,6 +81,7 @@ export interface NormalizedCategory {
 
 export interface NormalizedTag {
   type: "tag";
+  source: SourceMetadata;
   sourceId: string;
   name: string;
   slug: string;
@@ -93,13 +109,13 @@ export interface ValidationResult {
     pages?: number;
     assets?: number;
     portfolios?: number;
+    categories?: number;
+    tags?: number;
   };
 }
 
 export interface AdapterContext {
-  /** Opaque credentials or file paths supplied by the host / CLI. */
   input: unknown;
-  /** Resume cursor from a prior run (portable JSON). */
   cursor?: MigrationCursor;
 }
 
@@ -110,9 +126,7 @@ export interface MigrationAdapter {
 }
 
 export interface MigrationCursor {
-  /** Last processed entity key for resume. */
   lastEntityKey?: EntityKey;
-  /** Adapter-specific opaque state. */
   state?: Record<string, unknown>;
 }
 
@@ -125,7 +139,7 @@ export interface EntityKey {
 export function entityKey(entity: NormalizedEntity, platform: MigrationPlatform): EntityKey {
   return {
     platform,
-    entityType: entity.type === "asset" ? "asset" : entity.type,
+    entityType: entity.type,
     sourceId: entity.sourceId,
   };
 }

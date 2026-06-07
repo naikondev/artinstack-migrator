@@ -1,0 +1,29 @@
+{
+  "duplicatePostSlugs": [
+    {
+      "entityType": "post",
+      "slug": "autumn-in-north-georgia",
+      "sourceIds": [
+        "101",
+        "102"
+      ]
+    }
+  ],
+  "duplicatePageSlugs": [],
+  "missingFeaturedImages": [],
+  "staleAssetUrls": [
+    {
+      "sourceId": "201",
+      "url": "https://journal.example.com/wp-content/uploads/2018/11/autumn.jpg",
+      "reason": "fetch failed"
+    },
+    {
+      "sourceId": "202",
+      "url": "https://journal.example.com/wp-content/uploads/inline-extra.jpg",
+      "reason": "fetch failed"
+    }
+  ],
+  "invalidHtml": [],
+  "unresolvedInlineImages": [],
+  "redirectLoops": []
+}

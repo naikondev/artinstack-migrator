@@ -8,6 +8,7 @@ describe("entityKey", () => {
   it("builds a stable key from a normalized post", () => {
     const post: NormalizedPost = {
       type: "post",
+      source: { platform: "wordpress", id: "wp-42" },
       sourceId: "wp-42",
       title: "Hello",
       slug: "hello",

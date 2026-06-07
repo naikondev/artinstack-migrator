@@ -1,0 +1,22 @@
+[
+  {
+    "type": "category",
+    "source": {
+      "platform": "wordpress",
+      "id": "cat:landscape"
+    },
+    "sourceId": "cat:landscape",
+    "name": "Landscape",
+    "slug": "landscape"
+  },
+  {
+    "type": "category",
+    "source": {
+      "platform": "wordpress",
+      "id": "cat:travel"
+    },
+    "sourceId": "cat:travel",
+    "name": "Travel",
+    "slug": "travel"
+  }
+]

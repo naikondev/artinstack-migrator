@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0"
+  xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/"
+  xmlns:wp="http://wordpress.org/export/1.2/">
+<channel>
+  <title>Long Form Journal</title>
+  <link>https://journal.example.com</link>
+  <description>Fixture 1</description>
+  <wp:wxr_version>1.2</wp:wxr_version>
+
+  <item>
+    <title>Autumn in North Georgia</title>
+    <link>https://journal.example.com/2018/11/04/autumn-in-north-georgia/</link>
+    <content:encoded><![CDATA[<p>Fall colors in the mountains.</p><img src="https://journal.example.com/wp-content/uploads/2018/11/autumn.jpg" />]]></content:encoded>
+    <excerpt:encoded><![CDATA[Fall colors]]></excerpt:encoded>
+    <wp:post_id>101</wp:post_id>
+    <wp:post_date>2018-11-04 10:00:00</wp:post_date>
+    <wp:post_name>autumn-in-north-georgia</wp:post_name>
+    <wp:status>publish</wp:status>
+    <wp:post_type>post</wp:post_type>
+    <category domain="category" nicename="landscape"><![CDATA[Landscape]]></category>
+    <category domain="category" nicename="travel"><![CDATA[Travel]]></category>
+    <category domain="post_tag" nicename="autumn"><![CDATA[autumn]]></category>
+    <category domain="post_tag" nicename="georgia"><![CDATA[georgia]]></category>
+    <wp:postmeta><wp:meta_key>_thumbnail_id</wp:meta_key><wp:meta_value>201</wp:meta_value></wp:postmeta>
+  </item>
+
+  <item>
+    <title>Another Autumn in North Georgia</title>
+    <link>https://journal.example.com/2020/03/autumn-in-north-georgia/</link>
+    <content:encoded><![CDATA[<p>Second trip.</p>]]></content:encoded>
+    <wp:post_id>102</wp:post_id>
+    <wp:post_date>2020-03-15 09:00:00</wp:post_date>
+    <wp:post_name>autumn-in-north-georgia</wp:post_name>
+    <wp:status>publish</wp:status>
+    <wp:post_type>post</wp:post_type>
+    <category domain="category" nicename="landscape"><![CDATA[Landscape]]></category>
+    <category domain="post_tag" nicename="autumn"><![CDATA[autumn]]></category>
+  </item>
+
+  <item>
+    <title>Studio Notes</title>
+    <link>https://journal.example.com/2024/01/studio-notes/</link>
+    <content:encoded><![CDATA[<p>Behind the scenes.</p>]]></content:encoded>
+    <wp:post_id>103</wp:post_id>
+    <wp:post_date>2024-01-10 12:00:00</wp:post_date>
+    <wp:post_name>studio-notes</wp:post_name>
+    <wp:status>publish</wp:status>
+    <wp:post_type>post</wp:post_type>
+  </item>
+
+  <item>
+    <title>About</title>
+    <link>https://journal.example.com/about/</link>
+    <content:encoded><![CDATA[<p>About the photographer.</p>]]></content:encoded>
+    <wp:post_id>301</wp:post_id>
+    <wp:post_date>2015-01-01 08:00:00</wp:post_date>
+    <wp:post_name>about</wp:post_name>
+    <wp:status>publish</wp:status>
+    <wp:post_type>page</wp:post_type>
+  </item>
+
+  <item>
+    <title>Contact</title>
+    <link>https://journal.example.com/contact/</link>
+    <content:encoded><![CDATA[<p>Contact form.</p>]]></content:encoded>
+    <wp:post_id>302</wp:post_id>
+    <wp:post_date>2015-01-02 08:00:00</wp:post_date>
+    <wp:post_name>contact</wp:post_name>
+    <wp:status>publish</wp:status>
+    <wp:post_type>page</wp:post_type>
+  </item>
+
+  <item>
+    <title>autumn.jpg</title>
+    <link>https://journal.example.com/wp-content/uploads/2018/11/autumn.jpg</link>
+    <wp:post_id>201</wp:post_id>
+    <wp:post_date>2018-11-04 09:55:00</wp:post_date>
+    <wp:post_name>autumn-jpg</wp:post_name>
+    <wp:status>inherit</wp:status>
+    <wp:post_type>attachment</wp:post_type>
+    <wp:attachment_url>https://journal.example.com/wp-content/uploads/2018/11/autumn.jpg</wp:attachment_url>
+  </item>
+
+  <item>
+    <title>inline-extra.jpg</title>
+    <link>https://journal.example.com/wp-content/uploads/inline-extra.jpg</link>
+    <wp:post_id>202</wp:post_id>
+    <wp:post_date>2018-11-04 09:56:00</wp:post_date>
+    <wp:post_name>inline-extra-jpg</wp:post_name>
+    <wp:status>inherit</wp:status>
+    <wp:post_type>attachment</wp:post_type>
+    <wp:attachment_url>https://journal.example.com/wp-content/uploads/inline-extra.jpg</wp:attachment_url>
+  </item>
+</channel>
+</rss>

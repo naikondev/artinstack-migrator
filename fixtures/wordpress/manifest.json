@@ -1,0 +1,45 @@
+{
+  "fixtures": [
+    {
+      "id": "long-form-journal",
+      "file": "long-form-journal.xml",
+      "description": "Volume and taxonomy stress test (compact CI fixture)",
+      "expected": {
+        "posts": 3,
+        "pages": 2,
+        "assets": 2,
+        "categories": 2,
+        "tags": 2
+      },
+      "gates": ["dated_permalinks", "taxonomy", "duplicate_slugs"],
+      "dryRunExitCode": 2
+    },
+    {
+      "id": "portfolio-archive",
+      "file": "portfolio-archive.xml",
+      "description": "Media-heavy posts and home page flag",
+      "expected": {
+        "posts": 2,
+        "pages": 1,
+        "assets": 3,
+        "categories": 0,
+        "tags": 0
+      },
+      "gates": ["inline_images", "is_home_page"]
+    },
+    {
+      "id": "stale-legacy-void",
+      "file": "stale-legacy-void.xml",
+      "description": "Dead asset URLs and messy HTML",
+      "expected": {
+        "posts": 2,
+        "pages": 0,
+        "assets": 2,
+        "categories": 0,
+        "tags": 0
+      },
+      "gates": ["stale_urls", "malformed_html"],
+      "dryRunExitCode": 2
+    }
+  ]
+}

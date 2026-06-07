@@ -1,0 +1,25 @@
+{
+  "duplicatePostSlugs": [],
+  "duplicatePageSlugs": [],
+  "missingFeaturedImages": [],
+  "staleAssetUrls": [
+    {
+      "sourceId": "501",
+      "url": "https://wedding.example.com/wp-content/uploads/smith-01.jpg",
+      "reason": "fetch failed"
+    },
+    {
+      "sourceId": "502",
+      "url": "https://wedding.example.com/wp-content/uploads/smith-02.jpg",
+      "reason": "fetch failed"
+    },
+    {
+      "sourceId": "503",
+      "url": "https://wedding.example.com/wp-content/uploads/smith-03.jpg",
+      "reason": "fetch failed"
+    }
+  ],
+  "invalidHtml": [],
+  "unresolvedInlineImages": [],
+  "redirectLoops": []
+}

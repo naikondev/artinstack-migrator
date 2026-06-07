@@ -1,54 +1,200 @@
 #!/usr/bin/env node
 
+import { writeFile } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
+import { join } from "node:path";
+
+import { collectEntities } from "../normalizer/bundle.js";
 import { getAdapter } from "../parsers/index.js";
 import type { MigrationPlatform } from "../normalizer/types.js";
+import {
+  analyzeConflicts,
+  buildMigrationReport,
+  buildRedirectMap,
+  bundleToCombinedJson,
+  runDryRun,
+  writeFilesystemExport,
+} from "../sinks/index.js";
+import { estimateStorage, staleUrlsFromEstimate } from "../sinks/storage-estimate.js";
 
 const PLATFORMS: MigrationPlatform[] = ["wordpress", "smugmug", "squarespace"];
 
 function printUsage(): void {
-  console.log(`artinstack-migrate — enumerate and dry-run platform imports
+  console.log(`artinstack-migrate — platform content migration CLI
 
 Usage:
-  artinstack-migrate validate <platform> <input-path>
-  artinstack-migrate enumerate <platform> <input-path> [--dry-run]
+  artinstack-migrate <platform> <export-file> [options]
+  artinstack-migrate validate <platform> <export-file>
 
 Platforms: ${PLATFORMS.join(", ")}
+
+Options:
+  --out <dir>       Write grouped JSON files to directory
+  --format json     Write combined JSON to stdout
+  --dry-run         Parse and analyze without writing content files
+  --report <dir>    With --dry-run, write conflicts.json + migration-report.json
+  --offline         Skip network HEAD requests (4 MB fallback per asset)
+
+Examples:
+  artinstack-migrate wordpress export.xml --dry-run --report ./preview/
+  artinstack-migrate wordpress export.xml --out ./output
+  pnpm cli wordpress fixtures/wordpress/long-form-journal.xml --dry-run
 `);
 }
 
+function printDryRunStatus(exitCode: 0 | 1 | 2, reportDir?: string): void {
+  const dest = reportDir ? ` Reports written to ${reportDir}.` : "";
+  if (exitCode === 0) {
+    console.error(`Dry run complete.${dest}`);
+  } else if (exitCode === 2) {
+    console.error(`Dry run complete with warnings (exit 2).${dest}`);
+  } else {
+    console.error(`Dry run found blocking conflicts (exit 1).${dest}`);
+  }
+}
+
+function parseArgs(argv: string[]): {
+  command: string | undefined;
+  platform: MigrationPlatform | undefined;
+  inputPath: string | undefined;
+  outDir: string | undefined;
+  reportDir: string | undefined;
+  dryRun: boolean;
+  formatJson: boolean;
+  offline: boolean;
+} {
+  const args = [...argv];
+  let command: string | undefined;
+  let platform: MigrationPlatform | undefined;
+  let inputPath: string | undefined;
+  let outDir: string | undefined;
+  let reportDir: string | undefined;
+  let dryRun = false;
+  let formatJson = false;
+  let offline = false;
+
+  const first = args[0];
+  if (first === "validate") {
+    command = "validate";
+    platform = args[1] as MigrationPlatform;
+    inputPath = args[2];
+  } else if (first && PLATFORMS.includes(first as MigrationPlatform)) {
+    command = "migrate";
+    platform = first as MigrationPlatform;
+    inputPath = args[1];
+    for (let i = 2; i < args.length; i++) {
+      const flag = args[i];
+      if (flag === "--dry-run") dryRun = true;
+      else if (flag === "--format" && args[i + 1] === "json") formatJson = true;
+      else if (flag === "--offline") offline = true;
+      else if (flag === "--out" && args[i + 1]) {
+        outDir = args[++i];
+      } else if (flag === "--report" && args[i + 1]) {
+        reportDir = args[++i];
+      }
+    }
+  } else {
+    command = first;
+  }
+
+  return { command, platform, inputPath, outDir, reportDir, dryRun, formatJson, offline };
+}
+
 async function main(): Promise<void> {
-  const [, , command, platformArg, inputPath, ...rest] = process.argv;
+  const { command, platform, inputPath, outDir, reportDir, dryRun, formatJson, offline } =
+    parseArgs(process.argv.slice(2));
 
   if (!command || command === "--help" || command === "-h") {
     printUsage();
     process.exit(0);
   }
 
-  if (!platformArg || !PLATFORMS.includes(platformArg as MigrationPlatform)) {
-    console.error(`Unknown platform: ${platformArg ?? "(missing)"}`);
-    printUsage();
-    process.exit(1);
-  }
-
-  const platform = platformArg as MigrationPlatform;
-  const adapter = getAdapter(platform);
-  const dryRun = rest.includes("--dry-run");
-
   if (command === "validate") {
+    if (!platform || !PLATFORMS.includes(platform) || !inputPath) {
+      console.error("Usage: artinstack-migrate validate <platform> <export-file>");
+      process.exit(1);
+    }
+    const adapter = getAdapter(platform);
     const result = await adapter.validateInput({ path: inputPath });
     console.log(JSON.stringify(result, null, 2));
     process.exit(result.ok ? 0 : 1);
   }
 
-  if (command === "enumerate") {
-    let count = 0;
-    for await (const entity of adapter.enumerateEntities({ input: { path: inputPath } })) {
-      count += 1;
-      if (!dryRun) {
-        console.log(JSON.stringify(entity));
-      }
+  if (command === "migrate") {
+    if (!platform || !inputPath) {
+      printUsage();
+      process.exit(1);
     }
-    console.error(`Enumerated ${count} entities (${dryRun ? "dry-run" : "stdout"})`);
+
+    const adapter = getAdapter(platform);
+    const input = { path: inputPath };
+
+    if (dryRun) {
+      const result = await runDryRun({
+        adapter,
+        input,
+        platform,
+        offlineStorageEstimate: offline,
+      });
+
+      if (reportDir) {
+        await mkdir(reportDir, { recursive: true });
+        await writeFile(
+          join(reportDir, "conflicts.json"),
+          `${JSON.stringify(result.conflicts, null, 2)}\n`,
+        );
+        await writeFile(
+          join(reportDir, "migration-report.json"),
+          `${JSON.stringify(result.report, null, 2)}\n`,
+        );
+      } else {
+        console.log(JSON.stringify(result.report, null, 2));
+      }
+
+      printDryRunStatus(result.exitCode, reportDir);
+      process.exit(result.exitCode);
+    }
+
+    const startedAt = new Date();
+    const bundle = await collectEntities(adapter.enumerateEntities({ input }));
+
+    const estimate = await estimateStorage({
+      assets: bundle.media,
+      offline,
+    });
+    const redirectMap = buildRedirectMap(bundle);
+    const conflicts = analyzeConflicts(bundle, {
+      staleAssetUrls: staleUrlsFromEstimate(estimate),
+    });
+
+    const report = buildMigrationReport({
+      platform,
+      mode: "export",
+      bundle,
+      conflicts,
+      redirectMap,
+      startedAt,
+      storageBytesEstimated: estimate.totalBytes,
+    });
+
+    if (formatJson) {
+      console.log(JSON.stringify({ ...bundleToCombinedJson(bundle), conflicts, report }, null, 2));
+      process.exit(0);
+    }
+
+    if (!outDir) {
+      console.error("Specify --out <dir> or --format json or --dry-run");
+      process.exit(1);
+    }
+
+    await writeFilesystemExport({
+      outDir,
+      bundle,
+      conflicts,
+      report,
+    });
+
+    console.error(`Wrote export to ${outDir}`);
     process.exit(0);
   }
 

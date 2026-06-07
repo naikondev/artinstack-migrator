@@ -1,0 +1,62 @@
+{
+  "runId": "8c2d3901-88f6-4b5d-9b62-8caaed2ba63a",
+  "platform": "wordpress",
+  "mode": "dry-run",
+  "startedAt": "2026-06-07T01:57:51.018Z",
+  "finishedAt": "2026-06-07T01:57:51.046Z",
+  "summary": {
+    "posts": 2,
+    "pages": 1,
+    "assets": 3,
+    "portfolios": 0,
+    "categories": 0,
+    "tags": 0,
+    "storageBytesEstimated": 12582912
+  },
+  "warnings": [
+    "3 asset URL(s) unreachable; used 4 MB fallback each"
+  ],
+  "errors": [],
+  "conflicts": {
+    "duplicatePostSlugs": [],
+    "duplicatePageSlugs": [],
+    "missingFeaturedImages": [],
+    "staleAssetUrls": [
+      {
+        "sourceId": "501",
+        "url": "https://wedding.example.com/wp-content/uploads/smith-01.jpg",
+        "reason": "fetch failed"
+      },
+      {
+        "sourceId": "502",
+        "url": "https://wedding.example.com/wp-content/uploads/smith-02.jpg",
+        "reason": "fetch failed"
+      },
+      {
+        "sourceId": "503",
+        "url": "https://wedding.example.com/wp-content/uploads/smith-03.jpg",
+        "reason": "fetch failed"
+      }
+    ],
+    "invalidHtml": [],
+    "unresolvedInlineImages": [],
+    "redirectLoops": []
+  },
+  "redirectMap": [
+    {
+      "fromPath": "/smith-wedding/",
+      "toPath": "/blog/smith-wedding",
+      "statusCode": 301
+    },
+    {
+      "fromPath": "/jones-wedding/",
+      "toPath": "/blog/jones-wedding",
+      "statusCode": 301
+    },
+    {
+      "fromPath": "/",
+      "toPath": "/home",
+      "statusCode": 301
+    }
+  ]
+}

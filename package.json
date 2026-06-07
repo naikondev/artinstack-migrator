@@ -41,6 +41,7 @@
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:validate-fixtures": "vitest run fixtures/wordpress/benchmarks.test.ts",
     "test:watch": "vitest",
     "cli": "node dist/cli/index.js",
     "migrate": "node dist/cli/index.js"
@@ -49,10 +50,13 @@
     "node": ">=20"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   },
   "dependencies": {
     "cheerio": "^1.0.0",
+    "fast-xml-parser": "^5.8.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {

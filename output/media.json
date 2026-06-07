@@ -1,0 +1,30 @@
+[
+  {
+    "type": "asset",
+    "source": {
+      "platform": "wordpress",
+      "id": "201",
+      "url": "https://journal.example.com/wp-content/uploads/2018/11/autumn.jpg",
+      "path": "/wp-content/uploads/2018/11/autumn.jpg/"
+    },
+    "sourceId": "201",
+    "sourceUrl": "https://journal.example.com/wp-content/uploads/2018/11/autumn.jpg",
+    "filename": "autumn.jpg",
+    "mimeType": "image/jpeg",
+    "caption": "autumn.jpg"
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "wordpress",
+      "id": "202",
+      "url": "https://journal.example.com/wp-content/uploads/inline-extra.jpg",
+      "path": "/wp-content/uploads/inline-extra.jpg/"
+    },
+    "sourceId": "202",
+    "sourceUrl": "https://journal.example.com/wp-content/uploads/inline-extra.jpg",
+    "filename": "inline-extra.jpg",
+    "mimeType": "image/jpeg",
+    "caption": "inline-extra.jpg"
+  }
+]
