@@ -14,7 +14,7 @@ src/
   normalizer/       Canonical DTOs + portable idempotency types
   sinks/            filesystem export, MigrationSink interface
   cli/              artinstack-migrate
-  transformers/     HtmlToGrapes (later)
+  transformers/     HtmlToGrapes, css-to-styles (optional)
 ```
 
 ## Install
@@ -31,11 +31,13 @@ Requires **Node.js 20+**.
 ```bash
 pnpm build
 
-# Export normalized DTOs to a directory
+# Installed / linked binary
 artinstack-migrate wordpress export.xml --out ./output
-
-# Validate before running
 artinstack-migrate validate wordpress ./export.xml
+
+# Local clone — no global install
+pnpm cli wordpress export.xml --dry-run
+node dist/cli/index.js wordpress export.xml --dry-run
 ```
 
 ## Development
