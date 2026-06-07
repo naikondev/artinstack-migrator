@@ -1,10 +1,10 @@
 # Architecture blueprint
 
-`@artinstack/migrator` is a **stateless, platform-agnostic** migration framework. It reads content from third-party sources (WordPress, SmugMug, Squarespace, and similar) and normalizes it into portable data transfer objects (DTOs).
+`@artinstack/migrator` is a **stateless, platform-agnostic** migration framework and **public OSS** project (MIT). It reads content from third-party sources (WordPress, SmugMug, Squarespace, and similar) and normalizes it into portable data transfer objects (DTOs).
 
-The design progresses in layers: **export** normalized JSON first, introduce a **`MigrationSink`** write abstraction, then let a host application implement the sink and—only when imports are proven—add jobs, queues, and UI. If normalized export is not reliable, nothing downstream matters.
+The design progresses in layers: **dry-run** and **export** normalized JSON first, introduce a **`MigrationSink`** write abstraction, then let a host application implement the sink and—only when imports are proven—add jobs, queues, and UI. If normalized export is not reliable, nothing downstream matters.
 
-This package is **public from day one**. It has almost no coupling to any single CMS or cloud stack—the value is portable export and normalization. Orchestration, credentials, billing, and dashboard UI stay in the host application.
+Orchestration, credentials, billing, and dashboard UI stay in the host application.
 
 ---
 
@@ -13,15 +13,30 @@ This package is **public from day one**. It has almost no coupling to any single
 | Goal | Approach |
 |------|----------|
 | Support multiple source platforms | Isolated adapters behind one normalizer |
-| Prove correctness before integration | CLI → JSON / files on disk |
+| Prove correctness before integration | Dry-run + JSON export to disk |
+| Debug imports without side effects | Dry-run: parse, normalize, estimate storage, preview slugs and conflicts |
 | Stay testable without a running backend | Adapters emit DTOs, not database rows |
-| Allow local dry-runs and OSS contributions | Public repo + fixtures from the start |
+| OSS contributions | Public repo + fixtures |
 | Handle large imports safely | Stream assets through sinks; resume from checkpoints |
 | Defer hard layout translation | HTML snapshots first; structured page trees later |
 
 ---
 
-## High-level data flow
+## Dry-run
+
+Before any write (filesystem, sink, or host APIs), the CLI supports **`--dry-run`**: parse and normalize the full export, surface problems early, and exit without persisting content.
+
+| Capability | Purpose |
+|------------|---------|
+| **Parse + normalize** | Validate export structure; build DTOs in memory |
+| **Storage estimate** | Sum asset sizes (via HTTP `HEAD` where possible) for quota preview |
+| **Slug preview** | List post, page, and portfolio slugs with intended public paths |
+| **Conflict report** | Duplicate slugs, missing featured images, oversized media, invalid HTML, unsupported blocks |
+| **Migration report** | Run summary, warnings, and errors as JSON (no writes) |
+
+Dry-run is the recommended first step for any new export file. Host applications can reuse the same analysis before enqueueing a production job.
+
+---
 
 ### Export path — parse and write JSON
 
@@ -82,6 +97,7 @@ src/
     filesystem.ts   Write JSON bundles to disk
     types.ts        MigrationSink interface
     run-migration.ts
+    dry-run.ts      Parse, normalize, analyze — no writes
   transformers/     HtmlToGrapes, css-to-styles (later; optional)
   index.ts          Public API re-exports
 fixtures/           Sample exports and golden JSON for tests
@@ -89,7 +105,7 @@ fixtures/           Sample exports and golden JSON for tests
 
 **Dependency rule:** no imports from web frameworks, proprietary CMS SDKs, or host-specific libraries. Host apps depend on `@artinstack/migrator`; never the reverse.
 
-**Public from day one:** parsers and normalizer DTOs are useful beyond any single host—"export WordPress as JSON", "convert SmugMug albums", "transform Squarespace content". Publish and iterate in the open; keep host sinks, jobs, and billing private.
+**Public OSS:** parsers and normalizer DTOs are useful beyond any single host—"export WordPress as JSON", "convert SmugMug albums", "transform Squarespace content". Host sinks, jobs, and billing remain private to each integrator.
 
 ---
 
@@ -242,19 +258,30 @@ Portable helpers live in `src/normalizer/idempotency.ts`; they use `EntityKey` (
 ```bash
 pnpm build
 
+# Dry-run — parse, normalize, report conflicts (no writes)
+artinstack-migrate wordpress export.xml --dry-run
+artinstack-migrate wordpress export.xml --dry-run --report ./preview/
+
 # Export normalized DTOs to a directory
 artinstack-migrate wordpress export.xml --out ./output
 
 # Or emit a single combined JSON document
 artinstack-migrate wordpress export.xml --format json
 
-# Validate before running
+# Validate structure only
 artinstack-migrate validate wordpress ./export.xml
-artinstack-migrate enumerate wordpress ./export.xml --dry-run
 
 # Run through a sink (filesystem or host plugin)
 artinstack-migrate wordpress export.xml --sink filesystem --out ./imported
 artinstack-migrate wordpress export.xml --sink <host-plugin>
+```
+
+**Dry-run output** (under `--report`):
+
+```
+preview/
+├── conflicts.json        # duplicate slugs, missing assets, HTML issues, …
+└── migration-report.json # counts, warnings, storage estimate
 ```
 
 **Directory output:**
@@ -283,11 +310,12 @@ The CLI does not embed host credentials. Sink plugins are supplied by the host a
 
 ## Integration guide for host applications
 
-1. **Export first** — run the CLI against real source files and inspect normalized JSON before building sinks or workers.
-2. **Implement `MigrationSink`** against your content and media APIs—quotas, slug rules, and thumbnails belong in the sink.
-3. **Run locally** — wire the CLI or a script to your sink before adding job orchestration.
-4. **Productize later** — enqueue long-running jobs, persist progress, and expose UI only after local imports succeed at scale.
-5. **Optional** — export a redirect map (CSV) when source URLs differ from destination paths.
+1. **Dry-run first** — inspect conflicts, slugs, and storage estimates before any write.
+2. **Export** — run the CLI against real source files and review normalized JSON.
+3. **Implement `MigrationSink`** against your content and media APIs—quotas, slug rules, and thumbnails belong in the sink.
+4. **Run locally** — wire the CLI or a script to your sink before adding job orchestration.
+5. **Productize later** — enqueue long-running jobs, persist progress, and expose UI only after local imports succeed at scale.
+6. **Optional** — export a redirect map (CSV) when source URLs differ from destination paths.
 
 The migrator never embeds host credentials. Sink plugins are supplied by the host application.
 
@@ -315,7 +343,8 @@ The migrator never embeds host credentials. Sink plugins are supplied by the hos
 | Puppeteer for every page in bulk | Cost and memory risk |
 | Assuming `slug: "home"` means site root | Home page is often a separate flag on the host |
 | Downloading tens of GB to `/tmp` | OOM and slow; stream instead |
-| Building orchestration before JSON export is reliable | Unstable DTOs waste integration effort |
+| Skipping dry-run on large exports | Slug and storage issues surface only after a failed import |
+| Building orchestration before dry-run/export is reliable | Unstable DTOs waste integration effort |
 | Running the import loop inside the job-creation HTTP handler | Timeouts and coupling to the web tier |
 | Embedding long-lived admin tokens in the public package | Credentials belong in the host worker only |
 
@@ -326,7 +355,7 @@ The migrator never embeds host credentials. Sink plugins are supplied by the hos
 | Piece | Public `@artinstack/migrator` | Host application |
 |-------|------------------------------|------------------|
 | Parsers + normalizer DTOs | Yes | No |
-| CLI + filesystem export | Yes | No |
+| CLI, dry-run, conflict report, filesystem export | Yes | No |
 | `MigrationSink` interface | Yes | Implementation |
 | Host sink, jobs, worker, UI | No | Yes |
 | Storage credentials, billing | No | Yes |
@@ -335,4 +364,4 @@ The migrator never embeds host credentials. Sink plugins are supplied by the hos
 
 ## Summary
 
-`@artinstack/migrator` is the **portable core**: adapters, normalizer DTOs, CLI export, optional HTML→page-builder transformers, and a sink-driven execution loop. Prove correctness with **JSON export first**, then **`MigrationSink`**, then host integration. The package is **public from day one**—portable normalization has value beyond any single platform. Orchestration, credentials, and billing stay in the host.
+`@artinstack/migrator` is the **portable OSS core**: adapters, normalizer DTOs, dry-run, CLI export, optional HTML→page-builder transformers, and a sink-driven execution loop. Prove correctness with **dry-run and JSON export first**, then **`MigrationSink`**, then host integration. Orchestration, credentials, and billing stay in the host.
