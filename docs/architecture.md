@@ -77,7 +77,7 @@ Long-running imports, progress UI, and retry policy are **host concerns** (worke
 src/
   parsers/              WordPress, SmugMug, Squarespace → normalizer DTOs
     squarespace/        parse-export.ts — block flattening + static HTML snapshots
-  normalizer/           Canonical types + portable idempotency helpers
+  normalizer/           Canonical types, idempotency, opt-in validate.ts (Zod)
   lib/                  utility, content-asset-urls
   transformers/         HtmlToGrapes, css-to-styles, rewrite-inline-images
   cli/                  artinstack-migrate
@@ -445,6 +445,7 @@ The CLI does not embed host credentials. Sink plugins and auth are supplied by t
 | Slug collision policy (e.g. post auto-suffix, page skip-with-report) | Host sink |
 | Storage quota, thumbs, EXIF pipeline | Host sink |
 | `rewriteInlineImages` `replaceWith` (media URLs / embed ids) | Host sink |
+| Opt-in `validateNormalized*` / `validateGrapesProjectSnapshot` at write boundary | Host sink (optional) |
 | Job queue, worker, progress UI | Host |
 | Redirect middleware + `site_redirects` persistence | Host |
 | Advisory storage preflight in UI | Host |
@@ -462,6 +463,9 @@ Optional: export redirect map CSV when `source.path` differs from destination pa
 | WordPress WXR | Editorial content, attachments, taxonomy |
 | SmugMug API | Albums, large vaults, EXIF |
 | Squarespace | Pages, blog, block flattening |
+| Ghost (optional M0e) | JSON export / Admin API — Mobiledoc or HTML → `contentHtml` |
+| Blogger (optional M0e) | Google Takeout Atom XML or Blogger API v3 |
+| Wix (optional M0e) | Blog/RSS or API slice only — no full-site export parity with WXR |
 
 Transformers: **HtmlToGrapes** (`htmlToGrapes()` → `GrapesProjectSnapshot`, golden fixtures in `fixtures/grapes/`), **css-to-styles**, **rewrite-inline-images**. Redirect report generation is a host routing concern.
 

@@ -2,7 +2,7 @@
 
 Stateless content normalizer and migration framework for transforming **WordPress**, **SmugMug**, **Squarespace**, and similar sources into a platform-agnostic schema.
 
-**Public from day one.** Portable parsers and JSON export are useful without any specific host. Job orchestration, credentials, and UI are implemented separately via `MigrationSink`.
+Portable parsers and JSON export are useful without any specific host. Job orchestration, credentials, and UI are implemented separately via `MigrationSink`.
 
 See [docs/architecture.md](./docs/architecture.md) for the high-level blueprint: data flow, DTOs, sink contract, and source mappings.
 
