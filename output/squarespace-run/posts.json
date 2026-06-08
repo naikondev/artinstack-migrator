@@ -1,0 +1,49 @@
+[
+  {
+    "type": "post",
+    "source": {
+      "platform": "squarespace",
+      "id": "post-desert-light",
+      "url": "https://creative-studio.example/journal/desert-light-study",
+      "path": "/journal/desert-light-study/",
+      "exportedAt": "2026-06-07T18:00:00.000Z"
+    },
+    "sourceId": "post-desert-light",
+    "title": "Desert Light Study",
+    "slug": "desert-light-study",
+    "excerpt": "Notes from a week in the Mojave.",
+    "contentHtml": "<div class=\"sqs-block sqs-block-text\" id=\"sqs-block-block-post-intro\"><p>The desert compresses distance and exaggerates shadow.</p></div>\n<div class=\"sqs-block sqs-block-gallery\" id=\"sqs-block-block-post-gallery\"><div class=\"sqs-gallery\"><figure><img src=\"https://images.squarespace-cdn.com/content/v1/desert-01.jpg\" /><figcaption>Dawn ridge</figcaption></figure><figure><img src=\"https://images.squarespace-cdn.com/content/v1/desert-02.jpg\" alt=\"Salt flats\" /></figure></div></div>\n<div class=\"sqs-block sqs-block-unsupported\" data-artinstack-unsupported-block=\"form\" data-artinstack-block-id=\"block-post-form\" aria-hidden=\"true\"></div>",
+    "publishedAt": "2026-03-15T09:00:00.000Z",
+    "status": "published",
+    "categorySlugs": [
+      "travel"
+    ],
+    "tagSlugs": [
+      "editorial",
+      "film"
+    ],
+    "featuredAssetSourceId": "featured-post-desert-light"
+  },
+  {
+    "type": "post",
+    "source": {
+      "platform": "squarespace",
+      "id": "post-contact-sheet",
+      "url": "https://creative-studio.example/journal/contact-sheet-rituals",
+      "path": "/journal/contact-sheet-rituals/",
+      "exportedAt": "2026-06-07T18:00:00.000Z"
+    },
+    "sourceId": "post-contact-sheet",
+    "title": "Contact Sheet Rituals",
+    "slug": "contact-sheet-rituals",
+    "contentHtml": "<p>Static snapshot page with pre-rendered HTML and an inline image.</p><img src=\"https://images.squarespace-cdn.com/content/v1/contact-sheet.jpg\" alt=\"Contact sheet\" />",
+    "publishedAt": "2026-02-01T12:00:00.000Z",
+    "status": "published",
+    "categorySlugs": [
+      "process"
+    ],
+    "tagSlugs": [
+      "film"
+    ]
+  }
+]

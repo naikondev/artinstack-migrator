@@ -76,6 +76,7 @@ Long-running imports, progress UI, and retry policy are **host concerns** (worke
 ```
 src/
   parsers/              WordPress, SmugMug, Squarespace → normalizer DTOs
+    squarespace/        parse-export.ts — block flattening + static HTML snapshots
   normalizer/           Canonical types + portable idempotency helpers
   helpers/
     rewrite-inline-images.ts
@@ -299,7 +300,32 @@ Use bounded concurrency (e.g. 4–8 parallel uploads) per import to respect API 
 | Blog posts | `NormalizedPost` |
 | Static pages | `NormalizedPage` |
 | Block JSON | Flatten to `contentHtml` + minimal CSS, or map to structured component tree |
-| Galleries | `NormalizedPortfolio` + linked assets |
+| Galleries | `NormalizedAsset` rows from gallery/image blocks |
+| Unsupported blocks | Placeholder markers → `conflicts.unsupportedBlocks[]` |
+
+**Export format:** JSON (`exportVersion: 1`) with `pages[]` / `posts[]` and either `blocks[]` or pre-rendered `contentHtml`. Parser: `src/parsers/squarespace/parse-export.ts`.
+
+**Live collection (public package):** `src/parsers/squarespace/collect.ts` appends `?format=json-pretty`, maps wire JSON → `SquarespaceExport`, and paginates collection lists. **No cookies or API keys in the package** — the host injects an authenticated `fetch` (session cookies, proxy, etc.).
+
+```ts
+import { SquarespaceCollectionClient, squarespaceAdapter } from "@artinstack/migrator";
+
+const client = new SquarespaceCollectionClient({
+  fetchImpl: authenticatedFetch, // host-supplied
+});
+
+for await (const entity of squarespaceAdapter.enumerateEntities({
+  input: {
+    client,
+    collectTargets: [
+      { url: "https://example.com/journal", kind: "collection" },
+      { url: "https://example.com/about", kind: "page" },
+    ],
+  },
+})) {
+  // → NormalizedPage / NormalizedPost
+}
+```
 
 CDN and hidden asset URLs require a **URL resolver** before streaming.
 
@@ -469,6 +495,7 @@ Optional transformers: **HtmlToGrapes**, **css-to-styles**. Redirect report gene
 |-------|------------------------|------------------|
 | Parsers + normalizer DTOs (raw HTML) | Yes | No |
 | SmugMug OAuth signing + API crawl (`api.ts`) | Yes | Supplies credentials |
+| Squarespace json-pretty collector (`collect.ts`) | Yes | Supplies authenticated `fetch` |
 | Dry-run, conflicts, migration report | Yes | No |
 | CLI + filesystem export | Yes | No |
 | `rewriteInlineImages` helper | Yes | Supplies `replaceWith` |

@@ -1,0 +1,34 @@
+{
+  "website": {
+    "authenticUrl": "https://creative-studio.example",
+    "siteTitle": "Creative Studio"
+  },
+  "collection": {
+    "id": "col-blog",
+    "typeName": "blog",
+    "typeLabel": "Blog",
+    "ordering": "chronological",
+    "title": "Journal",
+    "urlId": "journal",
+    "fullUrl": "https://creative-studio.example/journal",
+    "categories": ["process", "travel"]
+  },
+  "pagination": {
+    "nextPage": false
+  },
+  "items": [
+    {
+      "id": "post-desert-light",
+      "urlId": "desert-light-study",
+      "title": "Desert Light Study",
+      "fullUrl": "https://creative-studio.example/journal/desert-light-study",
+      "excerpt": "Notes from a week in the Mojave.",
+      "publishOn": 1742025600000,
+      "workflowState": 1,
+      "tags": ["editorial", "film"],
+      "categories": ["travel"],
+      "assetUrl": "https://images.squarespace-cdn.com/content/v1/desert-featured.jpg",
+      "body": "<div class=\"sqs-block html-block sqs-block-html\" id=\"block-post-intro\"><div class=\"sqs-block-content\"><p>The desert compresses distance.</p></div></div><div class=\"sqs-block gallery-block sqs-block-gallery\" id=\"block-post-gallery\"><div class=\"sqs-block-content\"><img src=\"https://images.squarespace-cdn.com/content/v1/desert-01.jpg\" alt=\"Dawn ridge\" /><img src=\"https://images.squarespace-cdn.com/content/v1/desert-02.jpg\" alt=\"Salt flats\" /></div></div><div class=\"sqs-block form-block sqs-block-form\" id=\"block-post-form\"><div class=\"sqs-block-content\"></div></div>"
+    }
+  ]
+}

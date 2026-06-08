@@ -1,0 +1,34 @@
+[
+  {
+    "type": "page",
+    "source": {
+      "platform": "squarespace",
+      "id": "page-home",
+      "url": "https://creative-studio.example/",
+      "path": "/",
+      "exportedAt": "2026-06-07T18:00:00.000Z"
+    },
+    "sourceId": "page-home",
+    "title": "Home",
+    "slug": "home",
+    "contentHtml": "<div class=\"sqs-block sqs-block-html\" id=\"sqs-block-block-hero-text\"><h1>Creative Studio</h1><p>Editorial photography and visual storytelling.</p></div>\n<div class=\"sqs-block sqs-block-image\" id=\"sqs-block-block-hero-image\"><figure><img src=\"https://images.squarespace-cdn.com/content/v1/hero-studio.jpg\" alt=\"Studio workspace\" /></figure></div>\n<div class=\"sqs-block sqs-block-unsupported\" data-artinstack-unsupported-block=\"product\" data-artinstack-block-id=\"block-store\" aria-hidden=\"true\"></div>",
+    "contentCss": ".sqs-block { margin-bottom: 24px; }",
+    "isHomePage": true,
+    "status": "published"
+  },
+  {
+    "type": "page",
+    "source": {
+      "platform": "squarespace",
+      "id": "page-about",
+      "url": "https://creative-studio.example/about",
+      "path": "/about/",
+      "exportedAt": "2026-06-07T18:00:00.000Z"
+    },
+    "sourceId": "page-about",
+    "title": "About",
+    "slug": "about",
+    "contentHtml": "<div class=\"sqs-block sqs-block-markdown\" id=\"sqs-block-block-about-md\"><div class=\"sqs-markdown\">We collaborate with brands on **visual narratives**.</div></div>\n<div class=\"sqs-block sqs-block-quote\" id=\"sqs-block-block-about-quote\"><blockquote><p>Light is the first editor.</p></blockquote></div>\n<div class=\"sqs-block sqs-block-button\" id=\"sqs-block-block-about-button\"><p><a class=\"sqs-block-button\" href=\"https://creative-studio.example/work\">View portfolio</a></p></div>\n<div class=\"sqs-block sqs-block-unsupported\" data-artinstack-unsupported-block=\"map\" data-artinstack-block-id=\"block-about-map\" aria-hidden=\"true\"></div>",
+    "status": "published"
+  }
+]

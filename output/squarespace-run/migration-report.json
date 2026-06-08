@@ -1,0 +1,64 @@
+{
+  "runId": "6d9ea621-9447-4639-b448-c41ae8153198",
+  "platform": "squarespace",
+  "mode": "export",
+  "startedAt": "2026-06-08T01:25:20.883Z",
+  "finishedAt": "2026-06-08T01:25:20.896Z",
+  "summary": {
+    "posts": 2,
+    "pages": 2,
+    "assets": 5,
+    "portfolios": 0,
+    "categories": 2,
+    "tags": 2,
+    "storageBytesEstimated": 20971520
+  },
+  "warnings": [],
+  "errors": [],
+  "conflicts": {
+    "duplicatePostSlugs": [],
+    "duplicatePageSlugs": [],
+    "missingFeaturedImages": [],
+    "staleAssetUrls": [],
+    "invalidHtml": [],
+    "unresolvedInlineImages": [],
+    "unsupportedBlocks": [
+      {
+        "entityType": "post",
+        "sourceId": "post-desert-light",
+        "blockType": "form",
+        "blockId": "block-post-form"
+      },
+      {
+        "entityType": "page",
+        "sourceId": "page-home",
+        "blockType": "product",
+        "blockId": "block-store"
+      },
+      {
+        "entityType": "page",
+        "sourceId": "page-about",
+        "blockType": "map",
+        "blockId": "block-about-map"
+      }
+    ],
+    "redirectLoops": []
+  },
+  "redirectMap": [
+    {
+      "fromPath": "/journal/desert-light-study/",
+      "toPath": "/blog/desert-light-study",
+      "statusCode": 301
+    },
+    {
+      "fromPath": "/journal/contact-sheet-rituals/",
+      "toPath": "/blog/contact-sheet-rituals",
+      "statusCode": 301
+    },
+    {
+      "fromPath": "/",
+      "toPath": "/home",
+      "statusCode": 301
+    }
+  ]
+}

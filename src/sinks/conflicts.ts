@@ -2,6 +2,7 @@ import * as cheerio from "cheerio";
 
 import type { EntityBundle } from "../normalizer/bundle.js";
 import { discoverRawImgSrcs, normalizeAssetUrl } from "../lib/content-asset-urls.js";
+import { findUnsupportedBlockMarkers } from "../parsers/squarespace/parse-export.js";
 export interface DuplicateSlugConflict {
   entityType: "post" | "page";
   slug: string;
@@ -31,6 +32,13 @@ export interface UnresolvedInlineImageConflict {
   src: string;
 }
 
+export interface UnsupportedBlockConflict {
+  entityType: "post" | "page";
+  sourceId: string;
+  blockType: string;
+  blockId?: string;
+}
+
 export interface RedirectLoopConflict {
   fromPath: string;
   toPath: string;
@@ -44,6 +52,7 @@ export interface ConflictReport {
   staleAssetUrls: StaleAssetUrlConflict[];
   invalidHtml: InvalidHtmlConflict[];
   unresolvedInlineImages: UnresolvedInlineImageConflict[];
+  unsupportedBlocks: UnsupportedBlockConflict[];
   redirectLoops: RedirectLoopConflict[];
 }
 
@@ -55,6 +64,7 @@ export function emptyConflictReport(): ConflictReport {
     staleAssetUrls: [],
     invalidHtml: [],
     unresolvedInlineImages: [],
+    unsupportedBlocks: [],
     redirectLoops: [],
   };
 }
@@ -126,6 +136,19 @@ function findUnresolvedInlineImages(
   return conflicts;
 }
 
+function findUnsupportedBlocks(
+  entityType: "post" | "page",
+  sourceId: string,
+  contentHtml: string,
+): UnsupportedBlockConflict[] {
+  return findUnsupportedBlockMarkers(contentHtml).map((marker) => ({
+    entityType,
+    sourceId,
+    blockType: marker.blockType,
+    blockId: marker.blockId,
+  }));
+}
+
 export function analyzeConflicts(
   bundle: EntityBundle,
   options?: {
@@ -160,6 +183,9 @@ export function analyzeConflicts(
     report.unresolvedInlineImages.push(
       ...findUnresolvedInlineImages(post.sourceId, post.contentHtml, mediaUrls),
     );
+    report.unsupportedBlocks.push(
+      ...findUnsupportedBlocks("post", post.sourceId, post.contentHtml),
+    );
   }
 
   for (const page of bundle.pages) {
@@ -174,6 +200,9 @@ export function analyzeConflicts(
 
     report.unresolvedInlineImages.push(
       ...findUnresolvedInlineImages(page.sourceId, page.contentHtml, mediaUrls),
+    );
+    report.unsupportedBlocks.push(
+      ...findUnsupportedBlocks("page", page.sourceId, page.contentHtml),
     );
   }
 
@@ -197,7 +226,8 @@ export function hasWarnings(report: ConflictReport): boolean {
     report.missingFeaturedImages.length > 0 ||
     report.staleAssetUrls.length > 0 ||
     report.invalidHtml.length > 0 ||
-    report.unresolvedInlineImages.length > 0
+    report.unresolvedInlineImages.length > 0 ||
+    report.unsupportedBlocks.length > 0
   );
 }
 

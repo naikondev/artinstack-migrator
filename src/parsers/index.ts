@@ -11,6 +11,13 @@ export {
 } from "./smugmug/index.js";
 export type { SmugMugClientOptions, SmugMugCredentials } from "./smugmug/index.js";
 export { squarespaceAdapter } from "./squarespace/index.js";
+export {
+  SquarespaceCollectionClient,
+  SQUARESPACE_JSON_FORMAT,
+  buildJsonPrettyUrl,
+  mapJsonPrettyWire,
+} from "./squarespace/index.js";
+export type { SquarespaceClientOptions, SquarespaceCollectTarget } from "./squarespace/index.js";
 
 import type { MigrationPlatform } from "../normalizer/types.js";
 import { smugmugAdapter } from "./smugmug/index.js";

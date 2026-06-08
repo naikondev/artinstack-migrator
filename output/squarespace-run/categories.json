@@ -1,0 +1,24 @@
+[
+  {
+    "type": "category",
+    "source": {
+      "platform": "squarespace",
+      "id": "cat-process",
+      "exportedAt": "2026-06-07T18:00:00.000Z"
+    },
+    "sourceId": "cat-process",
+    "name": "Process",
+    "slug": "process"
+  },
+  {
+    "type": "category",
+    "source": {
+      "platform": "squarespace",
+      "id": "cat-travel",
+      "exportedAt": "2026-06-07T18:00:00.000Z"
+    },
+    "sourceId": "cat-travel",
+    "name": "Travel",
+    "slug": "travel"
+  }
+]

@@ -1,0 +1,29 @@
+{
+  "duplicatePostSlugs": [],
+  "duplicatePageSlugs": [],
+  "missingFeaturedImages": [],
+  "staleAssetUrls": [],
+  "invalidHtml": [],
+  "unresolvedInlineImages": [],
+  "unsupportedBlocks": [
+    {
+      "entityType": "post",
+      "sourceId": "post-desert-light",
+      "blockType": "form",
+      "blockId": "block-post-form"
+    },
+    {
+      "entityType": "page",
+      "sourceId": "page-home",
+      "blockType": "product",
+      "blockId": "block-store"
+    },
+    {
+      "entityType": "page",
+      "sourceId": "page-about",
+      "blockType": "map",
+      "blockId": "block-about-map"
+    }
+  ],
+  "redirectLoops": []
+}

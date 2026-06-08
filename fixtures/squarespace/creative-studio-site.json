@@ -1,0 +1,128 @@
+{
+  "exportVersion": "1",
+  "exportedAt": "2026-06-07T18:00:00.000Z",
+  "site": {
+    "url": "https://creative-studio.example",
+    "title": "Creative Studio"
+  },
+  "categories": [
+    { "id": "cat-process", "name": "Process", "slug": "process" },
+    { "id": "cat-travel", "name": "Travel", "slug": "travel" }
+  ],
+  "tags": [
+    { "id": "tag-film", "name": "Film", "slug": "film" },
+    { "id": "tag-editorial", "name": "Editorial", "slug": "editorial" }
+  ],
+  "pages": [
+    {
+      "id": "page-home",
+      "title": "Home",
+      "slug": "home",
+      "url": "https://creative-studio.example/",
+      "isHomePage": true,
+      "status": "published",
+      "contentCss": ".sqs-block { margin-bottom: 24px; }",
+      "blocks": [
+        {
+          "id": "block-hero-text",
+          "type": "html",
+          "html": "<h1>Creative Studio</h1><p>Editorial photography and visual storytelling.</p>"
+        },
+        {
+          "id": "block-hero-image",
+          "type": "image",
+          "imageUrl": "https://images.squarespace-cdn.com/content/v1/hero-studio.jpg",
+          "altText": "Studio workspace"
+        },
+        {
+          "id": "block-store",
+          "type": "product",
+          "value": "Print Shop"
+        }
+      ]
+    },
+    {
+      "id": "page-about",
+      "title": "About",
+      "slug": "about",
+      "url": "https://creative-studio.example/about",
+      "status": "published",
+      "blocks": [
+        {
+          "id": "block-about-md",
+          "type": "markdown",
+          "value": "We collaborate with brands on **visual narratives**."
+        },
+        {
+          "id": "block-about-quote",
+          "type": "quote",
+          "html": "<blockquote><p>Light is the first editor.</p></blockquote>"
+        },
+        {
+          "id": "block-about-button",
+          "type": "button",
+          "label": "View portfolio",
+          "url": "https://creative-studio.example/work"
+        },
+        {
+          "id": "block-about-map",
+          "type": "map",
+          "value": "Studio location"
+        }
+      ]
+    }
+  ],
+  "posts": [
+    {
+      "id": "post-desert-light",
+      "title": "Desert Light Study",
+      "slug": "desert-light-study",
+      "url": "https://creative-studio.example/journal/desert-light-study",
+      "excerpt": "Notes from a week in the Mojave.",
+      "publishedAt": "2026-03-15T09:00:00.000Z",
+      "status": "published",
+      "categorySlugs": ["travel"],
+      "tagSlugs": ["editorial", "film"],
+      "featuredImageUrl": "https://images.squarespace-cdn.com/content/v1/desert-featured.jpg",
+      "blocks": [
+        {
+          "id": "block-post-intro",
+          "type": "text",
+          "html": "<p>The desert compresses distance and exaggerates shadow.</p>"
+        },
+        {
+          "id": "block-post-gallery",
+          "type": "gallery",
+          "items": [
+            {
+              "id": "gal-1",
+              "imageUrl": "https://images.squarespace-cdn.com/content/v1/desert-01.jpg",
+              "caption": "Dawn ridge"
+            },
+            {
+              "id": "gal-2",
+              "imageUrl": "https://images.squarespace-cdn.com/content/v1/desert-02.jpg",
+              "altText": "Salt flats"
+            }
+          ]
+        },
+        {
+          "id": "block-post-form",
+          "type": "form",
+          "value": "Contact form"
+        }
+      ]
+    },
+    {
+      "id": "post-contact-sheet",
+      "title": "Contact Sheet Rituals",
+      "slug": "contact-sheet-rituals",
+      "url": "https://creative-studio.example/journal/contact-sheet-rituals",
+      "publishedAt": "2026-02-01T12:00:00.000Z",
+      "status": "published",
+      "categorySlugs": ["process"],
+      "tagSlugs": ["film"],
+      "contentHtml": "<p>Static snapshot page with pre-rendered HTML and an inline image.</p><img src=\"https://images.squarespace-cdn.com/content/v1/contact-sheet.jpg\" alt=\"Contact sheet\" />"
+    }
+  ]
+}

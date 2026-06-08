@@ -1,0 +1,22 @@
+{
+  "website": {
+    "authenticUrl": "https://creative-studio.example",
+    "siteTitle": "Creative Studio"
+  },
+  "collection": {
+    "id": "col-about",
+    "typeName": "page",
+    "typeLabel": "Page",
+    "title": "About",
+    "urlId": "about",
+    "fullUrl": "https://creative-studio.example/about"
+  },
+  "item": {
+    "id": "page-about",
+    "urlId": "about",
+    "title": "About",
+    "fullUrl": "https://creative-studio.example/about",
+    "workflowState": 1,
+    "body": "<div class=\"sqs-block html-block sqs-block-html\" id=\"block-about-md\"><div class=\"sqs-block-content\"><p>We collaborate on <strong>visual narratives</strong>.</p></div></div><div class=\"sqs-block button-block sqs-block-button\" id=\"block-about-button\"><div class=\"sqs-block-content\"><a href=\"https://creative-studio.example/work\">View portfolio</a></div></div><div class=\"sqs-block form-block sqs-block-form\" id=\"block-about-form\"><div class=\"sqs-block-content\"></div></div><div class=\"sqs-block commerce-block sqs-block-product\" id=\"block-about-store\"><div class=\"sqs-block-content\"></div></div>"
+  }
+}
