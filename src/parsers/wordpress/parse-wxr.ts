@@ -4,7 +4,12 @@ import { basename } from "node:path";
 import { XMLParser } from "fast-xml-parser";
 
 import { discoverContentAssetUrls } from "../../lib/content-asset-urls.js";
+import {
+  type OriginUrlRewriteConfig,
+  rewriteOriginUrlsInText,
+} from "../../lib/origin-url-rewrite.js";
 import { linkToPath, sanitizeSlug } from "../../lib/utility.js";
+import { flattenWordPressBuilders } from "./builders/flatten.js";
 import type {
   NormalizedAsset,
   NormalizedCategory,
@@ -21,6 +26,10 @@ const PLATFORM = "wordpress" as const;
 export interface WxrParseOptions {
   filePath: string;
   exportedAt?: string;
+  /** Swap legacy gateway/staging domains before parse, fetch, or asset discovery. */
+  originUrlRewrite?: OriginUrlRewriteConfig;
+  /** Pre-DTO builder flattening (Bucket 1 + Bucket 2). Default: true. */
+  flattenBuilders?: boolean;
 }
 
 interface WxrItem {
@@ -132,14 +141,20 @@ function parseItems(xml: string): WxrItem[] {
   return asArray(doc.rss?.channel?.item);
 }
 
-function buildAttachmentIndex(items: WxrItem[]): Map<string, AttachmentIndexEntry> {
+function buildAttachmentIndex(
+  items: WxrItem[],
+  originUrlRewrite?: OriginUrlRewriteConfig,
+): Map<string, AttachmentIndexEntry> {
   const index = new Map<string, AttachmentIndexEntry>();
 
   for (const item of items) {
     if (textValue(item.post_type) !== "attachment") continue;
     const id = textValue(item.post_id);
-    const url = textValue(item.attachment_url) || textValue(item.link);
+    let url = textValue(item.attachment_url) || textValue(item.link);
     if (!id || !url) continue;
+    if (originUrlRewrite) {
+      url = rewriteOriginUrlsInText(url, originUrlRewrite);
+    }
 
     const filename = basename(new URL(url, "http://local.invalid").pathname) || `attachment-${id}`;
     index.set(id, {
@@ -248,12 +263,35 @@ function collectInlineAssets(
   return assets;
 }
 
+function preprocessContent(rawHtml: string, options: WxrParseOptions): string {
+  let html = rawHtml;
+  if (options.originUrlRewrite) {
+    html = rewriteOriginUrlsInText(html, options.originUrlRewrite);
+  }
+  if (options.flattenBuilders !== false) {
+    html = flattenWordPressBuilders(html).html;
+  }
+  return html;
+}
+
+function resolveFeaturedAssetSourceId(
+  thumbnailId: string | undefined,
+  attachmentIndex: Map<string, AttachmentIndexEntry>,
+  contentHtml: string,
+): string | undefined {
+  if (thumbnailId && attachmentIndex.has(thumbnailId)) {
+    return thumbnailId;
+  }
+  const firstInline = discoverContentAssetUrls(contentHtml)[0];
+  return firstInline ? `url:${firstInline}` : undefined;
+}
+
 export async function* enumerateWxrEntities(
   options: WxrParseOptions,
 ): AsyncGenerator<NormalizedEntity> {
   const xml = await readFile(options.filePath, "utf8");
   const items = parseItems(xml);
-  const attachmentIndex = buildAttachmentIndex(items);
+  const attachmentIndex = buildAttachmentIndex(items, options.originUrlRewrite);
   const { categories, tags } = collectTaxonomies(items);
   const seenAssetUrls = new Set<string>();
   const emittedAttachmentIds = new Set<string>();
@@ -287,10 +325,10 @@ export async function* enumerateWxrEntities(
     const id = textValue(item.post_id);
     const link = textValue(item.link);
     const slug = sanitizeSlug(textValue(item.post_name) || textValue(item.title) || id);
-    const rawHtml = getContentEncoded(item);
+    const contentHtml = preprocessContent(getContentEncoded(item), options);
 
     for (const asset of collectInlineAssets(
-      rawHtml,
+      contentHtml,
       attachmentIndex,
       seenAssetUrls,
       options.exportedAt,
@@ -310,10 +348,11 @@ export async function* enumerateWxrEntities(
 
     if (postType === "post") {
       const thumbnailId = getPostMeta(item, "_thumbnail_id");
-      let featuredAssetSourceId: string | undefined;
-      if (thumbnailId && attachmentIndex.has(thumbnailId)) {
-        featuredAssetSourceId = thumbnailId;
-      }
+      const featuredAssetSourceId = resolveFeaturedAssetSourceId(
+        thumbnailId,
+        attachmentIndex,
+        contentHtml,
+      );
 
       const post: NormalizedPost = {
         type: "post",
@@ -322,7 +361,7 @@ export async function* enumerateWxrEntities(
         title: textValue(item.title) || slug,
         slug,
         excerpt: getExcerpt(item) || undefined,
-        contentHtml: rawHtml,
+        contentHtml,
         publishedAt: textValue(item.post_date) || undefined,
         status: mapPublishStatus(textValue(item.status)),
         categorySlugs: categorySlugs.length ? categorySlugs : undefined,
@@ -342,7 +381,7 @@ export async function* enumerateWxrEntities(
         sourceId: id,
         title: textValue(item.title) || slug,
         slug,
-        contentHtml: rawHtml,
+        contentHtml,
         isHomePage: isHomePage || undefined,
         status: mapPublishStatus(textValue(item.status)),
       };

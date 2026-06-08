@@ -1,20 +1,39 @@
 import type { AdapterContext, MigrationAdapter, ValidationResult } from "../../normalizer/types.js";
-import { enumerateWxrEntities, validateWxrFile } from "./parse-wxr.js";
+import type { OriginUrlRewriteConfig } from "../../lib/origin-url-rewrite.js";
+import { enumerateWxrEntities, validateWxrFile, type WxrParseOptions } from "./parse-wxr.js";
 
-function resolvePath(input: unknown): string {
-  if (typeof input === "string") return input;
-  if (input && typeof input === "object" && "path" in input) {
-    return String((input as { path: string }).path);
+export { flattenWordPressBuilders } from "./builders/flatten.js";
+export { WORDPRESS_BUILDER_REGISTRY } from "./builders/registry.js";
+export type { BuilderThemeConfig, BuilderContentRule } from "./builders/registry.js";
+export type { WxrParseOptions } from "./parse-wxr.js";
+
+export interface WordPressParseInput {
+  path: string;
+  originUrlRewrite?: OriginUrlRewriteConfig;
+  flattenBuilders?: boolean;
+}
+
+function resolveWxrOptions(input: unknown): WxrParseOptions {
+  if (typeof input === "string") {
+    return { filePath: input };
   }
-  throw new Error("WordPress adapter requires input path (string or { path })");
+  if (input && typeof input === "object" && "path" in input) {
+    const obj = input as WordPressParseInput;
+    return {
+      filePath: String(obj.path),
+      originUrlRewrite: obj.originUrlRewrite,
+      flattenBuilders: obj.flattenBuilders,
+    };
+  }
+  throw new Error("WordPress adapter requires input path (string or { path, originUrlRewrite?, flattenBuilders? })");
 }
 
 export const wordpressAdapter: MigrationAdapter = {
   platform: "wordpress",
 
   async validateInput(input: unknown): Promise<ValidationResult> {
-    const path = resolvePath(input);
-    const result = await validateWxrFile(path);
+    const { filePath } = resolveWxrOptions(input);
+    const result = await validateWxrFile(filePath);
     return {
       ok: result.ok,
       issues: result.issues,
@@ -23,7 +42,6 @@ export const wordpressAdapter: MigrationAdapter = {
   },
 
   enumerateEntities(ctx: AdapterContext) {
-    const path = resolvePath(ctx.input);
-    return enumerateWxrEntities({ filePath: path });
+    return enumerateWxrEntities(resolveWxrOptions(ctx.input));
   },
 };

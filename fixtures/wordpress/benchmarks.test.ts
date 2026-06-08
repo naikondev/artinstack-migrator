@@ -60,7 +60,7 @@ describe("M0 benchmark fixtures", () => {
     expect(result.ok, result.errors.join("; ")).toBe(true);
   });
 
-  it("naikonpixels export: discovers Tatsu shortcode images via regex", async () => {
+  it("naikonpixels export: flattens Tatsu shortcodes and discovers inline images", async () => {
     const bundle = await collectEntities(
       wordpressAdapter.enumerateEntities({
         input: { path: join(FIXTURES_ROOT, "naikonpixels.WordPress.2026-06-07.xml") },
@@ -71,5 +71,8 @@ describe("M0 benchmark fixtures", () => {
     expect(bundle.media.some((a) => a.sourceUrl.includes("MoccasinCreek_w_1045.jpg"))).toBe(
       true,
     );
+    const withImages = bundle.posts.filter((p) => /<img\b/i.test(p.contentHtml));
+    expect(withImages.length).toBeGreaterThan(0);
+    expect(withImages[0]?.contentHtml).not.toMatch(/\[tatsu_image/);
   });
 });
