@@ -1,16 +1,33 @@
 {
   "name": "@artinstack/migrator",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Stateless content normalizer and migration framework — WordPress, SmugMug, Squarespace → platform-agnostic schema",
   "license": "MIT",
+  "author": "ArtInStack",
+  "homepage": "https://github.com/naikondev/artinstack-migrator#readme",
+  "bugs": {
+    "url": "https://github.com/naikondev/artinstack-migrator/issues"
+  },
+  "keywords": [
+    "migration",
+    "wordpress",
+    "smugmug",
+    "squarespace",
+    "content",
+    "normalizer",
+    "wxr",
+    "grapesjs"
+  ],
   "packageManager": "pnpm@9.15.0",
   "type": "module",
+  "sideEffects": false,
   "repository": {
     "type": "git",
-    "url": "https://github.com/naikondev/artinstack-migrator.git"
+    "url": "git+https://github.com/naikondev/artinstack-migrator.git"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -43,6 +60,7 @@
     "test": "vitest run",
     "test:validate-fixtures": "vitest run fixtures",
     "test:watch": "vitest",
+    "prepublishOnly": "pnpm run build && pnpm run typecheck && pnpm run test",
     "cli": "node dist/cli/index.js",
     "migrate": "node dist/cli/index.js"
   },

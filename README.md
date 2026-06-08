@@ -19,6 +19,15 @@ src/
 
 ## Install
 
+**From npm** (after publish):
+
+```bash
+pnpm add @artinstack/migrator
+# or: npm install @artinstack/migrator
+```
+
+**From source** (development):
+
 ```bash
 pnpm install
 pnpm build
