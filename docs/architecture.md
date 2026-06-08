@@ -394,9 +394,8 @@ artinstack-migrate wordpress export.xml --format json
 # Validate structure
 artinstack-migrate validate wordpress ./export.xml
 
-# Sink (filesystem or host plugin)
+# Sink (filesystem only in OSS CLI; host sink via runMigration() in app code)
 artinstack-migrate wordpress export.xml --sink filesystem --out ./imported
-artinstack-migrate wordpress export.xml --sink <host-plugin>
 ```
 
 ### Local development

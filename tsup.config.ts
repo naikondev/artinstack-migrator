@@ -6,6 +6,7 @@ export default defineConfig({
     "cli/index": "src/cli/index.ts",
     "normalizer/index": "src/normalizer/index.ts",
     "sinks/index": "src/sinks/index.ts",
+    "lib/index": "src/lib/content-asset-urls.ts",
   },
   format: ["esm"],
   dts: true,

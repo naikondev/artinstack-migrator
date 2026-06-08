@@ -43,6 +43,10 @@
     "./sinks": {
       "types": "./dist/sinks/index.d.ts",
       "import": "./dist/sinks/index.js"
+    },
+    "./lib": {
+      "types": "./dist/lib/index.d.ts",
+      "import": "./dist/lib/index.js"
     }
   },
   "bin": {
