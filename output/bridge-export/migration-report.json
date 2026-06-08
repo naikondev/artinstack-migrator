@@ -1,0 +1,54 @@
+{
+  "runId": "85b4e9bb-f92d-4342-87cd-03bbe92b1582",
+  "platform": "wordpress",
+  "mode": "export",
+  "startedAt": "2026-06-08T01:51:04.588Z",
+  "finishedAt": "2026-06-08T01:51:04.601Z",
+  "summary": {
+    "posts": 3,
+    "pages": 2,
+    "assets": 2,
+    "portfolios": 0,
+    "categories": 2,
+    "tags": 2,
+    "storageBytesEstimated": 8388608
+  },
+  "warnings": [],
+  "errors": [],
+  "conflicts": {
+    "duplicatePostSlugs": [
+      {
+        "entityType": "post",
+        "slug": "autumn-in-north-georgia",
+        "sourceIds": [
+          "101",
+          "102"
+        ]
+      }
+    ],
+    "duplicatePageSlugs": [],
+    "missingFeaturedImages": [],
+    "staleAssetUrls": [],
+    "invalidHtml": [],
+    "unresolvedInlineImages": [],
+    "unsupportedBlocks": [],
+    "redirectLoops": []
+  },
+  "redirectMap": [
+    {
+      "fromPath": "/2018/11/04/autumn-in-north-georgia/",
+      "toPath": "/blog/autumn-in-north-georgia",
+      "statusCode": 301
+    },
+    {
+      "fromPath": "/2020/03/autumn-in-north-georgia/",
+      "toPath": "/blog/autumn-in-north-georgia",
+      "statusCode": 301
+    },
+    {
+      "fromPath": "/2024/01/studio-notes/",
+      "toPath": "/blog/studio-notes",
+      "statusCode": 301
+    }
+  ]
+}

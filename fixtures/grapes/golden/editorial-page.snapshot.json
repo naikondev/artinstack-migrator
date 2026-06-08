@@ -1,0 +1,49 @@
+{
+  "content": [
+    {
+      "type": "default",
+      "tagName": "article",
+      "components": [
+        {
+          "type": "text",
+          "tagName": "h1",
+          "content": "Studio visit"
+        },
+        {
+          "type": "text",
+          "tagName": "p",
+          "content": "Welcome <em>back</em>.",
+          "classes": [
+            "lead"
+          ]
+        },
+        {
+          "type": "image",
+          "tagName": "img",
+          "void": true,
+          "attributes": {
+            "src": "https://cdn.example/hero.jpg",
+            "alt": "Hero"
+          }
+        },
+        {
+          "type": "text",
+          "tagName": "p",
+          "content": "Read <a href=\"/blog\">more</a>."
+        }
+      ]
+    }
+  ],
+  "styles": [
+    {
+      "selectors": [
+        ".lead"
+      ],
+      "style": {
+        "font-size": "1.25rem"
+      }
+    }
+  ],
+  "contentHtml": "<article><h1>Studio visit</h1><p class=\"lead\">Welcome <em>back</em>.</p><img src=\"https://cdn.example/hero.jpg\" alt=\"Hero\"><p>Read <a href=\"/blog\">more</a>.</p></article>",
+  "contentCss": ".lead { font-size: 1.25rem; }"
+}

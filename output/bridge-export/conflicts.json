@@ -1,0 +1,19 @@
+{
+  "duplicatePostSlugs": [
+    {
+      "entityType": "post",
+      "slug": "autumn-in-north-georgia",
+      "sourceIds": [
+        "101",
+        "102"
+      ]
+    }
+  ],
+  "duplicatePageSlugs": [],
+  "missingFeaturedImages": [],
+  "staleAssetUrls": [],
+  "invalidHtml": [],
+  "unresolvedInlineImages": [],
+  "unsupportedBlocks": [],
+  "redirectLoops": []
+}

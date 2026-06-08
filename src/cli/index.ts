@@ -4,7 +4,6 @@ import { writeFile } from "node:fs/promises";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
-import { collectEntities } from "../normalizer/bundle.js";
 import { getAdapter } from "../parsers/index.js";
 import type { MigrationPlatform } from "../normalizer/types.js";
 import {
@@ -12,12 +11,19 @@ import {
   buildMigrationReport,
   buildRedirectMap,
   bundleToCombinedJson,
+  createFilesystemMigrationSink,
+  detectRedirectLoops,
+  hasBlockingConflicts,
+  hasWarnings,
   runDryRun,
+  runMigration,
   writeFilesystemExport,
 } from "../sinks/index.js";
+import { collectEntities } from "../normalizer/bundle.js";
 import { estimateStorage, staleUrlsFromEstimate } from "../sinks/storage-estimate.js";
 
 const PLATFORMS: MigrationPlatform[] = ["wordpress", "smugmug", "squarespace"];
+const SINKS = ["filesystem"] as const;
 
 function printUsage(): void {
   console.log(`artinstack-migrate — platform content migration CLI
@@ -30,6 +36,7 @@ Platforms: ${PLATFORMS.join(", ")}
 
 Options:
   --out <dir>       Write grouped JSON files to directory
+  --sink <name>     Run through MigrationSink (supported: ${SINKS.join(", ")})
   --format json     Write combined JSON to stdout
   --dry-run         Parse and analyze without writing content files
   --report <dir>    With --dry-run, write conflicts.json + migration-report.json
@@ -38,6 +45,7 @@ Options:
 Examples:
   artinstack-migrate wordpress export.xml --dry-run --report ./preview/
   artinstack-migrate wordpress export.xml --out ./output
+  artinstack-migrate wordpress export.xml --sink filesystem --out ./output
   pnpm cli wordpress fixtures/wordpress/long-form-journal.xml --dry-run
 `);
 }
@@ -59,6 +67,7 @@ function parseArgs(argv: string[]): {
   inputPath: string | undefined;
   outDir: string | undefined;
   reportDir: string | undefined;
+  sinkName: string | undefined;
   dryRun: boolean;
   formatJson: boolean;
   offline: boolean;
@@ -69,6 +78,7 @@ function parseArgs(argv: string[]): {
   let inputPath: string | undefined;
   let outDir: string | undefined;
   let reportDir: string | undefined;
+  let sinkName: string | undefined;
   let dryRun = false;
   let formatJson = false;
   let offline = false;
@@ -91,17 +101,25 @@ function parseArgs(argv: string[]): {
         outDir = args[++i];
       } else if (flag === "--report" && args[i + 1]) {
         reportDir = args[++i];
+      } else if (flag === "--sink" && args[i + 1]) {
+        sinkName = args[++i];
       }
     }
   } else {
     command = first;
   }
 
-  return { command, platform, inputPath, outDir, reportDir, dryRun, formatJson, offline };
+  return { command, platform, inputPath, outDir, reportDir, sinkName, dryRun, formatJson, offline };
+}
+
+function migrationExitCode(hasBlockers: boolean, hasWarn: boolean): 0 | 1 | 2 {
+  if (hasBlockers) return 1;
+  if (hasWarn) return 2;
+  return 0;
 }
 
 async function main(): Promise<void> {
-  const { command, platform, inputPath, outDir, reportDir, dryRun, formatJson, offline } =
+  const { command, platform, inputPath, outDir, reportDir, sinkName, dryRun, formatJson, offline } =
     parseArgs(process.argv.slice(2));
 
   if (!command || command === "--help" || command === "-h") {
@@ -123,6 +141,11 @@ async function main(): Promise<void> {
   if (command === "migrate") {
     if (!platform || !inputPath) {
       printUsage();
+      process.exit(1);
+    }
+
+    if (sinkName && !SINKS.includes(sinkName as (typeof SINKS)[number])) {
+      console.error(`Unknown sink: ${sinkName}. Supported: ${SINKS.join(", ")}`);
       process.exit(1);
     }
 
@@ -156,6 +179,54 @@ async function main(): Promise<void> {
     }
 
     const startedAt = new Date();
+
+    if (sinkName === "filesystem") {
+      if (!outDir) {
+        console.error("Filesystem sink requires --out <dir>");
+        process.exit(1);
+      }
+
+      const sink = createFilesystemMigrationSink();
+      const runResult = await runMigration({
+        sink,
+        platform,
+        entities: adapter.enumerateEntities({ input }),
+      });
+
+      const bundle = sink.bundle;
+      const estimate = await estimateStorage({
+        assets: bundle.media,
+        offline,
+      });
+      const redirectMap = buildRedirectMap(bundle);
+      const conflicts = analyzeConflicts(bundle, {
+        staleAssetUrls: staleUrlsFromEstimate(estimate),
+        redirectLoops: detectRedirectLoops(redirectMap),
+      });
+      const report = buildMigrationReport({
+        platform,
+        mode: "sink",
+        bundle,
+        conflicts,
+        redirectMap,
+        startedAt,
+        storageBytesEstimated: estimate.totalBytes,
+        warnings:
+          runResult.failed > 0
+            ? [`${runResult.failed} entity write(s) failed during sink migration`]
+            : [],
+      });
+
+      await sink.flush({ outDir, bundle, conflicts, report });
+      console.error(`Wrote sink export to ${outDir}`);
+
+      const exitCode = migrationExitCode(
+        hasBlockingConflicts(conflicts) || runResult.failed > 0,
+        hasWarnings(conflicts),
+      );
+      process.exit(exitCode);
+    }
+
     const bundle = await collectEntities(adapter.enumerateEntities({ input }));
 
     const estimate = await estimateStorage({
@@ -183,7 +254,7 @@ async function main(): Promise<void> {
     }
 
     if (!outDir) {
-      console.error("Specify --out <dir> or --format json or --dry-run");
+      console.error("Specify --out <dir>, --format json, --dry-run, or --sink filesystem --out <dir>");
       process.exit(1);
     }
 

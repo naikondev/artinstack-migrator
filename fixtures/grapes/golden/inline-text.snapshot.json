@@ -1,0 +1,11 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "tagName": "p",
+      "content": "Hello <strong>world</strong>"
+    }
+  ],
+  "styles": [],
+  "contentHtml": "<p>Hello <strong>world</strong></p>"
+}

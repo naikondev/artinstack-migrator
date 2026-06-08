@@ -1,0 +1,29 @@
+{
+  "content": [
+    {
+      "type": "default",
+      "tagName": "table",
+      "components": [
+        {
+          "type": "default",
+          "tagName": "tbody",
+          "components": [
+            {
+              "type": "default",
+              "tagName": "tr",
+              "components": [
+                {
+                  "type": "text",
+                  "tagName": "td",
+                  "content": "Cell"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "styles": [],
+  "contentHtml": "<table><tbody><tr><td>Cell</td></tr></tbody></table>"
+}

@@ -1,0 +1,29 @@
+{
+  "content": [
+    {
+      "type": "default",
+      "tagName": "div",
+      "classes": [
+        "hero"
+      ],
+      "components": [
+        {
+          "type": "textnode",
+          "content": "Title"
+        }
+      ]
+    }
+  ],
+  "styles": [
+    {
+      "selectors": [
+        ".hero"
+      ],
+      "style": {
+        "color": "red"
+      }
+    }
+  ],
+  "contentHtml": "<div class=\"hero\">Title</div>",
+  "contentCss": ".hero { color: red; }"
+}

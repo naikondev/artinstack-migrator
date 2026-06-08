@@ -11,6 +11,9 @@ importers:
       cheerio:
         specifier: ^1.0.0
         version: 1.2.0
+      domhandler:
+        specifier: ^5.0.3
+        version: 5.0.3
       fast-xml-parser:
         specifier: ^5.8.0
         version: 5.8.0

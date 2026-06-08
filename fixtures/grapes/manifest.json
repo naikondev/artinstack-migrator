@@ -1,0 +1,51 @@
+{
+  "fixtures": [
+    {
+      "id": "inline-text",
+      "html": "html/inline-text.html",
+      "golden": "golden/inline-text.snapshot.json",
+      "description": "Inline text tags stay inside parent text components",
+      "gates": ["inline_text"]
+    },
+    {
+      "id": "global-styles",
+      "html": "html/global-styles.html",
+      "golden": "golden/global-styles.snapshot.json",
+      "description": "Extract <style> blocks into root styles[] and strip from contentHtml",
+      "gates": ["global_styles"]
+    },
+    {
+      "id": "component-map",
+      "html": "html/component-map.html",
+      "golden": "golden/component-map.snapshot.json",
+      "description": "Map source CSS classes to component types via componentMap",
+      "options": {
+        "componentMap": {
+          "sqs-block": "section"
+        }
+      },
+      "gates": ["component_map"]
+    },
+    {
+      "id": "table-layout",
+      "html": "html/table-layout.html",
+      "golden": "golden/table-layout.snapshot.json",
+      "description": "Preserve table structure as nested structural components",
+      "gates": ["table_layout"]
+    },
+    {
+      "id": "hero-image",
+      "html": "html/hero-image.html",
+      "golden": "golden/hero-image.snapshot.json",
+      "description": "Map <img> tags to void image components",
+      "gates": ["hero_image"]
+    },
+    {
+      "id": "editorial-page",
+      "html": "html/editorial-page.html",
+      "golden": "golden/editorial-page.snapshot.json",
+      "description": "Composite page: headings, styled paragraph, image, link, extracted CSS",
+      "gates": ["editorial_page"]
+    }
+  ]
+}

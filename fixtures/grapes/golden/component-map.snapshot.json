@@ -1,0 +1,19 @@
+{
+  "content": [
+    {
+      "type": "section",
+      "tagName": "div",
+      "classes": [
+        "sqs-block"
+      ],
+      "components": [
+        {
+          "type": "textnode",
+          "content": "Block"
+        }
+      ]
+    }
+  ],
+  "styles": [],
+  "contentHtml": "<div class=\"sqs-block\">Block</div>"
+}

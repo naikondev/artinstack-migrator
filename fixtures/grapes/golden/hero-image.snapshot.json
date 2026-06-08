@@ -1,0 +1,15 @@
+{
+  "content": [
+    {
+      "type": "image",
+      "tagName": "img",
+      "void": true,
+      "attributes": {
+        "src": "https://example.com/a.jpg",
+        "alt": "Hero"
+      }
+    }
+  ],
+  "styles": [],
+  "contentHtml": "<img src=\"https://example.com/a.jpg\" alt=\"Hero\">"
+}

@@ -78,8 +78,8 @@ src/
   parsers/              WordPress, SmugMug, Squarespace → normalizer DTOs
     squarespace/        parse-export.ts — block flattening + static HTML snapshots
   normalizer/           Canonical types + portable idempotency helpers
-  helpers/
-    rewrite-inline-images.ts
+  lib/                  utility, content-asset-urls
+  transformers/         HtmlToGrapes, css-to-styles, rewrite-inline-images
   cli/                  artinstack-migrate
   sinks/
     filesystem.ts       Write JSON bundles + reports to disk
@@ -87,9 +87,8 @@ src/
     run-migration.ts    Canonical write-order dispatch
     dry-run.ts          Parse, normalize, analyze — no writes
     migration-report.ts Build migration-report.json
-  transformers/         HtmlToGrapes, css-to-styles (optional)
   index.ts              Public API re-exports
-fixtures/               Sample exports and golden JSON for tests
+fixtures/               Sample exports and golden JSON (incl. grapes/ HtmlToGrapes snapshots)
 ```
 
 **Dependency rule:** no imports from web frameworks, proprietary CMS SDKs, or host-specific libraries. Host apps depend on `@artinstack/migrator`; never the reverse.
@@ -464,7 +463,7 @@ Optional: export redirect map CSV when `source.path` differs from destination pa
 | SmugMug API | Albums, large vaults, EXIF |
 | Squarespace | Pages, blog, block flattening |
 
-Optional transformers: **HtmlToGrapes**, **css-to-styles**. Redirect report generation is a host routing concern.
+Transformers: **HtmlToGrapes** (`htmlToGrapes()` → `GrapesProjectSnapshot`, golden fixtures in `fixtures/grapes/`), **css-to-styles**, **rewrite-inline-images**. Redirect report generation is a host routing concern.
 
 ---
 

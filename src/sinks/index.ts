@@ -1,5 +1,19 @@
-export type { MigrationSink, MigrationRunOptions, MigrationRunResult } from "./types.js";
-export { runMigration } from "./run-migration.js";
+export type {
+  MigrationSink,
+  MigrationRunOptions,
+  MigrationRunResult,
+  MigrationRedirect,
+  MigrationWriteStage,
+  UploadAssetInput,
+  UploadAssetResult,
+} from "./types.js";
+export { MIGRATION_WRITE_STAGES } from "./types.js";
+export { runMigration, runMigrationFromBundle } from "./run-migration.js";
+export {
+  FilesystemMigrationSink,
+  createFilesystemMigrationSink,
+  portfolioMediaMatchesBundle,
+} from "./filesystem-sink.js";
 export { runDryRun, type DryRunResult, type DryRunOptions } from "./dry-run.js";
 export {
   analyzeConflicts,
@@ -22,3 +36,8 @@ export {
   FALLBACK_ASSET_BYTES,
   type StorageEstimate,
 } from "./storage-estimate.js";
+export {
+  rewriteInlineImages,
+  type RewriteInlineImagesOptions,
+  type RewriteInlineImagesResult,
+} from "../transformers/rewrite-inline-images.js";

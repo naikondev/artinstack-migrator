@@ -14,7 +14,7 @@ src/
   normalizer/       Canonical DTOs + portable idempotency types
   sinks/            filesystem export, MigrationSink interface
   cli/              artinstack-migrate
-  transformers/     HtmlToGrapes, css-to-styles (optional)
+  transformers/     HtmlToGrapes, css-to-styles, rewrite-inline-images
 ```
 
 ## Install
