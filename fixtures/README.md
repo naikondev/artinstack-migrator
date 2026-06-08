@@ -14,7 +14,8 @@ pnpm test:validate-fixtures
 | `smugmug/` | Portfolio vault JSON + mapping matrix |
 | `squarespace/` | Site export JSON + wire json-pretty samples |
 | `grapes/` | HTML inputs + golden `GrapesProjectSnapshot` JSON for `htmlToGrapes()` |
-| `ghost/`, `blogger/`, `wix/` | Planned optional adapters (M0e-B) — not yet present |
+| `wix/` | W0 RSS/Atom XML, W1 API JSON, W2 page HTML snapshots |
+| `ghost/`, `blogger/` | Planned optional adapters (M0e-B) — not yet present |
 
 ## Grapes golden fixtures
 

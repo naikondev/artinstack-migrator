@@ -1,0 +1,41 @@
+{
+  "exportVersion": 1,
+  "exportedAt": "2025-06-01T12:00:00.000Z",
+  "site": {
+    "url": "https://example.wixsite.com/studio",
+    "siteId": "00000000-0000-0000-0000-000000000001",
+    "title": "Creative Studio"
+  },
+  "categories": [
+    {
+      "id": "cat-studio-news",
+      "name": "Studio News",
+      "slug": "studio-news"
+    }
+  ],
+  "tags": [
+    {
+      "id": "tag-launch",
+      "name": "Launch",
+      "slug": "launch"
+    }
+  ],
+  "posts": [
+    {
+      "id": "post-spring-launch",
+      "title": "Spring collection launch",
+      "slug": "spring-collection-launch",
+      "url": "https://example.wixsite.com/studio/post/spring-collection-launch",
+      "excerpt": "Short excerpt for the launch post.",
+      "publishedAt": "2025-05-12T10:00:00.000Z",
+      "status": "published",
+      "categorySlugs": ["studio-news"],
+      "tagSlugs": ["launch", "portfolio"],
+      "featuredImageUrl": "https://static.wixstatic.com/media/hero-spring.jpg",
+      "contentHtml": "<p>We opened the spring collection with new portraits.</p><figure><img src=\"https://static.wixstatic.com/media/abc123~mv2.jpg\" alt=\"Gallery still\" /></figure>",
+      "seoTitle": "Spring Launch SEO",
+      "seoDescription": "Spring collection launch notes"
+    }
+  ],
+  "pages": []
+}

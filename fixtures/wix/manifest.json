@@ -1,0 +1,60 @@
+{
+  "fixtures": [
+    {
+      "id": "studio-blog-export",
+      "file": "studio-blog-export.xml",
+      "description": "Wix dashboard blog XML with inline images and no enclosure tags",
+      "expected": {
+        "posts": 2,
+        "pages": 0,
+        "assets": 1,
+        "categories": 1,
+        "tags": 1
+      },
+      "gates": ["content_asset_discovery", "rss_format"]
+    },
+    {
+      "id": "legacy-atom-feed",
+      "file": "legacy-atom-feed.xml",
+      "description": "Atom feed with protocol-relative inline image",
+      "expected": {
+        "posts": 1,
+        "pages": 0,
+        "assets": 1,
+        "categories": 1,
+        "tags": 0
+      },
+      "gates": ["atom_format", "protocol_relative_images"]
+    },
+    {
+      "id": "studio-api-export",
+      "file": "studio-api-export.json",
+      "description": "W1 canonical JSON export with Ricos-derived contentHtml",
+      "expected": {
+        "posts": 1,
+        "pages": 0,
+        "assets": 2,
+        "categories": 1,
+        "tags": 1
+      },
+      "gates": ["w1_ricos_assets", "w1_taxonomy"]
+    },
+    {
+      "id": "studio-page-snapshot",
+      "file": "pages/about.html",
+      "description": "W2 cheerio snapshot of static About page HTML",
+      "expected": {
+        "posts": 0,
+        "pages": 1,
+        "assets": 1,
+        "categories": 0,
+        "tags": 0
+      },
+      "gates": ["w2_main_extract", "w2_inline_assets"],
+      "snapshot": {
+        "url": "https://example.wixsite.com/studio/about",
+        "slug": "about"
+      }
+    }
+  ]
+}

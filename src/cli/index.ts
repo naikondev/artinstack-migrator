@@ -22,7 +22,7 @@ import {
 import { collectEntities } from "../normalizer/bundle.js";
 import { estimateStorage, staleUrlsFromEstimate } from "../sinks/storage-estimate.js";
 
-const PLATFORMS: MigrationPlatform[] = ["wordpress", "smugmug", "squarespace"];
+const PLATFORMS: MigrationPlatform[] = ["wordpress", "smugmug", "squarespace", "wix"];
 const SINKS = ["filesystem"] as const;
 
 function printUsage(): void {
@@ -41,9 +41,11 @@ Options:
   --dry-run         Parse and analyze without writing content files
   --report <dir>    With --dry-run, write conflicts.json + migration-report.json
   --offline         Skip network HEAD requests (4 MB fallback per asset)
+  --urls <file>     Wix W2: newline URL list or sitemap.xml for static page snapshots
 
 Examples:
   artinstack-migrate wordpress export.xml --dry-run --report ./preview/
+  artinstack-migrate wix feed.xml --urls ./sitemap-urls.txt --dry-run
   artinstack-migrate wordpress export.xml --out ./output
   artinstack-migrate wordpress export.xml --sink filesystem --out ./output
   pnpm cli wordpress fixtures/wordpress/long-form-journal.xml --dry-run
@@ -65,6 +67,7 @@ function parseArgs(argv: string[]): {
   command: string | undefined;
   platform: MigrationPlatform | undefined;
   inputPath: string | undefined;
+  urlsPath: string | undefined;
   outDir: string | undefined;
   reportDir: string | undefined;
   sinkName: string | undefined;
@@ -76,6 +79,7 @@ function parseArgs(argv: string[]): {
   let command: string | undefined;
   let platform: MigrationPlatform | undefined;
   let inputPath: string | undefined;
+  let urlsPath: string | undefined;
   let outDir: string | undefined;
   let reportDir: string | undefined;
   let sinkName: string | undefined;
@@ -88,6 +92,9 @@ function parseArgs(argv: string[]): {
     command = "validate";
     platform = args[1] as MigrationPlatform;
     inputPath = args[2];
+    for (let i = 3; i < args.length; i++) {
+      if (args[i] === "--urls" && args[i + 1]) urlsPath = args[++i];
+    }
   } else if (first && PLATFORMS.includes(first as MigrationPlatform)) {
     command = "migrate";
     platform = first as MigrationPlatform;
@@ -103,13 +110,15 @@ function parseArgs(argv: string[]): {
         reportDir = args[++i];
       } else if (flag === "--sink" && args[i + 1]) {
         sinkName = args[++i];
+      } else if (flag === "--urls" && args[i + 1]) {
+        urlsPath = args[++i];
       }
     }
   } else {
     command = first;
   }
 
-  return { command, platform, inputPath, outDir, reportDir, sinkName, dryRun, formatJson, offline };
+  return { command, platform, inputPath, urlsPath, outDir, reportDir, sinkName, dryRun, formatJson, offline };
 }
 
 function migrationExitCode(hasBlockers: boolean, hasWarn: boolean): 0 | 1 | 2 {
@@ -119,7 +128,7 @@ function migrationExitCode(hasBlockers: boolean, hasWarn: boolean): 0 | 1 | 2 {
 }
 
 async function main(): Promise<void> {
-  const { command, platform, inputPath, outDir, reportDir, sinkName, dryRun, formatJson, offline } =
+  const { command, platform, inputPath, urlsPath, outDir, reportDir, sinkName, dryRun, formatJson, offline } =
     parseArgs(process.argv.slice(2));
 
   if (!command || command === "--help" || command === "-h") {
@@ -133,7 +142,10 @@ async function main(): Promise<void> {
       process.exit(1);
     }
     const adapter = getAdapter(platform);
-    const result = await adapter.validateInput({ path: inputPath });
+    const result = await adapter.validateInput({
+      path: inputPath,
+      ...(urlsPath ? { urlsFile: urlsPath } : {}),
+    });
     console.log(JSON.stringify(result, null, 2));
     process.exit(result.ok ? 0 : 1);
   }
@@ -150,7 +162,10 @@ async function main(): Promise<void> {
     }
 
     const adapter = getAdapter(platform);
-    const input = { path: inputPath };
+    const input = {
+      path: inputPath,
+      ...(urlsPath ? { urlsFile: urlsPath } : {}),
+    };
 
     if (dryRun) {
       const result = await runDryRun({

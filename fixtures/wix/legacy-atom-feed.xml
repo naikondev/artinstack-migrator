@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Legacy Wix Blog Feed</title>
+  <link href="https://example.wixsite.com/legacy/blog"/>
+  <entry>
+    <title>Welcome post</title>
+    <link rel="alternate" href="https://example.wixsite.com/legacy/post/welcome-post"/>
+    <id>wix:post:welcome-post</id>
+    <published>2024-01-15T09:00:00Z</published>
+    <category term="Updates"/>
+    <content type="html"><![CDATA[
+<p>Welcome to the studio blog.</p>
+<p><img src="//static.wixstatic.com/media/welcome-hero.png"/></p>
+    ]]></content>
+  </entry>
+</feed>

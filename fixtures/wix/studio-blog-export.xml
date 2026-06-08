@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Creative Studio Blog</title>
+    <link>https://example.wixsite.com/studio/blog</link>
+    <description>Portfolio updates</description>
+    <item>
+      <title>Spring collection launch</title>
+      <link>https://example.wixsite.com/studio/post/spring-collection-launch</link>
+      <guid isPermaLink="false">wix:post:spring-collection-launch</guid>
+      <pubDate>Mon, 12 May 2025 10:00:00 GMT</pubDate>
+      <category domain="category">Studio News</category>
+      <category domain="tag">Launch</category>
+      <description>Short excerpt for the launch post.</description>
+      <content:encoded><![CDATA[
+<p>We opened the spring collection with new portraits.</p>
+<p><img src="https://static.wixstatic.com/media/abc123~mv2.jpg" alt="Hero"/></p>
+<p>Read more about our process.</p>
+      ]]></content:encoded>
+    </item>
+    <item>
+      <title>Behind the lens</title>
+      <link>https://example.wixsite.com/studio/post/behind-the-lens</link>
+      <pubDate>Fri, 02 May 2025 14:30:00 GMT</pubDate>
+      <content:encoded><![CDATA[<p>Notes from the field.</p>]]></content:encoded>
+    </item>
+  </channel>
+</rss>

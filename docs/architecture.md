@@ -463,9 +463,9 @@ Optional: export redirect map CSV when `source.path` differs from destination pa
 | WordPress WXR | Editorial content, attachments, taxonomy |
 | SmugMug API | Albums, large vaults, EXIF |
 | Squarespace | Pages, blog, block flattening |
-| Ghost (optional M0e) | JSON export / Admin API — Mobiledoc or HTML → `contentHtml` |
-| Blogger (optional M0e) | Google Takeout Atom XML or Blogger API v3 |
-| Wix (optional M0e) | Blog/RSS or API slice only — no full-site export parity with WXR |
+| Ghost (planned) | Blog export, Admin API |
+| Blogger (planned) | Takeout Atom export |
+| Wix | Blog RSS/Atom export, REST API (W1), static HTML snapshots (W2) |
 
 Transformers: **HtmlToGrapes** (`htmlToGrapes()` → `GrapesProjectSnapshot`, golden fixtures in `fixtures/grapes/`), **css-to-styles**, **rewrite-inline-images**. Redirect report generation is a host routing concern.
 

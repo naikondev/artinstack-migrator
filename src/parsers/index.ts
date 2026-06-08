@@ -11,6 +11,7 @@ export {
 } from "./smugmug/index.js";
 export type { SmugMugClientOptions, SmugMugCredentials } from "./smugmug/index.js";
 export { squarespaceAdapter } from "./squarespace/index.js";
+export { wixAdapter, WixCollectionClient, WixPageSnapshotCollector } from "./wix/index.js";
 export {
   SquarespaceCollectionClient,
   SQUARESPACE_JSON_FORMAT,
@@ -24,10 +25,13 @@ import { smugmugAdapter } from "./smugmug/index.js";
 import { squarespaceAdapter } from "./squarespace/index.js";
 import { wordpressAdapter } from "./wordpress/index.js";
 
+import { wixAdapter } from "./wix/index.js";
+
 const adapters = {
   wordpress: wordpressAdapter,
   smugmug: smugmugAdapter,
   squarespace: squarespaceAdapter,
+  wix: wixAdapter,
 } as const;
 
 export function getAdapter(platform: MigrationPlatform) {

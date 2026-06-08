@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import type { ValidationIssue, ValidationResult } from "./types.js";
 
-const migrationPlatformSchema = z.enum(["wordpress", "smugmug", "squarespace"]);
+const migrationPlatformSchema = z.enum(["wordpress", "smugmug", "squarespace", "wix"]);
 const publishStatusSchema = z.enum(["draft", "published", "archived"]);
 
 export const sourceMetadataSchema = z.object({

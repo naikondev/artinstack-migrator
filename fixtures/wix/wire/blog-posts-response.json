@@ -1,0 +1,77 @@
+{
+  "categories": [
+    {
+      "id": "cat-studio-news",
+      "label": "Studio News",
+      "slug": "studio-news"
+    }
+  ],
+  "tags": [
+    {
+      "id": "tag-launch",
+      "label": "Launch",
+      "slug": "launch"
+    }
+  ],
+  "posts": [
+    {
+      "id": "post-spring-launch",
+      "title": "Spring collection launch",
+      "slug": "spring-collection-launch",
+      "excerpt": "Short excerpt for the launch post.",
+      "firstPublishedDate": "2025-05-12T10:00:00.000Z",
+      "url": {
+        "base": "https://example.wixsite.com/studio",
+        "path": "/post/spring-collection-launch"
+      },
+      "categoryIds": ["cat-studio-news"],
+      "tagIds": ["tag-launch"],
+      "hashtags": ["portfolio"],
+      "heroImage": {
+        "url": "https://static.wixstatic.com/media/hero-spring.jpg",
+        "altText": "Hero"
+      },
+      "richContent": {
+        "nodes": [
+          {
+            "type": "PARAGRAPH",
+            "nodes": [
+              {
+                "type": "TEXT",
+                "textData": {
+                  "text": "We opened the spring collection with new portraits."
+                }
+              }
+            ]
+          },
+          {
+            "type": "IMAGE",
+            "imageData": {
+              "image": {
+                "src": {
+                  "url": "https://static.wixstatic.com/media/abc123~mv2.jpg"
+                },
+                "altText": "Gallery still"
+              }
+            }
+          }
+        ]
+      },
+      "seoData": {
+        "tags": [
+          {
+            "type": "title",
+            "children": "Spring Launch SEO"
+          },
+          {
+            "type": "meta",
+            "props": {
+              "name": "description",
+              "content": "Spring collection launch notes"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

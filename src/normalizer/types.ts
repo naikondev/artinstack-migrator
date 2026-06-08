@@ -1,4 +1,4 @@
-export type MigrationPlatform = "wordpress" | "smugmug" | "squarespace";
+export type MigrationPlatform = "wordpress" | "smugmug" | "squarespace" | "wix";
 
 export type EntityType = "post" | "page" | "asset" | "portfolio" | "category" | "tag";
 
