@@ -47,6 +47,14 @@ export interface NormalizedPage {
   seoDescription?: string;
 }
 
+/** EXIF fields preserved from SmugMug / camera metadata when present. */
+export interface NormalizedAssetExif {
+  iso?: number;
+  aperture?: number;
+  shutter?: string;
+  focalLength?: number;
+}
+
 /** Remote asset to stream into the host sink. */
 export interface NormalizedAsset {
   type: "asset";
@@ -57,8 +65,17 @@ export interface NormalizedAsset {
   mimeType?: string;
   caption?: string;
   altText?: string;
+  keywords?: string[];
+  exif?: NormalizedAssetExif;
   portfolioSourceId?: string;
   sort?: number;
+}
+
+/** M2M index: portfolio ↔ asset membership and sort order. */
+export interface PortfolioMediaLink {
+  portfolioSourceId: string;
+  assetSourceId: string;
+  sort: number;
 }
 
 export interface NormalizedPortfolio {

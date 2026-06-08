@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import type { EntityBundle } from "../normalizer/bundle.js";
+import { buildPortfolioMediaLinks } from "../normalizer/portfolio-media.js";
 import type { ConflictReport } from "./conflicts.js";
 import type { MigrationReport } from "./migration-report.js";
 
@@ -23,6 +24,10 @@ export async function writeFilesystemExport(options: WriteFilesystemOptions): Pr
   await writeJson(join(options.outDir, "pages.json"), options.bundle.pages);
   await writeJson(join(options.outDir, "media.json"), options.bundle.media);
   await writeJson(join(options.outDir, "portfolios.json"), options.bundle.portfolios);
+  await writeJson(
+    join(options.outDir, "portfolio-media.json"),
+    buildPortfolioMediaLinks(options.bundle),
+  );
   await writeJson(join(options.outDir, "categories.json"), options.bundle.categories);
   await writeJson(join(options.outDir, "tags.json"), options.bundle.tags);
 
@@ -40,6 +45,7 @@ export function bundleToCombinedJson(bundle: EntityBundle): Record<string, unkno
     pages: bundle.pages,
     media: bundle.media,
     portfolios: bundle.portfolios,
+    portfolioMedia: buildPortfolioMediaLinks(bundle),
     categories: bundle.categories,
     tags: bundle.tags,
   };

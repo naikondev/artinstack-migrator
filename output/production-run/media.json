@@ -1,0 +1,158 @@
+[
+  {
+    "type": "asset",
+    "source": {
+      "platform": "smugmug",
+      "id": "img-lemmon-01"
+    },
+    "sourceId": "img-lemmon-01",
+    "sourceUrl": "unspecified://smugmug/img-lemmon-01",
+    "filename": "img-lemmon-01.jpg",
+    "mimeType": "image/jpeg",
+    "keywords": [
+      "Comet",
+      "Lemmon",
+      "Astro",
+      "North Georgia"
+    ],
+    "exif": {
+      "iso": 3200,
+      "aperture": 2.8,
+      "shutter": "15",
+      "focalLength": 135
+    },
+    "portfolioSourceId": "al-comet-lemmon-2025",
+    "sort": 1
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "smugmug",
+      "id": "img-lemmon-02"
+    },
+    "sourceId": "img-lemmon-02",
+    "sourceUrl": "unspecified://smugmug/img-lemmon-02",
+    "filename": "img-lemmon-02.jpg",
+    "mimeType": "image/jpeg",
+    "keywords": [
+      "Comet",
+      "Stacked"
+    ],
+    "exif": {
+      "iso": 1600,
+      "aperture": 4,
+      "shutter": "60",
+      "focalLength": 135
+    },
+    "portfolioSourceId": "al-comet-lemmon-2025",
+    "sort": 2
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "smugmug",
+      "id": "img-mw-pano-01"
+    },
+    "sourceId": "img-mw-pano-01",
+    "sourceUrl": "unspecified://smugmug/img-mw-pano-01",
+    "filename": "img-mw-pano-01.jpg",
+    "mimeType": "image/jpeg",
+    "keywords": [
+      "Milky Way",
+      "Panorama",
+      "Brasstown Bald"
+    ],
+    "exif": {
+      "iso": 6400,
+      "aperture": 1.8,
+      "shutter": "1/15",
+      "focalLength": 24
+    },
+    "portfolioSourceId": "al-milky-way",
+    "sort": 1
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "smugmug",
+      "id": "img-mw-pano-02"
+    },
+    "sourceId": "img-mw-pano-02",
+    "sourceUrl": "unspecified://smugmug/img-mw-pano-02",
+    "filename": "img-mw-pano-02.jpg",
+    "mimeType": "image/jpeg",
+    "keywords": [
+      "Milky Way",
+      "Nightscape"
+    ],
+    "exif": {
+      "iso": 3200,
+      "aperture": 2,
+      "shutter": "20s",
+      "focalLength": 20
+    },
+    "portfolioSourceId": "al-milky-way",
+    "sort": 2
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "smugmug",
+      "id": "img-dv-dunes-01"
+    },
+    "sourceId": "img-dv-dunes-01",
+    "sourceUrl": "unspecified://smugmug/img-dv-dunes-01",
+    "filename": "img-dv-dunes-01.jpg",
+    "mimeType": "image/jpeg",
+    "keywords": [
+      "Death Valley",
+      "Mesquite Dunes",
+      "Landscape"
+    ],
+    "exif": {
+      "iso": 100,
+      "aperture": 11,
+      "shutter": "1/250",
+      "focalLength": 70
+    },
+    "portfolioSourceId": "al-death-valley",
+    "sort": 1
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "smugmug",
+      "id": "img-dv-badwater-02"
+    },
+    "sourceId": "img-dv-badwater-02",
+    "sourceUrl": "unspecified://smugmug/img-dv-badwater-02",
+    "filename": "img-dv-badwater-02.jpg",
+    "mimeType": "image/jpeg",
+    "keywords": [
+      "Death Valley",
+      "Badwater Basin",
+      "Textures"
+    ],
+    "exif": {
+      "iso": 64,
+      "aperture": 8,
+      "shutter": "0.4",
+      "focalLength": 14
+    },
+    "portfolioSourceId": "al-death-valley",
+    "sort": 2
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "smugmug",
+      "id": "img-corrupted-edgecase"
+    },
+    "sourceId": "img-corrupted-edgecase",
+    "sourceUrl": "unspecified://smugmug/img-corrupted-edgecase",
+    "filename": "img-corrupted-edgecase.jpg",
+    "mimeType": "image/jpeg",
+    "portfolioSourceId": "al-death-valley",
+    "sort": 3
+  }
+]

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { collectEntities, bundleCounts } from "../../src/normalizer/bundle.js";
 import { wordpressAdapter } from "../../src/parsers/wordpress/index.js";
-import { validateAllFixtures, validateFixture } from "../../scripts/validate-fixtures.js";
+import { validateAllFixtures, validateFixture, type ManifestFixture } from "../../scripts/validate-fixtures.js";
 
 const FIXTURES_ROOT = join(dirname(fileURLToPath(import.meta.url)));
 
@@ -52,11 +52,24 @@ describe("M0 benchmark fixtures", () => {
   it("stale-legacy-void: preserves raw HTML and warns", async () => {
     const manifest = JSON.parse(
       await readFile(join(FIXTURES_ROOT, "manifest.json"), "utf8"),
-    ) as { fixtures: { id: string }[] };
+    ) as { fixtures: ManifestFixture[] };
     const entry = manifest.fixtures.find((f) => f.id === "stale-legacy-void");
     expect(entry).toBeDefined();
 
-    const result = await validateFixture(entry!);
+    const result = await validateFixture(entry as ManifestFixture);
     expect(result.ok, result.errors.join("; ")).toBe(true);
+  });
+
+  it("naikonpixels export: discovers Tatsu shortcode images via regex", async () => {
+    const bundle = await collectEntities(
+      wordpressAdapter.enumerateEntities({
+        input: { path: join(FIXTURES_ROOT, "naikonpixels.WordPress.2026-06-07.xml") },
+      }),
+    );
+
+    expect(bundleCounts(bundle).assets).toBeGreaterThan(50);
+    expect(bundle.media.some((a) => a.sourceUrl.includes("MoccasinCreek_w_1045.jpg"))).toBe(
+      true,
+    );
   });
 });

@@ -1,6 +1,7 @@
 import * as cheerio from "cheerio";
 
 import type { EntityBundle } from "../normalizer/bundle.js";
+import { discoverRawImgSrcs, normalizeAssetUrl } from "../lib/content-asset-urls.js";
 export interface DuplicateSlugConflict {
   entityType: "post" | "page";
   slug: string;
@@ -99,6 +100,32 @@ function analyzeHtml(html: string): string[] {
   return [...new Set(issues)];
 }
 
+function mediaUrlSet(bundle: EntityBundle): Set<string> {
+  const urls = new Set<string>();
+  for (const asset of bundle.media) {
+    const normalized = normalizeAssetUrl(asset.sourceUrl);
+    if (normalized) urls.add(normalized);
+    urls.add(asset.sourceUrl);
+  }
+  return urls;
+}
+
+function findUnresolvedInlineImages(
+  sourceId: string,
+  contentHtml: string,
+  mediaUrls: Set<string>,
+): UnresolvedInlineImageConflict[] {
+  const conflicts: UnresolvedInlineImageConflict[] = [];
+  for (const raw of discoverRawImgSrcs(contentHtml)) {
+    const normalized = normalizeAssetUrl(raw);
+    if (!normalized) continue;
+    if (!mediaUrls.has(normalized) && !mediaUrls.has(raw)) {
+      conflicts.push({ postOrPageSourceId: sourceId, src: raw });
+    }
+  }
+  return conflicts;
+}
+
 export function analyzeConflicts(
   bundle: EntityBundle,
   options?: {
@@ -107,6 +134,7 @@ export function analyzeConflicts(
   },
 ): ConflictReport {
   const report = emptyConflictReport();
+  const mediaUrls = mediaUrlSet(bundle);
 
   report.duplicatePostSlugs = findDuplicateSlugs(bundle.posts, "post");
   report.duplicatePageSlugs = findDuplicateSlugs(bundle.pages, "page");
@@ -128,6 +156,10 @@ export function analyzeConflicts(
         issues: htmlIssues,
       });
     }
+
+    report.unresolvedInlineImages.push(
+      ...findUnresolvedInlineImages(post.sourceId, post.contentHtml, mediaUrls),
+    );
   }
 
   for (const page of bundle.pages) {
@@ -139,6 +171,10 @@ export function analyzeConflicts(
         issues: htmlIssues,
       });
     }
+
+    report.unresolvedInlineImages.push(
+      ...findUnresolvedInlineImages(page.sourceId, page.contentHtml, mediaUrls),
+    );
   }
 
   if (options?.staleAssetUrls) {

@@ -1,5 +1,15 @@
 export { wordpressAdapter } from "./wordpress/index.js";
-export { smugmugAdapter } from "./smugmug/index.js";
+export {
+  SmugMugApiClient,
+  SMUGMUG_API_BASE,
+  SMUGMUG_OAUTH_ENDPOINTS,
+  buildSmugMugAuthorizationHeader,
+  readSmugMugCredentialsFromEnv,
+  signSmugMugOAuthRequest,
+  smugmugAdapter,
+  smugMugCredentialsSchema,
+} from "./smugmug/index.js";
+export type { SmugMugClientOptions, SmugMugCredentials } from "./smugmug/index.js";
 export { squarespaceAdapter } from "./squarespace/index.js";
 
 import type { MigrationPlatform } from "../normalizer/types.js";

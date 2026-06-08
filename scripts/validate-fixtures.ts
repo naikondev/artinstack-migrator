@@ -9,7 +9,7 @@ import { runDryRun } from "../src/sinks/dry-run.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_ROOT = join(__dirname, "..", "fixtures", "wordpress");
 
-interface ManifestFixture {
+export interface ManifestFixture {
   id: string;
   file: string;
   description: string;

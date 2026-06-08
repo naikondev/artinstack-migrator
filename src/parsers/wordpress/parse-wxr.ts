@@ -3,7 +3,7 @@ import { basename } from "node:path";
 
 import { XMLParser } from "fast-xml-parser";
 
-import { extractInlineImageSrcs } from "../../lib/inline-images.js";
+import { discoverContentAssetUrls } from "../../lib/content-asset-urls.js";
 import { linkToPath, sanitizeSlug } from "../../lib/utility.js";
 import type {
   NormalizedAsset,
@@ -81,8 +81,13 @@ function mapPublishStatus(wpStatus: string | undefined): PublishStatus {
   }
 }
 
-function stripShortcodesForParse(html: string): string {
-  return html.replace(/\[[^\]]+\]/g, "");
+function getContentEncoded(item: WxrItem): string {
+  const content = (item as { content?: { encoded?: string } | string }).content;
+  if (content !== undefined) {
+    if (typeof content === "string") return content;
+    return textValue(content.encoded);
+  }
+  return textValue(item.encoded);
 }
 
 function sourceMeta(id: string, link?: string, exportedAt?: string): SourceMetadata {
@@ -212,7 +217,7 @@ function collectInlineAssets(
   exportedAt?: string,
 ): NormalizedAsset[] {
   const assets: NormalizedAsset[] = [];
-  for (const src of extractInlineImageSrcs(html)) {
+  for (const src of discoverContentAssetUrls(html)) {
     if (seenUrls.has(src)) continue;
     seenUrls.add(src);
 
@@ -282,7 +287,7 @@ export async function* enumerateWxrEntities(
     const id = textValue(item.post_id);
     const link = textValue(item.link);
     const slug = sanitizeSlug(textValue(item.post_name) || textValue(item.title) || id);
-    const rawHtml = stripShortcodesForParse(textValue(item.encoded));
+    const rawHtml = getContentEncoded(item);
 
     for (const asset of collectInlineAssets(
       rawHtml,

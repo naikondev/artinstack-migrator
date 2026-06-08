@@ -281,6 +281,15 @@ Featured images reference attachment ids, not inline bytes:
 | Captions / keywords | `caption`, tags where supported |
 | EXIF/IPTC | Preserved in asset metadata when present in source |
 
+**Live API (public package):** `src/parsers/smugmug/api.ts` ships OAuth 1.0a signing, endpoint paths, pagination, bounded retry/throttle, and recursive node crawl. **No secrets in the package** — hosts or CLI pass `SmugMugCredentials` at runtime (`SMUGMUG_CONSUMER_KEY`, `SMUGMUG_CONSUMER_SECRET`, `SMUGMUG_ACCESS_TOKEN`, `SMUGMUG_ACCESS_TOKEN_SECRET`). OAuth redirect and token storage stay in the host application.
+
+```ts
+import { SmugMugApiClient, readSmugMugCredentialsFromEnv } from "@artinstack/migrator";
+
+const client = new SmugMugApiClient({ credentials: readSmugMugCredentialsFromEnv() });
+const doc = await client.crawlExport(); // flat tables → parse-node.ts → DTOs
+```
+
 Use bounded concurrency (e.g. 4–8 parallel uploads) per import to respect API rate limits.
 
 ### Squarespace
@@ -459,11 +468,13 @@ Optional transformers: **HtmlToGrapes**, **css-to-styles**. Redirect report gene
 | Piece | `@artinstack/migrator` | Host application |
 |-------|------------------------|------------------|
 | Parsers + normalizer DTOs (raw HTML) | Yes | No |
+| SmugMug OAuth signing + API crawl (`api.ts`) | Yes | Supplies credentials |
 | Dry-run, conflicts, migration report | Yes | No |
 | CLI + filesystem export | Yes | No |
 | `rewriteInlineImages` helper | Yes | Supplies `replaceWith` |
 | `MigrationSink` interface + `runMigration` | Yes | Implementation |
 | Sanitization, uploads, slug policy | No | Yes |
+| SmugMug OAuth redirect + token vault | No | Yes |
 | Jobs, worker, UI, credentials, billing | No | Yes |
 
 ---

@@ -1,0 +1,116 @@
+{
+    "exportVersion": 1,
+    "Folders": [
+      {
+        "sourceId": "f-north-georgia",
+        "name": "North Georgia Expeditions"
+      },
+      {
+        "sourceId": "f-sub-astro",
+        "parentSourceId": "f-north-georgia",
+        "name": "Dark Sky Astrophotography"
+      },
+      {
+        "sourceId": "f-sw-deserts",
+        "name": "Southwest Deserts"
+      }
+    ],
+    "Albums": [
+      {
+        "sourceId": "al-comet-lemmon-2025",
+        "parentSourceId": "f-sub-astro",
+        "name": "Comet C/2025 A6 Lemmon"
+      },
+      {
+        "sourceId": "al-milky-way",
+        "parentSourceId": "f-sub-astro",
+        "name": "Milky Way Panoramas"
+      },
+      {
+        "sourceId": "al-death-valley",
+        "parentSourceId": "f-sw-deserts",
+        "name": "Death Valley Explorations"
+      }
+    ],
+    "Images": [
+      {
+        "sourceId": "img-lemmon-01",
+        "portfolioSourceId": "al-comet-lemmon-2025",
+        "sort": 1,
+        "keywords": ["Comet", "Lemmon", "Astro", "North Georgia"],
+        "exif": {
+          "iso": 3200,
+          "aperture": "f/2.8",
+          "shutter": "15",
+          "focalLength": "135mm"
+        }
+      },
+      {
+        "sourceId": "img-lemmon-02",
+        "portfolioSourceId": "al-comet-lemmon-2025",
+        "sort": 2,
+        "keywords": ["Comet", "Stacked"],
+        "exif": {
+          "iso": 1600,
+          "aperture": "f/4.0",
+          "shutter": "60",
+          "focalLength": "135mm"
+        }
+      },
+      {
+        "sourceId": "img-mw-pano-01",
+        "portfolioSourceId": "al-milky-way",
+        "sort": 1,
+        "keywords": ["Milky Way", "Panorama", "Brasstown Bald"],
+        "exif": {
+          "iso": "6400",
+          "aperture": "f/1.8",
+          "shutter": "1/15",
+          "focalLength": "24mm"
+        }
+      },
+      {
+        "sourceId": "img-mw-pano-02",
+        "portfolioSourceId": "al-milky-way",
+        "sort": 2,
+        "keywords": ["Milky Way", "Nightscape"],
+        "exif": {
+          "iso": 3200,
+          "aperture": "f/2.0",
+          "shutter": "20s",
+          "focalLength": "20mm"
+        }
+      },
+      {
+        "sourceId": "img-dv-dunes-01",
+        "portfolioSourceId": "al-death-valley",
+        "sort": 1,
+        "keywords": ["Death Valley", "Mesquite Dunes", "Landscape"],
+        "exif": {
+          "iso": 100,
+          "aperture": "f/11",
+          "shutter": "1/250",
+          "focalLength": "70mm"
+        }
+      },
+      {
+        "sourceId": "img-dv-badwater-02",
+        "portfolioSourceId": "al-death-valley",
+        "sort": 2,
+        "keywords": ["Death Valley", "Badwater Basin", "Textures"],
+        "exif": {
+          "iso": 64,
+          "aperture": "f/8.0",
+          "shutter": "0.4",
+          "focalLength": "14mm"
+        }
+      },
+      {
+        "sourceId": "img-corrupted-edgecase",
+        "portfolioSourceId": "al-death-valley",
+        "sort": 3,
+        "keywords": [],
+        "exif": {}
+      }
+    ]
+  }

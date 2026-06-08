@@ -1,0 +1,16 @@
+{
+  "fixtures": [
+    {
+      "id": "portfolio-vault",
+      "file": "portfolio-vault.json",
+      "description": "Compact CI fixture — 3 folders × 5 albums × 3 images (production matrix: ≥3 categories, ≥5 sub-albums, ≥200 images)",
+      "expected": {
+        "folders": 3,
+        "albums": 15,
+        "portfolios": 18,
+        "assets": 45
+      },
+      "gates": ["portfolio_hierarchy", "portfolio_media_m2m", "exif_metadata"]
+    }
+  ]
+}
