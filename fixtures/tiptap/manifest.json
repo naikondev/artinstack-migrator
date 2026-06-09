@@ -1,0 +1,39 @@
+{
+  "fixtures": [
+    {
+      "id": "inline-text",
+      "html": "html/inline-text.html",
+      "golden": "golden/inline-text.snapshot.json",
+      "description": "Inline bold/italic marks inside paragraphs",
+      "gates": ["inline_marks"]
+    },
+    {
+      "id": "editorial-post",
+      "html": "html/editorial-post.html",
+      "golden": "golden/editorial-post.snapshot.json",
+      "description": "Composite post: heading, styled paragraph, image, link",
+      "gates": ["editorial_post"]
+    },
+    {
+      "id": "data-layout-unwrap",
+      "html": "html/data-layout-unwrap.html",
+      "golden": "golden/data-layout-unwrap.snapshot.json",
+      "description": "OSS-2 data-layout scaffolding unwraps to prose blocks",
+      "gates": ["layout_unwrap"]
+    },
+    {
+      "id": "lists",
+      "html": "html/lists.html",
+      "golden": "golden/lists.snapshot.json",
+      "description": "Bullet and ordered lists with listItem → paragraph nesting",
+      "gates": ["lists"]
+    },
+    {
+      "id": "blockquote",
+      "html": "html/blockquote.html",
+      "golden": "golden/blockquote.snapshot.json",
+      "description": "Blockquote with nested paragraph",
+      "gates": ["blockquote"]
+    }
+  ]
+}

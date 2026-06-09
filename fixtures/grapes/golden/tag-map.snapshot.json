@@ -1,0 +1,27 @@
+{
+  "content": [
+    {
+      "type": "heading",
+      "tagName": "h2",
+      "content": "Section title"
+    },
+    {
+      "type": "paragraph",
+      "tagName": "p",
+      "content": "Paragraph body"
+    },
+    {
+      "type": "section",
+      "tagName": "div",
+      "classes": ["sqs-block"],
+      "components": [
+        {
+          "type": "textnode",
+          "content": "Class-mapped block"
+        }
+      ]
+    }
+  ],
+  "styles": [],
+  "contentHtml": "<h2>Section title</h2>\n<p>Paragraph body</p>\n<div class=\"sqs-block\">Class-mapped block</div>"
+}

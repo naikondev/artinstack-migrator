@@ -91,7 +91,22 @@ export async function validateGrapesFixture(
       errors.push("editorial_page: expected .lead style rule");
     }
   }
-
+  if (gates.includes("data_layout")) {
+    if (actual.content[0]?.type !== "section") {
+      errors.push("data_layout: expected section root from data-layout marker");
+    }
+    if (actual.content[0]?.components?.[0]?.type !== "row") {
+      errors.push("data_layout: expected row child from data-cols row marker");
+    }
+  }
+  if (gates.includes("tag_map")) {
+    if (actual.content[0]?.type !== "heading") {
+      errors.push("tag_map: expected heading from h2 tagMap");
+    }
+    if (actual.content[2]?.type !== "section") {
+      errors.push("tag_map: expected section from componentMap over tagMap");
+    }
+  }
   return { id: entry.id, ok: errors.length === 0, errors };
 }
 

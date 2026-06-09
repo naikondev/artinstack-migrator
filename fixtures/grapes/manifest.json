@@ -46,6 +46,29 @@
       "golden": "golden/editorial-page.snapshot.json",
       "description": "Composite page: headings, styled paragraph, image, link, extracted CSS",
       "gates": ["editorial_page"]
+    },
+    {
+      "id": "data-layout-tree",
+      "html": "html/data-layout-tree.html",
+      "golden": "golden/data-layout-tree.snapshot.json",
+      "description": "OSS-2 data-layout section/row/column markers → Grapes layout components",
+      "gates": ["data_layout"]
+    },
+    {
+      "id": "tag-map",
+      "html": "html/tag-map.html",
+      "golden": "golden/tag-map.snapshot.json",
+      "description": "OSS-1 tagMap maps HTML tag names to Grapes component types",
+      "options": {
+        "tagMap": {
+          "h2": "heading",
+          "p": "paragraph"
+        },
+        "componentMap": {
+          "sqs-block": "section"
+        }
+      },
+      "gates": ["tag_map"]
     }
   ]
 }

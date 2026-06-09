@@ -1,7 +1,7 @@
 import type { Cheerio, CheerioAPI } from "cheerio";
 import type { AnyNode } from "domhandler";
 
-import type { GrapesComponent, HtmlToGrapesOptions } from "./types.js";
+import type { GrapesComponent, HtmlToGrapesOptions, LayoutKind } from "./types.js";
 
 type CheerioSelection = Cheerio<AnyNode>;
 
@@ -70,6 +70,32 @@ const DEFAULT_TYPES: Record<string, string> = {
   img: "image",
 };
 
+const LAYOUT_DATA_ATTR = "data-layout";
+
+const DEFAULT_LAYOUT_TYPE_MAP: Record<LayoutKind, string> = {
+  section: "section",
+  row: "row",
+  column: "column",
+};
+
+function parseLayoutKind(attributes: Record<string, string> | undefined): LayoutKind | undefined {
+  const value = attributes?.[LAYOUT_DATA_ATTR];
+  if (value === "section" || value === "row" || value === "column") return value;
+  return undefined;
+}
+
+function resolveLayoutComponentType(kind: LayoutKind, options: HtmlToGrapesOptions): string {
+  return options.layoutTypeMap?.[kind] ?? DEFAULT_LAYOUT_TYPE_MAP[kind];
+}
+
+function layoutAttributesForComponent(
+  attributes: Record<string, string> | undefined,
+): Record<string, string> | undefined {
+  if (!attributes) return undefined;
+  const { [LAYOUT_DATA_ATTR]: _layout, ...rest } = attributes;
+  return Object.keys(rest).length > 0 ? rest : undefined;
+}
+
 function tagNameOf($el: CheerioSelection): string | undefined {
   const raw = $el.prop("tagName");
   return typeof raw === "string" ? raw.toLowerCase() : undefined;
@@ -108,6 +134,7 @@ function resolveComponentType(
   tagName: string,
   classes: string[] | undefined,
   options: HtmlToGrapesOptions,
+  fallback = "default",
 ): string {
   if (options.componentMap && classes) {
     for (const className of classes) {
@@ -115,7 +142,9 @@ function resolveComponentType(
       if (mapped) return mapped;
     }
   }
-  return DEFAULT_TYPES[tagName] ?? "default";
+  const tagMapped = options.tagMap?.[tagName];
+  if (tagMapped) return tagMapped;
+  return DEFAULT_TYPES[tagName] ?? fallback;
 }
 
 function hasOnlyInlineContent($: CheerioAPI, $el: CheerioSelection): boolean {
@@ -179,6 +208,25 @@ function walkNode(
 
   const meta = pickElementMeta($el);
 
+  const layoutKind = parseLayoutKind(meta.attributes);
+  if (layoutKind) {
+    const components = walkChildren($, $el, options);
+    const component = applyElementMeta(
+      {
+        type: resolveLayoutComponentType(layoutKind, options),
+        tagName,
+      },
+      {
+        attributes: layoutAttributesForComponent(meta.attributes),
+        classes: meta.classes,
+      },
+    );
+    if (components.length > 0) {
+      component.components = components;
+    }
+    return component;
+  }
+
   if (VOID_TAGS.has(tagName)) {
     return applyElementMeta(
       {
@@ -193,7 +241,7 @@ function walkNode(
   if (TEXT_CONTAINER_TAGS.has(tagName) && hasOnlyInlineContent($, $el)) {
     return applyElementMeta(
       {
-        type: "text",
+        type: resolveComponentType(tagName, meta.classes, options, "text"),
         tagName,
         content: $el.html() ?? "",
       },

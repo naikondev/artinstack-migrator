@@ -1,10 +1,14 @@
 import { normalizeAssetUrl } from "../../../lib/content-asset-urls.js";
 import type {
+  BuilderIconImageRule,
   BuilderPlaceholderRule,
   BuilderTextRule,
   BuilderThemeConfig,
   BuilderUrlRule,
   BuilderWrapperRule,
+  FractionalLayoutMap,
+  PrefixedLayoutMap,
+  StructuralLayoutMap,
   TextHtmlTag,
   BuilderHtmlTag,
 } from "./registry.js";
@@ -51,6 +55,79 @@ export function extractQuotedParam(params: string, name: string): string | undef
 
   const trimmed = value.trim();
   return trimmed || undefined;
+}
+
+function escapeLayoutAttr(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;");
+}
+
+/** Parse row `layout="1/2+1/2"` style strings → column count. */
+export function parseRowLayoutCols(layout: string | undefined): number | undefined {
+  if (!layout?.trim()) return undefined;
+  const parts = layout.split("+").map((part) => part.trim()).filter(Boolean);
+  return parts.length > 1 ? parts.length : undefined;
+}
+
+function openSectionDiv(params: string, bgParamName?: string): string {
+  const attrs = ['data-layout="section"'];
+  const bgImage = extractQuotedParam(params, bgParamName ?? "bg_image");
+  if (bgImage?.startsWith("http")) {
+    attrs.push(`data-bg-image="${escapeLayoutAttr(bgImage)}"`);
+  }
+  return `<div ${attrs.join(" ")}>`;
+}
+
+function openRowDiv(params: string, colsParamName?: string): string {
+  const attrs = ['data-layout="row"'];
+  const cols = parseRowLayoutCols(extractQuotedParam(params, colsParamName ?? "layout"));
+  if (cols) attrs.push(`data-cols="${cols}"`);
+  return `<div ${attrs.join(" ")}>`;
+}
+
+function applyPrefixedLayoutMap(content: string, map: PrefixedLayoutMap): string {
+  let html = content;
+  html = html.replace(map.sectionRegex, (_, params: string) => openSectionDiv(params, map.bgParamName));
+  html = html.replace(map.sectionCloseRegex, "</div>");
+  html = html.replace(map.rowRegex, (_, params: string) => openRowDiv(params, map.colsParamName));
+  html = html.replace(map.rowCloseRegex, "</div>");
+  html = html.replace(map.columnRegex, '<div data-layout="column">');
+  html = html.replace(map.columnCloseRegex, "</div>");
+  return html;
+}
+
+function applyFractionalLayoutMap(content: string, map: FractionalLayoutMap): string {
+  let html = content;
+  html = html.replace(map.sectionRegex, (_, params: string) => openSectionDiv(params, map.bgParamName));
+  html = html.replace(map.sectionCloseRegex, "</div>");
+  html = html.replace(map.rowRegex, (_, params: string) => openRowDiv(params));
+  html = html.replace(map.rowCloseRegex, "</div>");
+
+  for (let index = 0; index < map.columnTokens.length; index += 1) {
+    const token = map.columnTokens[index]!;
+    const width = map.columnWidths[token];
+    const openRegex = map.columnOpenRegexes[index]!;
+    const closeRegex = map.columnCloseRegexes[index]!;
+    html = html.replace(openRegex, () => {
+      const attrs = ['data-layout="column"'];
+      if (width) attrs.push(`data-col-width="${width}"`);
+      return `<div ${attrs.join(" ")}>`;
+    });
+    html = html.replace(closeRegex, "</div>");
+  }
+  return html;
+}
+
+/** Map builder layout shortcodes → editor-neutral `data-layout` HTML. */
+export function applyStructuralLayoutMap(content: string, map: StructuralLayoutMap): string {
+  switch (map.kind) {
+    case "prefixed":
+      return applyPrefixedLayoutMap(content, map);
+    case "fractional":
+      return applyFractionalLayoutMap(content, map);
+  }
 }
 
 function extractShortcodeParam(params: string, names: string[]): string | undefined {
@@ -149,6 +226,33 @@ function convertWrapperRule(content: string, rule: BuilderWrapperRule): string {
   });
 }
 
+function convertIconImageRule(content: string, rule: BuilderIconImageRule): string {
+  const prefix = escapeRegExp(rule.shortcodePrefix);
+  const pattern = new RegExp(
+    `\\[${prefix}\\b([^\\]]*)\\]\\s*(?:\\[\\/${prefix}\\b[^\\]]*\\])?`,
+    "gi",
+  );
+
+  return content.replace(pattern, (_, params: string) => {
+    const iconImage = extractQuotedParam(params, rule.imageParam);
+    if (!iconImage?.startsWith("http") || iconImage.includes("placehold")) {
+      return "";
+    }
+    const img = emitHtmlTag("img", iconImage);
+    if (rule.hrefParam) {
+      const href = extractQuotedParam(params, rule.hrefParam);
+      if (href?.startsWith("http")) {
+        const escapedHref = href
+          .replace(/&/g, "&amp;")
+          .replace(/"/g, "&quot;")
+          .replace(/</g, "&lt;");
+        return `<a href="${escapedHref}">${img}</a>`;
+      }
+    }
+    return img;
+  });
+}
+
 function convertPlaceholderRule(content: string, rule: BuilderPlaceholderRule): string {
   const prefix = escapeRegExp(rule.shortcodePrefix);
   const pattern = new RegExp(
@@ -211,6 +315,12 @@ export function flattenWordPressBuilders(
     }
     for (const rule of theme.placeholderRules ?? []) {
       html = convertPlaceholderRule(html, rule);
+    }
+    for (const rule of theme.iconImageRules ?? []) {
+      html = convertIconImageRule(html, rule);
+    }
+    if (theme.layoutMap) {
+      html = applyStructuralLayoutMap(html, theme.layoutMap);
     }
     for (const prefix of theme.scaffoldingPrefixes ?? []) {
       html = stripScaffoldingPrefix(html, prefix);

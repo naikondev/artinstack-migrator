@@ -9,6 +9,8 @@ export type {
   GrapesProjectSnapshot,
   GrapesStyleRule,
   HtmlToGrapesOptions,
+  LayoutKind,
+  LayoutTypeMap,
 } from "./types.js";
 
 /** Cheerio HTML walk → Grapes `content` + root `styles`. */

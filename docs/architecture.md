@@ -92,6 +92,16 @@ src/
 fixtures/               Sample exports and golden JSON (incl. grapes/ HtmlToGrapes snapshots)
 ```
 
+**Package export subpaths** (separate bundles for tree-shaking / smaller client imports):
+
+| Subpath | Use when |
+|---------|----------|
+| `@artinstack/migrator` | Full pipeline — parsers, sink types, CLI consumers |
+| `@artinstack/migrator/transformers` | `htmlToGrapes`, `htmlToTiptap`, `rewriteInlineImages` only — no WXR/parser code |
+| `@artinstack/migrator/normalizer` | DTO types + validation |
+| `@artinstack/migrator/sinks` | `MigrationSink`, `runMigration`, dry-run |
+| `@artinstack/migrator/lib` | `discoverContentAssetUrls`, origin URL rewrite helpers |
+
 **Dependency rule:** no imports from web frameworks, proprietary CMS SDKs, or host-specific libraries. Host apps depend on `@artinstack/migrator`; never the reverse.
 
 ---
@@ -365,7 +375,7 @@ There is no reliable off-the-shelf server library for arbitrary HTML → full Gr
 | Headless browser | Spot-checks only — too heavy at scale |
 | HTML snapshot | Readable pages without perfect editor tree |
 
-**HtmlToGrapesParser** edge cases: inline vs global CSS → root `styles[]`; layout tables/grids → structural wrappers; inline text tags stay inside parent text components.
+**HtmlToGrapesParser** edge cases: inline vs global CSS → root `styles[]`; layout tables/grids → structural wrappers; inline text tags stay inside parent text components; `tagMap` / `componentMap` / `layoutTypeMap` for host component typing.
 
 ---
 
@@ -486,7 +496,7 @@ Optional: export redirect map CSV when `source.path` differs from destination pa
 | Blogger (planned) | Takeout Atom export |
 | Wix | Blog RSS/Atom export, REST API (W1), static HTML snapshots (W2) |
 
-Transformers: **HtmlToGrapes** (`htmlToGrapes()` → `GrapesProjectSnapshot`, golden fixtures in `fixtures/grapes/`), **css-to-styles**, **rewrite-inline-images**. Redirect report generation is a host routing concern.
+Transformers: **HtmlToGrapes** (`htmlToGrapes()` → `GrapesProjectSnapshot`, golden fixtures in `fixtures/grapes/`), **HtmlToTiptap** (`htmlToTiptap()` → ProseMirror `doc` for blog `content_json`, golden fixtures in `fixtures/tiptap/`), **css-to-styles**, **rewrite-inline-images**. Redirect report generation is a host routing concern.
 
 ---
 

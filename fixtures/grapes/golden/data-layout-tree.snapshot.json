@@ -1,0 +1,101 @@
+{
+  "content": [
+    {
+      "type": "section",
+      "tagName": "div",
+      "attributes": {
+        "data-bg-image": "https://example.com/hero.jpg"
+      },
+      "components": [
+        {
+          "type": "row",
+          "tagName": "div",
+          "attributes": {
+            "data-cols": "2"
+          },
+          "components": [
+            {
+              "type": "column",
+              "tagName": "div",
+              "components": [
+                {
+                  "type": "text",
+                  "tagName": "p",
+                  "content": "Left"
+                }
+              ]
+            },
+            {
+              "type": "column",
+              "tagName": "div",
+              "components": [
+                {
+                  "type": "image",
+                  "tagName": "img",
+                  "void": true,
+                  "attributes": {
+                    "src": "https://example.com/a.jpg",
+                    "alt": ""
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "row",
+          "tagName": "div",
+          "attributes": {
+            "data-cols": "3"
+          },
+          "components": [
+            {
+              "type": "column",
+              "tagName": "div",
+              "attributes": {
+                "data-col-width": "33.33%"
+              },
+              "components": [
+                {
+                  "type": "text",
+                  "tagName": "h6",
+                  "content": "A"
+                }
+              ]
+            },
+            {
+              "type": "column",
+              "tagName": "div",
+              "attributes": {
+                "data-col-width": "33.33%"
+              },
+              "components": [
+                {
+                  "type": "text",
+                  "tagName": "h6",
+                  "content": "B"
+                }
+              ]
+            },
+            {
+              "type": "column",
+              "tagName": "div",
+              "attributes": {
+                "data-col-width": "33.33%"
+              },
+              "components": [
+                {
+                  "type": "text",
+                  "tagName": "h6",
+                  "content": "C"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "styles": [],
+  "contentHtml": "<div data-layout=\"section\" data-bg-image=\"https://example.com/hero.jpg\">\n  <div data-layout=\"row\" data-cols=\"2\">\n    <div data-layout=\"column\"><p>Left</p></div>\n    <div data-layout=\"column\"><img src=\"https://example.com/a.jpg\" alt=\"\"></div>\n  </div>\n  <div data-layout=\"row\" data-cols=\"3\">\n    <div data-layout=\"column\" data-col-width=\"33.33%\"><h6>A</h6></div>\n    <div data-layout=\"column\" data-col-width=\"33.33%\"><h6>B</h6></div>\n    <div data-layout=\"column\" data-col-width=\"33.33%\"><h6>C</h6></div>\n  </div>\n</div>"
+}
