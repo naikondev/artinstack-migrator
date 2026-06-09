@@ -11,6 +11,7 @@ See [docs/architecture.md](./docs/architecture.md) for the high-level blueprint:
 ```
 src/
   parsers/          WordPress, SmugMug, Squarespace, Wix → normalizer DTOs
+    wordpress/      WXR parse, builder flattening (theme registry)
   normalizer/       Canonical DTOs + portable idempotency types
   sinks/            filesystem export, MigrationSink interface
   cli/              artinstack-migrate
@@ -56,6 +57,8 @@ artinstack-migrate validate <platform> <export-file>
 | `--dry-run` | Parse and analyze only; no export files |
 | `--report <dir>` | With `--dry-run`, write `conflicts.json` and `migration-report.json` |
 | `--offline` | Skip network HEAD requests for asset size estimates |
+| `--rewrite-gateway <url>` | WordPress: legacy API-gateway base (use with `--rewrite-public`) |
+| `--rewrite-public <url>` | WordPress: public origin for `/wp-content/` asset paths |
 | `--sink filesystem` | Run through `MigrationSink` before writing (requires `--out`) |
 | `--urls <file>` | Wix only: URL list or `sitemap.xml` for static page snapshots |
 
@@ -67,6 +70,12 @@ artinstack-migrate wordpress export.xml --out ./output
 
 # Preview conflicts without writing content
 artinstack-migrate wordpress export.xml --dry-run --report ./preview/
+
+# WordPress: rewrite legacy gateway URLs before dry-run / export (e.g. API Gateway → public CDN)
+artinstack-migrate wordpress export.xml \
+  --rewrite-gateway "https://gateway.example/prod" \
+  --rewrite-public "https://www.example.com" \
+  --dry-run --report ./preview/
 
 # Validate export structure (JSON result on stdout, exit 0/1)
 artinstack-migrate validate wordpress export.xml
@@ -119,8 +128,10 @@ pnpm dev          # watch build
 | Piece | `@artinstack/migrator` | Host application |
 |-------|------------------------|------------------|
 | Parsers + normalizer DTOs | Yes | No |
+| WordPress builder flattening + origin URL rewrite (pre-DTO) | Yes | Optional same config on adapter input |
 | CLI + filesystem JSON export | Yes | No |
 | `MigrationSink` interface | Yes | Implementation |
+| Dynamic shortcodes (`[portfolio]`, `[recent_posts]`), forms, sanitize | No | Yes |
 | Jobs, worker, credentials, UI | No | Yes |
 
 ## License

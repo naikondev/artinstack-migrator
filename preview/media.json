@@ -3,715 +3,520 @@
     "type": "asset",
     "source": {
       "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/05/MoccasinCreek_w_1045.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/05/MoccasinCreek_w_1045.jpg",
-      "path": "/prod/wp-content/uploads/2022/05/MoccasinCreek_w_1045.jpg/"
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2022/05/BloodMountain_Mist_Self_w.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2022/05/BloodMountain_Mist_Self_w.jpg",
+      "path": "/wp-content/uploads/2022/05/BloodMountain_Mist_Self_w.jpg/"
     },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/05/MoccasinCreek_w_1045.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/05/MoccasinCreek_w_1045.jpg",
-    "filename": "MoccasinCreek_w_1045.jpg",
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2022/05/BloodMountain_Mist_Self_w.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2022/05/BloodMountain_Mist_Self_w.jpg",
+    "filename": "BloodMountain_Mist_Self_w.jpg",
     "mimeType": "image/jpeg"
   },
   {
     "type": "asset",
     "source": {
       "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2021/07/Pemaquid_Milkyway_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2021/07/Pemaquid_Milkyway_w.jpg",
-      "path": "/prod/wp-content/uploads/2021/07/Pemaquid_Milkyway_w.jpg/"
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2022/05/TheWatcher_w.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2022/05/TheWatcher_w.jpg",
+      "path": "/wp-content/uploads/2022/05/TheWatcher_w.jpg/"
     },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2021/07/Pemaquid_Milkyway_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2021/07/Pemaquid_Milkyway_w.jpg",
-    "filename": "Pemaquid_Milkyway_w.jpg",
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2022/05/TheWatcher_w.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2022/05/TheWatcher_w.jpg",
+    "filename": "TheWatcher_w.jpg",
     "mimeType": "image/jpeg"
   },
   {
     "type": "asset",
     "source": {
       "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/DevilsBridge_Sedona-Pano_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/DevilsBridge_Sedona-Pano_w.jpg",
-      "path": "/prod/wp-content/uploads/2017/12/DevilsBridge_Sedona-Pano_w.jpg/"
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/Shanty-150x150.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/Shanty-150x150.jpg",
+      "path": "/wp-content/uploads/Shanty-150x150.jpg/"
     },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/DevilsBridge_Sedona-Pano_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/DevilsBridge_Sedona-Pano_w.jpg",
-    "filename": "DevilsBridge_Sedona-Pano_w.jpg",
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/Shanty-150x150.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/Shanty-150x150.jpg",
+    "filename": "Shanty-150x150.jpg",
     "mimeType": "image/jpeg"
   },
   {
     "type": "asset",
     "source": {
       "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2021/04/Coconino_Sedona_Pano_v1_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2021/04/Coconino_Sedona_Pano_v1_w.jpg",
-      "path": "/prod/wp-content/uploads/2021/04/Coconino_Sedona_Pano_v1_w.jpg/"
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/Springer_w_900x600.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/Springer_w_900x600.jpg",
+      "path": "/wp-content/uploads/Springer_w_900x600.jpg/"
     },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2021/04/Coconino_Sedona_Pano_v1_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2021/04/Coconino_Sedona_Pano_v1_w.jpg",
-    "filename": "Coconino_Sedona_Pano_v1_w.jpg",
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/Springer_w_900x600.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/Springer_w_900x600.jpg",
+    "filename": "Springer_w_900x600.jpg",
     "mimeType": "image/jpeg"
   },
   {
     "type": "asset",
     "source": {
       "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/DoubleArch_Pano_v2_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/DoubleArch_Pano_v2_w.jpg",
-      "path": "/prod/wp-content/uploads/2017/12/DoubleArch_Pano_v2_w.jpg/"
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/Lake-Allatoona_w_900x600.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/Lake-Allatoona_w_900x600.jpg",
+      "path": "/wp-content/uploads/Lake-Allatoona_w_900x600.jpg/"
     },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/DoubleArch_Pano_v2_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/DoubleArch_Pano_v2_w.jpg",
-    "filename": "DoubleArch_Pano_v2_w.jpg",
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/Lake-Allatoona_w_900x600.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/Lake-Allatoona_w_900x600.jpg",
+    "filename": "Lake-Allatoona_w_900x600.jpg",
     "mimeType": "image/jpeg"
   },
   {
     "type": "asset",
     "source": {
       "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/BoulderBeach_Milkyway_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/BoulderBeach_Milkyway_w.jpg",
-      "path": "/prod/wp-content/uploads/2017/12/BoulderBeach_Milkyway_w.jpg/"
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/Mt_Yonah_w_900x600.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/Mt_Yonah_w_900x600.jpg",
+      "path": "/wp-content/uploads/Mt_Yonah_w_900x600.jpg/"
     },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/BoulderBeach_Milkyway_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/BoulderBeach_Milkyway_w.jpg",
-    "filename": "BoulderBeach_Milkyway_w.jpg",
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/Mt_Yonah_w_900x600.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/Mt_Yonah_w_900x600.jpg",
+    "filename": "Mt_Yonah_w_900x600.jpg",
     "mimeType": "image/jpeg"
   },
   {
     "type": "asset",
     "source": {
       "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/12/Stephen-Foster_MW_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/12/Stephen-Foster_MW_w.jpg",
-      "path": "/prod/wp-content/uploads/2022/12/Stephen-Foster_MW_w.jpg/"
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/Chimney_tops_w_900x600.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/Chimney_tops_w_900x600.jpg",
+      "path": "/wp-content/uploads/Chimney_tops_w_900x600.jpg/"
     },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/12/Stephen-Foster_MW_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/12/Stephen-Foster_MW_w.jpg",
-    "filename": "Stephen-Foster_MW_w.jpg",
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/Chimney_tops_w_900x600.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/Chimney_tops_w_900x600.jpg",
+    "filename": "Chimney_tops_w_900x600.jpg",
     "mimeType": "image/jpeg"
   },
   {
     "type": "asset",
     "source": {
       "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/12/StephenFoster_Road_1024px_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/12/StephenFoster_Road_1024px_w.jpg",
-      "path": "/prod/wp-content/uploads/2022/12/StephenFoster_Road_1024px_w.jpg/"
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/Blood-Mountain_selfie-900x600-1.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/Blood-Mountain_selfie-900x600-1.jpg",
+      "path": "/wp-content/uploads/Blood-Mountain_selfie-900x600-1.jpg/"
     },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/12/StephenFoster_Road_1024px_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/12/StephenFoster_Road_1024px_w.jpg",
-    "filename": "StephenFoster_Road_1024px_w.jpg",
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/Blood-Mountain_selfie-900x600-1.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/Blood-Mountain_selfie-900x600-1.jpg",
+    "filename": "Blood-Mountain_selfie-900x600-1.jpg",
     "mimeType": "image/jpeg"
   },
   {
     "type": "asset",
     "source": {
       "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/12/StephenFoster_Trees_1024px_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/12/StephenFoster_Trees_1024px_w.jpg",
-      "path": "/prod/wp-content/uploads/2022/12/StephenFoster_Trees_1024px_w.jpg/"
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/Arabia_Mountain_w_900x600.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/Arabia_Mountain_w_900x600.jpg",
+      "path": "/wp-content/uploads/Arabia_Mountain_w_900x600.jpg/"
     },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/12/StephenFoster_Trees_1024px_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/12/StephenFoster_Trees_1024px_w.jpg",
-    "filename": "StephenFoster_Trees_1024px_w.jpg",
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/Arabia_Mountain_w_900x600.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/Arabia_Mountain_w_900x600.jpg",
+    "filename": "Arabia_Mountain_w_900x600.jpg",
     "mimeType": "image/jpeg"
   },
   {
     "type": "asset",
     "source": {
       "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2023/01/Brasstown_MW_2022-1024px.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2023/01/Brasstown_MW_2022-1024px.jpg",
-      "path": "/prod/wp-content/uploads/2023/01/Brasstown_MW_2022-1024px.jpg/"
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2022/10/IPA_create_winner_seal22.png",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2022/10/IPA_create_winner_seal22.png",
+      "path": "/wp-content/uploads/2022/10/IPA_create_winner_seal22.png/"
     },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2023/01/Brasstown_MW_2022-1024px.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2023/01/Brasstown_MW_2022-1024px.jpg",
-    "filename": "Brasstown_MW_2022-1024px.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/12/Pleiades_PixInsight_1024px_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/12/Pleiades_PixInsight_1024px_w.jpg",
-      "path": "/prod/wp-content/uploads/2022/12/Pleiades_PixInsight_1024px_w.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/12/Pleiades_PixInsight_1024px_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/12/Pleiades_PixInsight_1024px_w.jpg",
-    "filename": "Pleiades_PixInsight_1024px_w.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Orion_M42_DDP-1.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Orion_M42_DDP-1.jpg",
-      "path": "/prod/wp-content/uploads/2017/12/Orion_M42_DDP-1.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Orion_M42_DDP-1.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Orion_M42_DDP-1.jpg",
-    "filename": "Orion_M42_DDP-1.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Geminid_Sunset_Crater_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Geminid_Sunset_Crater_w.jpg",
-      "path": "/prod/wp-content/uploads/2017/12/Geminid_Sunset_Crater_w.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Geminid_Sunset_Crater_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Geminid_Sunset_Crater_w.jpg",
-    "filename": "Geminid_Sunset_Crater_w.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/EastPocket_Perseids_v2_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/EastPocket_Perseids_v2_w.jpg",
-      "path": "/prod/wp-content/uploads/2017/12/EastPocket_Perseids_v2_w.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/EastPocket_Perseids_v2_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/EastPocket_Perseids_v2_w.jpg",
-    "filename": "EastPocket_Perseids_v2_w.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://www.naikonpixels.com/wp-content/uploads/Coconino_Sedona_Pano_v1_w.jpg",
-      "url": "https://www.naikonpixels.com/wp-content/uploads/Coconino_Sedona_Pano_v1_w.jpg",
-      "path": "/wp-content/uploads/Coconino_Sedona_Pano_v1_w.jpg/"
-    },
-    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/Coconino_Sedona_Pano_v1_w.jpg",
-    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/Coconino_Sedona_Pano_v1_w.jpg",
-    "filename": "Coconino_Sedona_Pano_v1_w.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Bad_water_basin_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Bad_water_basin_w.jpg",
-      "path": "/prod/wp-content/uploads/2017/12/Bad_water_basin_w.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Bad_water_basin_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Bad_water_basin_w.jpg",
-    "filename": "Bad_water_basin_w.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/GrandCanyon_Milkyway_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/GrandCanyon_Milkyway_w.jpg",
-      "path": "/prod/wp-content/uploads/2017/12/GrandCanyon_Milkyway_w.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/GrandCanyon_Milkyway_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/GrandCanyon_Milkyway_w.jpg",
-    "filename": "GrandCanyon_Milkyway_w.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Monument_valley_Leonids_v2_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Monument_valley_Leonids_v2_w.jpg",
-      "path": "/prod/wp-content/uploads/2017/12/Monument_valley_Leonids_v2_w.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Monument_valley_Leonids_v2_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Monument_valley_Leonids_v2_w.jpg",
-    "filename": "Monument_valley_Leonids_v2_w.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Superstition_Mt-v2_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Superstition_Mt-v2_w.jpg",
-      "path": "/prod/wp-content/uploads/2017/12/Superstition_Mt-v2_w.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Superstition_Mt-v2_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Superstition_Mt-v2_w.jpg",
-    "filename": "Superstition_Mt-v2_w.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Bunito_Milkyway_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Bunito_Milkyway_w.jpg",
-      "path": "/prod/wp-content/uploads/2017/12/Bunito_Milkyway_w.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Bunito_Milkyway_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Bunito_Milkyway_w.jpg",
-    "filename": "Bunito_Milkyway_w.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Mogollon_Rim_Milkyway_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Mogollon_Rim_Milkyway_w.jpg",
-      "path": "/prod/wp-content/uploads/2017/12/Mogollon_Rim_Milkyway_w.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Mogollon_Rim_Milkyway_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Mogollon_Rim_Milkyway_w.jpg",
-    "filename": "Mogollon_Rim_Milkyway_w.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Fort_mountain_w_2048.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Fort_mountain_w_2048.jpg",
-      "path": "/prod/wp-content/uploads/Fort_mountain_w_2048.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Fort_mountain_w_2048.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Fort_mountain_w_2048.jpg",
-    "filename": "Fort_mountain_w_2048.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Mesquite-Flat-Sand-Dunes_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Mesquite-Flat-Sand-Dunes_w.jpg",
-      "path": "/prod/wp-content/uploads/2017/12/Mesquite-Flat-Sand-Dunes_w.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Mesquite-Flat-Sand-Dunes_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/Mesquite-Flat-Sand-Dunes_w.jpg",
-    "filename": "Mesquite-Flat-Sand-Dunes_w.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2019/08/Los_angeles_skyline_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2019/08/Los_angeles_skyline_w.jpg",
-      "path": "/prod/wp-content/uploads/2019/08/Los_angeles_skyline_w.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2019/08/Los_angeles_skyline_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2019/08/Los_angeles_skyline_w.jpg",
-    "filename": "Los_angeles_skyline_w.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/ZabriskiePoint_Stacked-v1_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/ZabriskiePoint_Stacked-v1_w.jpg",
-      "path": "/prod/wp-content/uploads/2017/12/ZabriskiePoint_Stacked-v1_w.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/ZabriskiePoint_Stacked-v1_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/ZabriskiePoint_Stacked-v1_w.jpg",
-    "filename": "ZabriskiePoint_Stacked-v1_w.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2021/01/Zabriskie_Point_mw_v2_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2021/01/Zabriskie_Point_mw_v2_w.jpg",
-      "path": "/prod/wp-content/uploads/2021/01/Zabriskie_Point_mw_v2_w.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2021/01/Zabriskie_Point_mw_v2_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2021/01/Zabriskie_Point_mw_v2_w.jpg",
-    "filename": "Zabriskie_Point_mw_v2_w.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2021/01/Zabriskie_SunshineRivulet_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2021/01/Zabriskie_SunshineRivulet_w.jpg",
-      "path": "/prod/wp-content/uploads/2021/01/Zabriskie_SunshineRivulet_w.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2021/01/Zabriskie_SunshineRivulet_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2021/01/Zabriskie_SunshineRivulet_w.jpg",
-    "filename": "Zabriskie_SunshineRivulet_w.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2021/03/MesquiteFlat_WalkingMan_v2_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2021/03/MesquiteFlat_WalkingMan_v2_w.jpg",
-      "path": "/prod/wp-content/uploads/2021/03/MesquiteFlat_WalkingMan_v2_w.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2021/03/MesquiteFlat_WalkingMan_v2_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2021/03/MesquiteFlat_WalkingMan_v2_w.jpg",
-    "filename": "MesquiteFlat_WalkingMan_v2_w.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/RaceTrack_Playa_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/RaceTrack_Playa_w.jpg",
-      "path": "/prod/wp-content/uploads/2017/12/RaceTrack_Playa_w.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/RaceTrack_Playa_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2017/12/RaceTrack_Playa_w.jpg",
-    "filename": "RaceTrack_Playa_w.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Brasstown_Bald_w_2048.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Brasstown_Bald_w_2048.jpg",
-      "path": "/prod/wp-content/uploads/Brasstown_Bald_w_2048.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Brasstown_Bald_w_2048.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Brasstown_Bald_w_2048.jpg",
-    "filename": "Brasstown_Bald_w_2048.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Brasstown_Bald_SE_w_2048.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Brasstown_Bald_SE_w_2048.jpg",
-      "path": "/prod/wp-content/uploads/Brasstown_Bald_SE_w_2048.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Brasstown_Bald_SE_w_2048.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Brasstown_Bald_SE_w_2048.jpg",
-    "filename": "Brasstown_Bald_SE_w_2048.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/MoccasinCreek_w_20481.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/MoccasinCreek_w_20481.jpg",
-      "path": "/prod/wp-content/uploads/MoccasinCreek_w_20481.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/MoccasinCreek_w_20481.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/MoccasinCreek_w_20481.jpg",
-    "filename": "MoccasinCreek_w_20481.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Vogel_State_Park_w_2048.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Vogel_State_Park_w_2048.jpg",
-      "path": "/prod/wp-content/uploads/Vogel_State_Park_w_2048.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Vogel_State_Park_w_2048.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Vogel_State_Park_w_2048.jpg",
-    "filename": "Vogel_State_Park_w_2048.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Vogel_State_NoMoon_w_2048.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Vogel_State_NoMoon_w_2048.jpg",
-      "path": "/prod/wp-content/uploads/Vogel_State_NoMoon_w_2048.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Vogel_State_NoMoon_w_2048.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Vogel_State_NoMoon_w_2048.jpg",
-    "filename": "Vogel_State_NoMoon_w_2048.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Fort_mountain_faint_w_5x7.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Fort_mountain_faint_w_5x7.jpg",
-      "path": "/prod/wp-content/uploads/Fort_mountain_faint_w_5x7.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Fort_mountain_faint_w_5x7.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Fort_mountain_faint_w_5x7.jpg",
-    "filename": "Fort_mountain_faint_w_5x7.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Fort_mountain_last_w_5x7.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Fort_mountain_last_w_5x7.jpg",
-      "path": "/prod/wp-content/uploads/Fort_mountain_last_w_5x7.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Fort_mountain_last_w_5x7.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Fort_mountain_last_w_5x7.jpg",
-    "filename": "Fort_mountain_last_w_5x7.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Geminids_Meteor_2017_w_2048.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Geminids_Meteor_2017_w_2048.jpg",
-      "path": "/prod/wp-content/uploads/Geminids_Meteor_2017_w_2048.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Geminids_Meteor_2017_w_2048.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Geminids_Meteor_2017_w_2048.jpg",
-    "filename": "Geminids_Meteor_2017_w_2048.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/10/Tybee_Island_v2_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/10/Tybee_Island_v2_w.jpg",
-      "path": "/prod/wp-content/uploads/2022/10/Tybee_Island_v2_w.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/10/Tybee_Island_v2_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/10/Tybee_Island_v2_w.jpg",
-    "filename": "Tybee_Island_v2_w.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/St_Simon_Stacked_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/St_Simon_Stacked_w.jpg",
-      "path": "/prod/wp-content/uploads/St_Simon_Stacked_w.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/St_Simon_Stacked_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/St_Simon_Stacked_w.jpg",
-    "filename": "St_Simon_Stacked_w.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Boyle_Murder_Lake_w_2048.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Boyle_Murder_Lake_w_2048.jpg",
-      "path": "/prod/wp-content/uploads/Boyle_Murder_Lake_w_2048.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Boyle_Murder_Lake_w_2048.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Boyle_Murder_Lake_w_2048.jpg",
-    "filename": "Boyle_Murder_Lake_w_2048.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Charlie_Elliott_w_2048.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Charlie_Elliott_w_2048.jpg",
-      "path": "/prod/wp-content/uploads/Charlie_Elliott_w_2048.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Charlie_Elliott_w_2048.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Charlie_Elliott_w_2048.jpg",
-    "filename": "Charlie_Elliott_w_2048.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Carters_Lake_Milky-way_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Carters_Lake_Milky-way_w.jpg",
-      "path": "/prod/wp-content/uploads/Carters_Lake_Milky-way_w.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Carters_Lake_Milky-way_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Carters_Lake_Milky-way_w.jpg",
-    "filename": "Carters_Lake_Milky-way_w.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Carters_Lake_Ramp_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Carters_Lake_Ramp_w.jpg",
-      "path": "/prod/wp-content/uploads/Carters_Lake_Ramp_w.jpg/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Carters_Lake_Ramp_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Carters_Lake_Ramp_w.jpg",
-    "filename": "Carters_Lake_Ramp_w.jpg",
-    "mimeType": "image/jpeg"
-  },
-  {
-    "type": "asset",
-    "source": {
-      "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2018/07/Home-Server-icon.png",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2018/07/Home-Server-icon.png",
-      "path": "/prod/wp-content/uploads/2018/07/Home-Server-icon.png/"
-    },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2018/07/Home-Server-icon.png",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2018/07/Home-Server-icon.png",
-    "filename": "Home-Server-icon.png",
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2022/10/IPA_create_winner_seal22.png",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2022/10/IPA_create_winner_seal22.png",
+    "filename": "IPA_create_winner_seal22.png",
     "mimeType": "image/png"
   },
   {
     "type": "asset",
     "source": {
       "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2014/04/Storage_AWSStorageGateway1.png",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2014/04/Storage_AWSStorageGateway1.png",
-      "path": "/prod/wp-content/uploads/2014/04/Storage_AWSStorageGateway1.png/"
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2022/10/OFFICIAL-SELECTION-Canadian-Cinematography-Awards-CaCA-2022.png",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2022/10/OFFICIAL-SELECTION-Canadian-Cinematography-Awards-CaCA-2022.png",
+      "path": "/wp-content/uploads/2022/10/OFFICIAL-SELECTION-Canadian-Cinematography-Awards-CaCA-2022.png/"
     },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2014/04/Storage_AWSStorageGateway1.png",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2014/04/Storage_AWSStorageGateway1.png",
-    "filename": "Storage_AWSStorageGateway1.png",
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2022/10/OFFICIAL-SELECTION-Canadian-Cinematography-Awards-CaCA-2022.png",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2022/10/OFFICIAL-SELECTION-Canadian-Cinematography-Awards-CaCA-2022.png",
+    "filename": "OFFICIAL-SELECTION-Canadian-Cinematography-Awards-CaCA-2022.png",
     "mimeType": "image/png"
   },
   {
     "type": "asset",
     "source": {
       "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2014/04/Cloud-Storage.png",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2014/04/Cloud-Storage.png",
-      "path": "/prod/wp-content/uploads/2014/04/Cloud-Storage.png/"
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2022/10/Honorable_mention_2020_300px.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2022/10/Honorable_mention_2020_300px.jpg",
+      "path": "/wp-content/uploads/2022/10/Honorable_mention_2020_300px.jpg/"
     },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2014/04/Cloud-Storage.png",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2014/04/Cloud-Storage.png",
-    "filename": "Cloud-Storage.png",
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2022/10/Honorable_mention_2020_300px.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2022/10/Honorable_mention_2020_300px.jpg",
+    "filename": "Honorable_mention_2020_300px.jpg",
+    "mimeType": "image/jpeg"
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "wordpress",
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/mifa_seal-150x150.png",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/mifa_seal-150x150.png",
+      "path": "/wp-content/uploads/mifa_seal-150x150.png/"
+    },
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/mifa_seal-150x150.png",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/mifa_seal-150x150.png",
+    "filename": "mifa_seal-150x150.png",
     "mimeType": "image/png"
   },
   {
     "type": "asset",
     "source": {
       "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/HH_Sheikh_Mohammed_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/HH_Sheikh_Mohammed_w.jpg",
-      "path": "/prod/wp-content/uploads/HH_Sheikh_Mohammed_w.jpg/"
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2021/08/OFFICIAL-SELECTION-New-York-Cinematography-AWARDS-NYCA-2020.png",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2021/08/OFFICIAL-SELECTION-New-York-Cinematography-AWARDS-NYCA-2020.png",
+      "path": "/wp-content/uploads/2021/08/OFFICIAL-SELECTION-New-York-Cinematography-AWARDS-NYCA-2020.png/"
     },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/HH_Sheikh_Mohammed_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/HH_Sheikh_Mohammed_w.jpg",
-    "filename": "HH_Sheikh_Mohammed_w.jpg",
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2021/08/OFFICIAL-SELECTION-New-York-Cinematography-AWARDS-NYCA-2020.png",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2021/08/OFFICIAL-SELECTION-New-York-Cinematography-AWARDS-NYCA-2020.png",
+    "filename": "OFFICIAL-SELECTION-New-York-Cinematography-AWARDS-NYCA-2020.png",
+    "mimeType": "image/png"
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "wordpress",
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/mifa_seal_2019.png",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2022/03/mifa_seal_2019.png",
+      "path": "/wp-content/uploads/2022/03/mifa_seal_2019.png/"
+    },
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/mifa_seal_2019.png",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2022/03/mifa_seal_2019.png",
+    "filename": "mifa_seal_2019.png",
+    "mimeType": "image/png"
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "wordpress",
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/spiderfellow16thnominee.png",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2022/03/spiderfellow16thnominee.png",
+      "path": "/wp-content/uploads/2022/03/spiderfellow16thnominee.png/"
+    },
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/spiderfellow16thnominee.png",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2022/03/spiderfellow16thnominee.png",
+    "filename": "spiderfellow16thnominee.png",
+    "mimeType": "image/png"
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "wordpress",
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2021/08/European-CineAwards.png",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2021/08/European-CineAwards.png",
+      "path": "/wp-content/uploads/2021/08/European-CineAwards.png/"
+    },
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2021/08/European-CineAwards.png",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2021/08/European-CineAwards.png",
+    "filename": "European-CineAwards.png",
+    "mimeType": "image/png"
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "wordpress",
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2019/03/color-awards-12th_medal-nominee.png",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2019/03/color-awards-12th_medal-nominee.png",
+      "path": "/wp-content/uploads/2019/03/color-awards-12th_medal-nominee.png/"
+    },
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2019/03/color-awards-12th_medal-nominee.png",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2019/03/color-awards-12th_medal-nominee.png",
+    "filename": "color-awards-12th_medal-nominee.png",
+    "mimeType": "image/png"
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "wordpress",
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/2021-Epson-Pano-Awards-Score-Open-Awards-Bronze.png",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2022/03/2021-Epson-Pano-Awards-Score-Open-Awards-Bronze.png",
+      "path": "/wp-content/uploads/2022/03/2021-Epson-Pano-Awards-Score-Open-Awards-Bronze.png/"
+    },
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/2021-Epson-Pano-Awards-Score-Open-Awards-Bronze.png",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2022/03/2021-Epson-Pano-Awards-Score-Open-Awards-Bronze.png",
+    "filename": "2021-Epson-Pano-Awards-Score-Open-Awards-Bronze.png",
+    "mimeType": "image/png"
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "wordpress",
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/6th_fapa_nominee.png",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2022/03/6th_fapa_nominee.png",
+      "path": "/wp-content/uploads/2022/03/6th_fapa_nominee.png/"
+    },
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/6th_fapa_nominee.png",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2022/03/6th_fapa_nominee.png",
+    "filename": "6th_fapa_nominee.png",
+    "mimeType": "image/png"
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "wordpress",
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2019/01/Tifa_Silver-150x150.png",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2019/01/Tifa_Silver-150x150.png",
+      "path": "/wp-content/uploads/2019/01/Tifa_Silver-150x150.png/"
+    },
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2019/01/Tifa_Silver-150x150.png",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2019/01/Tifa_Silver-150x150.png",
+    "filename": "Tifa_Silver-150x150.png",
+    "mimeType": "image/png"
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "wordpress",
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/Group_Shot_2048x1157_web.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/Group_Shot_2048x1157_web.jpg",
+      "path": "/wp-content/uploads/Group_Shot_2048x1157_web.jpg/"
+    },
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/Group_Shot_2048x1157_web.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/Group_Shot_2048x1157_web.jpg",
+    "filename": "Group_Shot_2048x1157_web.jpg",
     "mimeType": "image/jpeg"
   },
   {
     "type": "asset",
     "source": {
       "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/05/Petra_Main_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/05/Petra_Main_w.jpg",
-      "path": "/prod/wp-content/uploads/2022/05/Petra_Main_w.jpg/"
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2025/07/Dubai_SheikhZayedRd_Pano-5x7_w.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2025/07/Dubai_SheikhZayedRd_Pano-5x7_w.jpg",
+      "path": "/wp-content/uploads/2025/07/Dubai_SheikhZayedRd_Pano-5x7_w.jpg/"
     },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/05/Petra_Main_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/05/Petra_Main_w.jpg",
-    "filename": "Petra_Main_w.jpg",
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2025/07/Dubai_SheikhZayedRd_Pano-5x7_w.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2025/07/Dubai_SheikhZayedRd_Pano-5x7_w.jpg",
+    "filename": "Dubai_SheikhZayedRd_Pano-5x7_w.jpg",
     "mimeType": "image/jpeg"
   },
   {
     "type": "asset",
     "source": {
       "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2013/07/Petra_Gate_Blog.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2013/07/Petra_Gate_Blog.jpg",
-      "path": "/prod/wp-content/uploads/2013/07/Petra_Gate_Blog.jpg/"
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2017/12/Monument_trails_w.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2017/12/Monument_trails_w.jpg",
+      "path": "/wp-content/uploads/2017/12/Monument_trails_w.jpg/"
     },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2013/07/Petra_Gate_Blog.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2013/07/Petra_Gate_Blog.jpg",
-    "filename": "Petra_Gate_Blog.jpg",
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2017/12/Monument_trails_w.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2017/12/Monument_trails_w.jpg",
+    "filename": "Monument_trails_w.jpg",
     "mimeType": "image/jpeg"
   },
   {
     "type": "asset",
     "source": {
       "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Eclipse_sequence_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Eclipse_sequence_w.jpg",
-      "path": "/prod/wp-content/uploads/Eclipse_sequence_w.jpg/"
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2024/07/theweatherdotcom.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2024/07/theweatherdotcom.jpg",
+      "path": "/wp-content/uploads/2024/07/theweatherdotcom.jpg/"
     },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Eclipse_sequence_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/Eclipse_sequence_w.jpg",
-    "filename": "Eclipse_sequence_w.jpg",
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2024/07/theweatherdotcom.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2024/07/theweatherdotcom.jpg",
+    "filename": "theweatherdotcom.jpg",
     "mimeType": "image/jpeg"
   },
   {
     "type": "asset",
     "source": {
       "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2024/08/BrasstownBald_Aurora_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2024/08/BrasstownBald_Aurora_w.jpg",
-      "path": "/prod/wp-content/uploads/2024/08/BrasstownBald_Aurora_w.jpg/"
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2024/07/Atlanta-Skyline-600x400-1.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2024/07/Atlanta-Skyline-600x400-1.jpg",
+      "path": "/wp-content/uploads/2024/07/Atlanta-Skyline-600x400-1.jpg/"
     },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2024/08/BrasstownBald_Aurora_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2024/08/BrasstownBald_Aurora_w.jpg",
-    "filename": "BrasstownBald_Aurora_w.jpg",
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2024/07/Atlanta-Skyline-600x400-1.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2024/07/Atlanta-Skyline-600x400-1.jpg",
+    "filename": "Atlanta-Skyline-600x400-1.jpg",
     "mimeType": "image/jpeg"
   },
   {
     "type": "asset",
     "source": {
       "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2024/09/Brasstown_Bald_AuroraDisplay_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2024/09/Brasstown_Bald_AuroraDisplay_w.jpg",
-      "path": "/prod/wp-content/uploads/2024/09/Brasstown_Bald_AuroraDisplay_w.jpg/"
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2024/07/Thors_well_600x400.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2024/07/Thors_well_600x400.jpg",
+      "path": "/wp-content/uploads/2024/07/Thors_well_600x400.jpg/"
     },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2024/09/Brasstown_Bald_AuroraDisplay_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2024/09/Brasstown_Bald_AuroraDisplay_w.jpg",
-    "filename": "Brasstown_Bald_AuroraDisplay_w.jpg",
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2024/07/Thors_well_600x400.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2024/07/Thors_well_600x400.jpg",
+    "filename": "Thors_well_600x400.jpg",
     "mimeType": "image/jpeg"
   },
   {
     "type": "asset",
     "source": {
       "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2024/09/Brasstown_Tower_Perseid_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2024/09/Brasstown_Tower_Perseid_w.jpg",
-      "path": "/prod/wp-content/uploads/2024/09/Brasstown_Tower_Perseid_w.jpg/"
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2023/07/BloodMountain_self_v2_600x400_w.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2023/07/BloodMountain_self_v2_600x400_w.jpg",
+      "path": "/wp-content/uploads/2023/07/BloodMountain_self_v2_600x400_w.jpg/"
     },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2024/09/Brasstown_Tower_Perseid_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2024/09/Brasstown_Tower_Perseid_w.jpg",
-    "filename": "Brasstown_Tower_Perseid_w.jpg",
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2023/07/BloodMountain_self_v2_600x400_w.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2023/07/BloodMountain_self_v2_600x400_w.jpg",
+    "filename": "BloodMountain_self_v2_600x400_w.jpg",
     "mimeType": "image/jpeg"
   },
   {
     "type": "asset",
     "source": {
       "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2024/09/Brasstown_Aurora_Perseid_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2024/09/Brasstown_Aurora_Perseid_w.jpg",
-      "path": "/prod/wp-content/uploads/2024/09/Brasstown_Aurora_Perseid_w.jpg/"
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2024/07/Arch-Rock_JoshuaTree_v2_600x400.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2024/07/Arch-Rock_JoshuaTree_v2_600x400.jpg",
+      "path": "/wp-content/uploads/2024/07/Arch-Rock_JoshuaTree_v2_600x400.jpg/"
     },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2024/09/Brasstown_Aurora_Perseid_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2024/09/Brasstown_Aurora_Perseid_w.jpg",
-    "filename": "Brasstown_Aurora_Perseid_w.jpg",
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2024/07/Arch-Rock_JoshuaTree_v2_600x400.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2024/07/Arch-Rock_JoshuaTree_v2_600x400.jpg",
+    "filename": "Arch-Rock_JoshuaTree_v2_600x400.jpg",
     "mimeType": "image/jpeg"
   },
   {
     "type": "asset",
     "source": {
       "platform": "wordpress",
-      "id": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2024/09/Brasstown_Perseid_MW_v3_w.jpg",
-      "url": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2024/09/Brasstown_Perseid_MW_v3_w.jpg",
-      "path": "/prod/wp-content/uploads/2024/09/Brasstown_Perseid_MW_v3_w.jpg/"
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2023/06/Double_Arch_Final_v1_w-600x400px.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2023/06/Double_Arch_Final_v1_w-600x400px.jpg",
+      "path": "/wp-content/uploads/2023/06/Double_Arch_Final_v1_w-600x400px.jpg/"
     },
-    "sourceId": "url:https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2024/09/Brasstown_Perseid_MW_v3_w.jpg",
-    "sourceUrl": "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2024/09/Brasstown_Perseid_MW_v3_w.jpg",
-    "filename": "Brasstown_Perseid_MW_v3_w.jpg",
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2023/06/Double_Arch_Final_v1_w-600x400px.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2023/06/Double_Arch_Final_v1_w-600x400px.jpg",
+    "filename": "Double_Arch_Final_v1_w-600x400px.jpg",
+    "mimeType": "image/jpeg"
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "wordpress",
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/GrandCanyon_Milkyway_w_600px.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2022/03/GrandCanyon_Milkyway_w_600px.jpg",
+      "path": "/wp-content/uploads/2022/03/GrandCanyon_Milkyway_w_600px.jpg/"
+    },
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/GrandCanyon_Milkyway_w_600px.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2022/03/GrandCanyon_Milkyway_w_600px.jpg",
+    "filename": "GrandCanyon_Milkyway_w_600px.jpg",
+    "mimeType": "image/jpeg"
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "wordpress",
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2021/10/BBC-Sky-at-Night-Oct-2021.png",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2021/10/BBC-Sky-at-Night-Oct-2021.png",
+      "path": "/wp-content/uploads/2021/10/BBC-Sky-at-Night-Oct-2021.png/"
+    },
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2021/10/BBC-Sky-at-Night-Oct-2021.png",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2021/10/BBC-Sky-at-Night-Oct-2021.png",
+    "filename": "BBC-Sky-at-Night-Oct-2021.png",
+    "mimeType": "image/png"
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "wordpress",
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/TurretArch_w_600px.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2022/03/TurretArch_w_600px.jpg",
+      "path": "/wp-content/uploads/2022/03/TurretArch_w_600px.jpg/"
+    },
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/TurretArch_w_600px.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2022/03/TurretArch_w_600px.jpg",
+    "filename": "TurretArch_w_600px.jpg",
+    "mimeType": "image/jpeg"
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "wordpress",
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/Pemaquid_Milkyway_w_600px.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2022/03/Pemaquid_Milkyway_w_600px.jpg",
+      "path": "/wp-content/uploads/2022/03/Pemaquid_Milkyway_w_600px.jpg/"
+    },
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/Pemaquid_Milkyway_w_600px.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2022/03/Pemaquid_Milkyway_w_600px.jpg",
+    "filename": "Pemaquid_Milkyway_w_600px.jpg",
+    "mimeType": "image/jpeg"
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "wordpress",
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2023/06/Screen-Shot-2023-06-25-at-10.19.25-PM.png",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2023/06/Screen-Shot-2023-06-25-at-10.19.25-PM.png",
+      "path": "/wp-content/uploads/2023/06/Screen-Shot-2023-06-25-at-10.19.25-PM.png/"
+    },
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2023/06/Screen-Shot-2023-06-25-at-10.19.25-PM.png",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2023/06/Screen-Shot-2023-06-25-at-10.19.25-PM.png",
+    "filename": "Screen-Shot-2023-06-25-at-10.19.25-PM.png",
+    "mimeType": "image/png"
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "wordpress",
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/Brasstown_2017_w_600px.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2022/03/Brasstown_2017_w_600px.jpg",
+      "path": "/wp-content/uploads/2022/03/Brasstown_2017_w_600px.jpg/"
+    },
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/Brasstown_2017_w_600px.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2022/03/Brasstown_2017_w_600px.jpg",
+    "filename": "Brasstown_2017_w_600px.jpg",
+    "mimeType": "image/jpeg"
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "wordpress",
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/Brasstown_bald_w_600px.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2022/03/Brasstown_bald_w_600px.jpg",
+      "path": "/wp-content/uploads/2022/03/Brasstown_bald_w_600px.jpg/"
+    },
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/Brasstown_bald_w_600px.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2022/03/Brasstown_bald_w_600px.jpg",
+    "filename": "Brasstown_bald_w_600px.jpg",
+    "mimeType": "image/jpeg"
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "wordpress",
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/PetaPixel_medium.jpeg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2022/03/PetaPixel_medium.jpeg",
+      "path": "/wp-content/uploads/2022/03/PetaPixel_medium.jpeg/"
+    },
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/PetaPixel_medium.jpeg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2022/03/PetaPixel_medium.jpeg",
+    "filename": "PetaPixel_medium.jpeg",
+    "mimeType": "image/jpeg"
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "wordpress",
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/Coconino_Sedona_Pano-600px.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2022/03/Coconino_Sedona_Pano-600px.jpg",
+      "path": "/wp-content/uploads/2022/03/Coconino_Sedona_Pano-600px.jpg/"
+    },
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/Coconino_Sedona_Pano-600px.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2022/03/Coconino_Sedona_Pano-600px.jpg",
+    "filename": "Coconino_Sedona_Pano-600px.jpg",
+    "mimeType": "image/jpeg"
+  },
+  {
+    "type": "asset",
+    "source": {
+      "platform": "wordpress",
+      "id": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/Brasstown_Bald_SE_w_600px.jpg",
+      "url": "https://www.naikonpixels.com/wp-content/uploads/2022/03/Brasstown_Bald_SE_w_600px.jpg",
+      "path": "/wp-content/uploads/2022/03/Brasstown_Bald_SE_w_600px.jpg/"
+    },
+    "sourceId": "url:https://www.naikonpixels.com/wp-content/uploads/2022/03/Brasstown_Bald_SE_w_600px.jpg",
+    "sourceUrl": "https://www.naikonpixels.com/wp-content/uploads/2022/03/Brasstown_Bald_SE_w_600px.jpg",
+    "filename": "Brasstown_Bald_SE_w_600px.jpg",
     "mimeType": "image/jpeg"
   }
 ]

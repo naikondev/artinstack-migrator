@@ -3,6 +3,7 @@ import * as cheerio from "cheerio";
 import type { EntityBundle } from "../normalizer/bundle.js";
 import { discoverRawImgSrcs, normalizeAssetUrl } from "../lib/content-asset-urls.js";
 import { findUnsupportedBlockMarkers } from "../parsers/squarespace/parse-export.js";
+import { findWordPressShortcodeMarkers } from "../parsers/wordpress/builders/shortcode-conflicts.js";
 export interface DuplicateSlugConflict {
   entityType: "post" | "page";
   slug: string;
@@ -141,12 +142,28 @@ function findUnsupportedBlocks(
   sourceId: string,
   contentHtml: string,
 ): UnsupportedBlockConflict[] {
-  return findUnsupportedBlockMarkers(contentHtml).map((marker) => ({
-    entityType,
-    sourceId,
-    blockType: marker.blockType,
-    blockId: marker.blockId,
-  }));
+  const conflicts: UnsupportedBlockConflict[] = [];
+
+  for (const marker of findUnsupportedBlockMarkers(contentHtml)) {
+    conflicts.push({
+      entityType,
+      sourceId,
+      blockType: marker.blockType,
+      blockId: marker.blockId,
+    });
+  }
+
+  for (const marker of findWordPressShortcodeMarkers(contentHtml)) {
+    conflicts.push({
+      entityType,
+      sourceId,
+      blockType: marker.unresolvable
+        ? `wordpress:unresolvable:${marker.shortcode}`
+        : `wordpress:shortcode:${marker.shortcode}`,
+    });
+  }
+
+  return conflicts;
 }
 
 export function analyzeConflicts(

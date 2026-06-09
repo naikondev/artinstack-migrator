@@ -23,6 +23,16 @@ import type {
 
 const PLATFORM = "wordpress" as const;
 
+const WOOCOMMERCE_STUB_PAGE_SLUGS = new Set(["cart", "checkout", "my-account"]);
+const WOOCOMMERCE_STUB_SHORTCODE = /^\[woocommerce_(?:cart|checkout|my_account)\]\s*$/i;
+
+function isWooCommerceStubPage(slug: string, contentHtml: string): boolean {
+  if (WOOCOMMERCE_STUB_PAGE_SLUGS.has(slug)) return true;
+  const trimmed = contentHtml.trim();
+  if (!trimmed) return false;
+  return WOOCOMMERCE_STUB_SHORTCODE.test(trimmed);
+}
+
 export interface WxrParseOptions {
   filePath: string;
   exportedAt?: string;
@@ -30,6 +40,8 @@ export interface WxrParseOptions {
   originUrlRewrite?: OriginUrlRewriteConfig;
   /** Pre-DTO builder flattening (Bucket 1 + Bucket 2). Default: true. */
   flattenBuilders?: boolean;
+  /** Omit WooCommerce cart/checkout/my-account stub pages. Default: true. */
+  skipWooCommerceStubPages?: boolean;
 }
 
 interface WxrItem {
@@ -286,6 +298,12 @@ function resolveFeaturedAssetSourceId(
   return firstInline ? `url:${firstInline}` : undefined;
 }
 
+function maybeRewriteUrl(url: string | undefined, config?: OriginUrlRewriteConfig): string | undefined {
+  if (!url) return undefined;
+  if (!config) return url;
+  return rewriteOriginUrlsInText(url, config);
+}
+
 export async function* enumerateWxrEntities(
   options: WxrParseOptions,
 ): AsyncGenerator<NormalizedEntity> {
@@ -323,9 +341,17 @@ export async function* enumerateWxrEntities(
     if (postType !== "post" && postType !== "page") continue;
 
     const id = textValue(item.post_id);
-    const link = textValue(item.link);
+    const link = maybeRewriteUrl(textValue(item.link), options.originUrlRewrite);
     const slug = sanitizeSlug(textValue(item.post_name) || textValue(item.title) || id);
     const contentHtml = preprocessContent(getContentEncoded(item), options);
+
+    if (
+      postType === "page" &&
+      options.skipWooCommerceStubPages !== false &&
+      isWooCommerceStubPage(slug, contentHtml)
+    ) {
+      continue;
+    }
 
     for (const asset of collectInlineAssets(
       contentHtml,

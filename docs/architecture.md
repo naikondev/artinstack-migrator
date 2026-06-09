@@ -75,10 +75,11 @@ Long-running imports, progress UI, and retry policy are **host concerns** (worke
 
 ```
 src/
-  parsers/              WordPress, SmugMug, Squarespace → normalizer DTOs
+  parsers/              WordPress, SmugMug, Squarespace, Wix → normalizer DTOs
+    wordpress/          WXR parse, builder flattening (theme registry), asset discovery
     squarespace/        parse-export.ts — block flattening + static HTML snapshots
   normalizer/           Canonical types, idempotency, opt-in validate.ts (Zod)
-  lib/                  utility, content-asset-urls
+  lib/                  utility, content-asset-urls, origin-url-rewrite
   transformers/         HtmlToGrapes, css-to-styles, rewrite-inline-images
   cli/                  artinstack-migrate
   sinks/
@@ -134,15 +135,15 @@ Adapters emit **canonical entities**, not host-specific records:
 
 | Entity | Purpose |
 |--------|---------|
-| `NormalizedPost` | Blog posts and articles — **raw** `contentHtml` |
-| `NormalizedPage` | Static pages — **raw** `contentHtml`, optional `contentCss` |
+| `NormalizedPost` | Blog posts and articles — `contentHtml` (portable HTML after adapter preprocessing) |
+| `NormalizedPage` | Static pages — `contentHtml`, optional `contentCss` |
 | `NormalizedAsset` | Remote file to stream into storage (`sourceUrl`, filename, mime) |
 | `NormalizedPortfolio` | Gallery or album grouping |
 | `NormalizedCategory` / `NormalizedTag` | Taxonomy |
 
-Common fields: `source`, `sourceId`, `slug`, `title`, `status`, SEO fields. WordPress posts may include `sourceFeaturedMediaId` (unresolved attachment id) and `featuredAssetSourceId` after attachment index resolution.
+**HTML boundary:** WordPress adapters flatten common page-builder shortcodes to portable HTML **before** DTO emission. Parsers do not sanitize. Security sanitization happens in the **host sink** immediately before content API writes—not in this package.
 
-**HTML boundary:** parsers emit faithful source HTML. Security sanitization happens in the **host sink** immediately before content API writes—not in this package.
+Common fields: `source`, `sourceId`, `slug`, `title`, `status`, SEO fields. WordPress posts may include `sourceFeaturedMediaId` (unresolved attachment id) and `featuredAssetSourceId` (attachment id or first inline asset fallback).
 
 ### MigrationSink
 
@@ -234,7 +235,7 @@ Hosts may persist this artifact (e.g. object storage keyed by job id) for downlo
 
 ## `rewriteInlineImages`
 
-Public helper — no host imports. Host sink supplies upload and replacement logic.
+Public helper — no host imports. Host sink supplies upload and replacement logic. **Not** the WordPress page-builder flatten step; that runs in the adapter before DTOs are emitted.
 
 ```ts
 function rewriteInlineImages(html: string, options: {
@@ -255,14 +256,31 @@ Walk `contentHtml` with cheerio; collect `<img src>` (and `srcset` where needed)
 |---------|-------------------|
 | `item` post type `post` | `NormalizedPost` |
 | `<link>` + `<wp:post_name>` | `source.path` + flat `slug` |
-| `content:encoded` | **Raw** `contentHtml` |
+| `content:encoded` | `contentHtml` after optional builder flatten + origin rewrite |
 | `wp:post_date` | `publishedAt` |
 | Categories / tags | `NormalizedCategory`, `NormalizedTag` + slugs on post |
-| `_thumbnail_id` meta | Two-pass resolution (see § WordPress attachments) |
-| Inline `<img src>` | `NormalizedAsset` + `rewriteInlineImages` at sink |
-| Pages (`page`) | `NormalizedPage` — static HTML snapshot or structured tree |
+| `_thumbnail_id` meta | Attachment index + first-inline-image fallback (see § WordPress attachments) |
+| Inline `<img src>` | `NormalizedAsset`; sink-time URL swap via `rewriteInlineImages` |
+| Pages (`page`) | `NormalizedPage` — static HTML snapshot |
 
-Strip WordPress shortcodes only where required for parseability—not for security policy.
+#### Page builders (theme registry)
+
+Many WordPress exports mix **shortcodes** (Tatsu, Oshine/Blox, Divi, Elementor, …) with plain HTML. The WordPress adapter applies a **declarative theme registry** in two passes **before** DTOs are emitted:
+
+| Bucket | Role | Examples |
+|--------|------|----------|
+| **Content blockers** | Map asset/text shortcodes → standard HTML | `[tatsu_image image=…]` → `<img>`; `special_sub_title` → `<p>` |
+| **Scaffolding** | Strip layout shortcodes; keep inner text | `[tatsu_section]`, `[blox_row]`, `[section]` / `[row]` |
+
+Registered theme families ship in OSS (e.g. Tatsu, Oshine, Divi, Elementor). New families add a registry row—not per-page logic.
+
+**Not flattened in OSS** (reported in `conflicts.unsupportedBlocks`, mapped at host): dynamic shortcodes such as `[portfolio]`, `[recent_posts]`, WooCommerce stubs. WooCommerce system pages (`cart`, `checkout`, `my-account`) are skipped by default.
+
+This is **separate from** `rewriteInlineImages`, which runs at **sink time** and only swaps uploaded media URLs in existing `<img>` tags.
+
+#### Origin URL rewrite
+
+Exports that reference a **legacy gateway or staging host** (e.g. API Gateway `/prod/wp-content/…`) can rewrite those paths to a **public CDN origin** before asset discovery and dry-run HEAD checks. Configure via adapter `originUrlRewrite` or CLI `--rewrite-gateway` / `--rewrite-public`.
 
 #### WordPress attachments (two-pass)
 
@@ -441,6 +459,8 @@ The CLI does not embed host credentials. Sink plugins and auth are supplied by t
 |----------------|--------|
 | `MigrationSink` implementation | Host |
 | HTML sanitization before content writes | Host sink |
+| WordPress builder flattening + origin URL rewrite (pre-DTO) | OSS adapter (optional CLI flags) |
+| Dynamic WP shortcodes (`[portfolio]`, `[recent_posts]`, maps, forms) | Host sink / structured blocks |
 | Slug collision policy (e.g. post auto-suffix, page skip-with-report) | Host sink |
 | Storage quota, thumbs, EXIF pipeline | Host sink |
 | `rewriteInlineImages` `replaceWith` (media URLs / embed ids) | Host sink |
@@ -459,7 +479,7 @@ Optional: export redirect map CSV when `source.path` differs from destination pa
 
 | Source | Focus |
 |--------|--------|
-| WordPress WXR | Editorial content, attachments, taxonomy |
+| WordPress WXR | Editorial content, page-builder flattening, attachments, taxonomy |
 | SmugMug API | Albums, large vaults, EXIF |
 | Squarespace | Pages, blog, block flattening |
 | Ghost (planned) | Blog export, Admin API |
@@ -495,14 +515,16 @@ Transformers: **HtmlToGrapes** (`htmlToGrapes()` → `GrapesProjectSnapshot`, go
 
 | Piece | `@artinstack/migrator` | Host application |
 |-------|------------------------|------------------|
-| Parsers + normalizer DTOs (raw HTML) | Yes | No |
+| Parsers + normalizer DTOs (portable HTML after adapter preprocessing) | Yes | No |
+| WordPress builder flattening + origin URL rewrite | Yes | Optional same config on adapter input |
 | SmugMug OAuth signing + API crawl (`api.ts`) | Yes | Supplies credentials |
 | Squarespace json-pretty collector (`collect.ts`) | Yes | Supplies authenticated `fetch` |
 | Dry-run, conflicts, migration report | Yes | No |
 | CLI + filesystem export | Yes | No |
-| `rewriteInlineImages` helper | Yes | Supplies `replaceWith` |
+| `rewriteInlineImages` helper (sink-time media URL swap) | Yes | Supplies `replaceWith` |
 | `MigrationSink` interface + `runMigration` | Yes | Implementation |
 | Sanitization, uploads, slug policy | No | Yes |
+| WordPress dynamic shortcodes (`[portfolio]`, forms, maps) | No | Yes |
 | SmugMug OAuth redirect + token vault | No | Yes |
 | Jobs, worker, UI, credentials, billing | No | Yes |
 
@@ -510,4 +532,4 @@ Transformers: **HtmlToGrapes** (`htmlToGrapes()` → `GrapesProjectSnapshot`, go
 
 ## Summary
 
-`@artinstack/migrator` is a **portable OSS core**: platform adapters, normalizer DTOs with `SourceMetadata`, dry-run analysis, JSON export, optional HTML→component transformers, and a **`MigrationSink`-driven** migration loop with explicit write ordering. The package emits **raw HTML** and **never** touches host storage or CMS APIs directly. Hosts implement the sink—sanitization, streaming uploads, slug rules, and orchestration—and own everything operational.
+`@artinstack/migrator` is a **portable OSS core**: platform adapters, normalizer DTOs with `SourceMetadata`, dry-run analysis, JSON export, optional HTML→component transformers, and a **`MigrationSink`-driven** migration loop with explicit write ordering. WordPress exports get **pre-DTO builder flattening** and optional **origin URL rewrite**; the package emits **portable HTML** and **never** touches host storage or CMS APIs directly. Hosts implement the sink—sanitization, streaming uploads, slug rules, dynamic shortcode mapping, and orchestration—and own everything operational.

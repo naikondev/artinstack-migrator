@@ -63,7 +63,7 @@ describe("M0 benchmark fixtures", () => {
   it("naikonpixels export: flattens Tatsu shortcodes and discovers inline images", async () => {
     const bundle = await collectEntities(
       wordpressAdapter.enumerateEntities({
-        input: { path: join(FIXTURES_ROOT, "naikonpixels.WordPress.2026-06-07.xml") },
+        input: { path: join(FIXTURES_ROOT, "naikonpixels.WordPress.Posts.2026-06-07.xml") },
       }),
     );
 

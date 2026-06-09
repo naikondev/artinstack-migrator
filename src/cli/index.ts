@@ -20,6 +20,7 @@ import {
   writeFilesystemExport,
 } from "../sinks/index.js";
 import { collectEntities } from "../normalizer/bundle.js";
+import { createWpContentGatewayRewrite } from "../lib/origin-url-rewrite.js";
 import { estimateStorage, staleUrlsFromEstimate } from "../sinks/storage-estimate.js";
 
 const PLATFORMS: MigrationPlatform[] = ["wordpress", "smugmug", "squarespace", "wix"];
@@ -42,9 +43,12 @@ Options:
   --report <dir>    With --dry-run, write conflicts.json + migration-report.json
   --offline         Skip network HEAD requests (4 MB fallback per asset)
   --urls <file>     Wix W2: newline URL list or sitemap.xml for static page snapshots
+  --rewrite-gateway <url>  WordPress: API gateway base (requires --rewrite-public)
+  --rewrite-public <url>   WordPress: public origin for /wp-content/ asset paths
 
 Examples:
   artinstack-migrate wordpress export.xml --dry-run --report ./preview/
+  artinstack-migrate wordpress export.xml --rewrite-gateway https://gateway.example/prod --rewrite-public https://www.example.com --dry-run --report ./preview/
   artinstack-migrate wix feed.xml --urls ./sitemap-urls.txt --dry-run
   artinstack-migrate wordpress export.xml --out ./output
   artinstack-migrate wordpress export.xml --sink filesystem --out ./output
@@ -74,6 +78,8 @@ function parseArgs(argv: string[]): {
   dryRun: boolean;
   formatJson: boolean;
   offline: boolean;
+  rewriteGateway: string | undefined;
+  rewritePublic: string | undefined;
 } {
   const args = [...argv];
   let command: string | undefined;
@@ -86,6 +92,8 @@ function parseArgs(argv: string[]): {
   let dryRun = false;
   let formatJson = false;
   let offline = false;
+  let rewriteGateway: string | undefined;
+  let rewritePublic: string | undefined;
 
   const first = args[0];
   if (first === "validate") {
@@ -110,15 +118,50 @@ function parseArgs(argv: string[]): {
         reportDir = args[++i];
       } else if (flag === "--sink" && args[i + 1]) {
         sinkName = args[++i];
-      } else if (flag === "--urls" && args[i + 1]) {
+      }       else if (flag === "--urls" && args[i + 1]) {
         urlsPath = args[++i];
+      } else if (flag === "--rewrite-gateway" && args[i + 1]) {
+        rewriteGateway = args[++i];
+      } else if (flag === "--rewrite-public" && args[i + 1]) {
+        rewritePublic = args[++i];
       }
     }
   } else {
     command = first;
   }
 
-  return { command, platform, inputPath, urlsPath, outDir, reportDir, sinkName, dryRun, formatJson, offline };
+  return { command, platform, inputPath, urlsPath, outDir, reportDir, sinkName, dryRun, formatJson, offline, rewriteGateway, rewritePublic };
+}
+
+function buildAdapterInput(
+  platform: MigrationPlatform,
+  inputPath: string,
+  urlsPath: string | undefined,
+  rewriteGateway: string | undefined,
+  rewritePublic: string | undefined,
+): unknown {
+  if (rewriteGateway || rewritePublic) {
+    if (platform !== "wordpress") {
+      throw new Error("--rewrite-gateway and --rewrite-public are WordPress-only options");
+    }
+    if (!rewriteGateway || !rewritePublic) {
+      throw new Error("Both --rewrite-gateway and --rewrite-public are required together");
+    }
+  }
+
+  if (platform === "wordpress") {
+    return {
+      path: inputPath,
+      ...(rewriteGateway && rewritePublic
+        ? { originUrlRewrite: createWpContentGatewayRewrite(rewriteGateway, rewritePublic) }
+        : {}),
+    };
+  }
+
+  return {
+    path: inputPath,
+    ...(urlsPath ? { urlsFile: urlsPath } : {}),
+  };
 }
 
 function migrationExitCode(hasBlockers: boolean, hasWarn: boolean): 0 | 1 | 2 {
@@ -128,7 +171,7 @@ function migrationExitCode(hasBlockers: boolean, hasWarn: boolean): 0 | 1 | 2 {
 }
 
 async function main(): Promise<void> {
-  const { command, platform, inputPath, urlsPath, outDir, reportDir, sinkName, dryRun, formatJson, offline } =
+  const { command, platform, inputPath, urlsPath, outDir, reportDir, sinkName, dryRun, formatJson, offline, rewriteGateway, rewritePublic } =
     parseArgs(process.argv.slice(2));
 
   if (!command || command === "--help" || command === "-h") {
@@ -162,10 +205,13 @@ async function main(): Promise<void> {
     }
 
     const adapter = getAdapter(platform);
-    const input = {
-      path: inputPath,
-      ...(urlsPath ? { urlsFile: urlsPath } : {}),
-    };
+    let input: unknown;
+    try {
+      input = buildAdapterInput(platform, inputPath, urlsPath, rewriteGateway, rewritePublic);
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : error);
+      process.exit(1);
+    }
 
     if (dryRun) {
       const result = await runDryRun({
