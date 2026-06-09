@@ -8,5 +8,10 @@ coverage/
 .env.*
 !.env.example
 
+# Local migration CLI outputs (--out / --dry-run --report)
+preview/
+preview-*/
+output/
+
 # Local-only design notes (not published)
 docs/migration-assistance.md
