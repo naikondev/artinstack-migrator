@@ -79,8 +79,8 @@ src/
     wordpress/          WXR parse, builder flattening (theme registry), asset discovery
     squarespace/        parse-export.ts — block flattening + static HTML snapshots
   normalizer/           Canonical types, idempotency, opt-in validate.ts (Zod)
-  lib/                  utility, content-asset-urls, origin-url-rewrite
-  transformers/         HtmlToGrapes, css-to-styles, rewrite-inline-images
+  lib/                  content-asset-urls, migration-media-ref, origin-url-rewrite
+  transformers/         HtmlToGrapes, css-to-styles, rewrite-inline-images, expand-migration-media-refs
   cli/                  artinstack-migrate
   sinks/
     filesystem.ts       Write JSON bundles + reports to disk
@@ -97,10 +97,10 @@ fixtures/               Sample exports and golden JSON (incl. grapes/ HtmlToGrap
 | Subpath | Use when |
 |---------|----------|
 | `@artinstack/migrator` | Full pipeline — parsers, sink types, CLI consumers |
-| `@artinstack/migrator/transformers` | `htmlToGrapes`, `htmlToTiptap`, `rewriteInlineImages` only — no WXR/parser code |
+| `@artinstack/migrator/transformers` | `htmlToGrapes`, `htmlToTiptap`, `rewriteInlineImages`, `expandMigrationMediaRefs` — no WXR/parser code |
 | `@artinstack/migrator/normalizer` | DTO types + validation |
 | `@artinstack/migrator/sinks` | `MigrationSink`, `runMigration`, dry-run |
-| `@artinstack/migrator/lib` | `discoverContentAssetUrls`, origin URL rewrite helpers |
+| `@artinstack/migrator/lib` | `discoverContentAssetUrls`, migration media ref helpers, origin URL rewrite |
 
 **Dependency rule:** no imports from web frameworks, proprietary CMS SDKs, or host-specific libraries. Host apps depend on `@artinstack/migrator`; never the reverse.
 
@@ -243,18 +243,61 @@ Hosts may persist this artifact (e.g. object storage keyed by job id) for downlo
 
 ---
 
-## `rewriteInlineImages`
+## Migration media refs
 
-Public helper — no host imports. Host sink supplies upload and replacement logic. **Not** the WordPress page-builder flatten step; that runs in the adapter before DTOs are emitted.
+WordPress exports often reference the same upload under many URL shapes — API gateway, public origin, flat vs dated `wp-content/uploads/…` paths. Jamstack gateway sites (e.g. naikonpixels) and standard WordPress share the problem: one asset, many URL aliases.
+
+**Problem with host-side URL chasing:** the host builds a large origin URL index (gateway, public site, basename variants) and rewrites in HTML, CSS, and the Grapes tree. That is fragile because hero promotion / `htmlToGrapes` can copy a URL before host rewrite runs, and every new alias shape needs another sweep.
+
+**Approach:** OSS normalizes upload URLs to a stable normalizer `sourceId` and stamps an **editor-neutral ref**; the host resolves that id to a CDN URL once at persist boundaries.
+
+| Layer | Responsibility |
+|-------|----------------|
+| **OSS** (`parse-wxr`, `rewriteInlineImages`, builder flatten) | Map `wp-content/uploads` URLs → `sourceId` via attachment index + inline discovery; stamp `artinstack-migration://asset/{sourceId}` in `<img>`, `srcset`, `data-bg-image`, and CSS `url()` |
+| **Host** (`expandMigrationMediaRefs`) | Look up `sourceId` → `publicUrl` (e.g. `migration_entities` + object storage) before sink write or page import |
+
+Refs use a **pseudo-URL scheme**, not WordPress shortcode syntax (avoids colliding with builder shortcodes and works in attributes/CSS):
+
+```
+artinstack-migration://asset/wordpress:attachment:4507
+artinstack-migration://asset/url%3Ahttps%3A%2F%2Fwww.example.com%2Fwp-content%2Fuploads%2Fhero.jpg
+```
+
+**Example — gateway hero on naikonpixels about page:**
+
+```
+Input:    https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/About_w_2048.jpg
+          → origin rewrite → https://www.naikonpixels.com/wp-content/uploads/About_w_2048.jpg
+sourceId: url:https://www.naikonpixels.com/wp-content/uploads/About_w_2048.jpg
+Stamped:  artinstack-migration://asset/url%3Ahttps%3A%2F%2Fwww.naikonpixels.com%2Fwp-content%2Fuploads%2FAbout_w_2048.jpg
+```
+
+The host never needs to know which origin host the URL came from — only `sourceId` → `targetId` → `publicUrl`. Unresolved URLs are left unchanged and surface in `conflicts.unresolvedInlineImages` (refs are not counted as unresolved).
+
+### `rewriteInlineImages` and `stampMigrationMediaRefs`
+
+Public helpers. **Not** the WordPress page-builder flatten step; that runs in the adapter before DTOs are emitted.
 
 ```ts
 function rewriteInlineImages(html: string, options: {
   resolveAsset: (src: string) => { originalSrc: string; sourceAssetId?: string } | undefined;
-  replaceWith: (ref, uploaded: { targetId: string; publicUrl?: string }) => string;
+  /** Default: stamp `artinstack-migration://asset/…` refs (OSS-14). Host may override for immediate CDN injection. */
+  replaceWith?: (ref, uploaded?: { targetId: string; publicUrl?: string }) => string;
 }): { html: string; referencedSources: string[]; unresolved: string[] };
+
+function stampMigrationMediaRefs(html: string, options: {
+  urlToSourceId: Map<string, string>;
+}): RewriteInlineImagesResult;
+
+function expandMigrationMediaRefs(
+  html: string,
+  resolvePublicUrl: (sourceId: string) => string | undefined,
+): { html: string; unresolved: string[] };
 ```
 
-Walk `contentHtml` with cheerio; collect `<img src>` (and `srcset` where needed); resolve against the asset index; after `uploadAsset`, rewrite markup per host embed conventions. Unresolved URLs feed the conflict report.
+`parse-wxr` stamps refs in `contentHtml` by default after inline asset discovery (`stampMigrationMediaRefs: true`). Discovery still runs on raw URLs first; stamping is a second pass once the URL → `sourceId` index exists.
+
+Expand **before** DB write — Page Editor expects `data-bg-image` to be a real URL at persist time, not only at render time.
 
 ---
 
@@ -270,7 +313,7 @@ Walk `contentHtml` with cheerio; collect `<img src>` (and `srcset` where needed)
 | `wp:post_date` | `publishedAt` |
 | Categories / tags | `NormalizedCategory`, `NormalizedTag` + slugs on post |
 | `_thumbnail_id` meta | Attachment index + first-inline-image fallback (see § WordPress attachments) |
-| Inline `<img src>` | `NormalizedAsset`; sink-time URL swap via `rewriteInlineImages` |
+| Inline `<img src>`, `data-bg-image`, CSS `url()` | `NormalizedAsset`; `contentHtml` stamped with migration media refs |
 | Pages (`page`) | `NormalizedPage` — static HTML snapshot |
 
 #### Page builders (theme registry)
@@ -286,7 +329,7 @@ Registered theme families ship in OSS (e.g. Tatsu, Oshine, Divi, Elementor). New
 
 **Not flattened in OSS** (reported in `conflicts.unsupportedBlocks`, mapped at host): dynamic shortcodes such as `[portfolio]`, `[recent_posts]`, WooCommerce stubs. WooCommerce system pages (`cart`, `checkout`, `my-account`) are skipped by default.
 
-This is **separate from** `rewriteInlineImages`, which runs at **sink time** and only swaps uploaded media URLs in existing `<img>` tags.
+This is **separate from** migration media ref stamping (`rewriteInlineImages` / `stampMigrationMediaRefs`), which runs after flatten and origin rewrite and covers `<img>`, `srcset`, `data-bg-image`, and inline CSS backgrounds.
 
 #### Origin URL rewrite
 
@@ -473,7 +516,8 @@ The CLI does not embed host credentials. Sink plugins and auth are supplied by t
 | Dynamic WP shortcodes (`[portfolio]`, `[recent_posts]`, maps, forms) | Host sink / structured blocks |
 | Slug collision policy (e.g. post auto-suffix, page skip-with-report) | Host sink |
 | Storage quota, thumbs, EXIF pipeline | Host sink |
-| `rewriteInlineImages` `replaceWith` (media URLs / embed ids) | Host sink |
+| `expandMigrationMediaRefs` at persist (ref → CDN URL) | Host sink / page import |
+| `rewriteInlineImages` custom `replaceWith` (optional immediate CDN) | Host sink |
 | Opt-in `validateNormalized*` / `validateGrapesProjectSnapshot` at write boundary | Host sink (optional) |
 | Job queue, worker, progress UI | Host |
 | Redirect middleware + `site_redirects` persistence | Host |
@@ -496,7 +540,7 @@ Optional: export redirect map CSV when `source.path` differs from destination pa
 | Blogger (planned) | Takeout Atom export |
 | Wix | Blog RSS/Atom export, REST API (W1), static HTML snapshots (W2) |
 
-Transformers: **HtmlToGrapes** (`htmlToGrapes()` → `GrapesProjectSnapshot`, golden fixtures in `fixtures/grapes/`), **HtmlToTiptap** (`htmlToTiptap()` → ProseMirror `doc` for blog `content_json`, golden fixtures in `fixtures/tiptap/`), **css-to-styles**, **rewrite-inline-images**. Redirect report generation is a host routing concern.
+Transformers: **HtmlToGrapes** (`htmlToGrapes()` → `GrapesProjectSnapshot`, golden fixtures in `fixtures/grapes/`), **HtmlToTiptap** (`htmlToTiptap()` → ProseMirror `doc` for blog `content_json`, golden fixtures in `fixtures/tiptap/`), **css-to-styles**, **rewrite-inline-images**, **expand-migration-media-refs**. Redirect report generation is a host routing concern.
 
 ---
 
@@ -531,7 +575,9 @@ Transformers: **HtmlToGrapes** (`htmlToGrapes()` → `GrapesProjectSnapshot`, go
 | Squarespace json-pretty collector (`collect.ts`) | Yes | Supplies authenticated `fetch` |
 | Dry-run, conflicts, migration report | Yes | No |
 | CLI + filesystem export | Yes | No |
-| `rewriteInlineImages` helper (sink-time media URL swap) | Yes | Supplies `replaceWith` |
+| Stamp `artinstack-migration://asset/…` refs in `contentHtml` | Yes | No |
+| `expandMigrationMediaRefs` helper | Yes | Call site + DB lookup |
+| `rewriteInlineImages` custom `replaceWith` (optional) | Yes | Supplies override |
 | `MigrationSink` interface + `runMigration` | Yes | Implementation |
 | Sanitization, uploads, slug policy | No | Yes |
 | WordPress dynamic shortcodes (`[portfolio]`, forms, maps) | No | Yes |
@@ -542,4 +588,4 @@ Transformers: **HtmlToGrapes** (`htmlToGrapes()` → `GrapesProjectSnapshot`, go
 
 ## Summary
 
-`@artinstack/migrator` is a **portable OSS core**: platform adapters, normalizer DTOs with `SourceMetadata`, dry-run analysis, JSON export, optional HTML→component transformers, and a **`MigrationSink`-driven** migration loop with explicit write ordering. WordPress exports get **pre-DTO builder flattening** and optional **origin URL rewrite**; the package emits **portable HTML** and **never** touches host storage or CMS APIs directly. Hosts implement the sink—sanitization, streaming uploads, slug rules, dynamic shortcode mapping, and orchestration—and own everything operational.
+`@artinstack/migrator` is a **portable OSS core**: platform adapters, normalizer DTOs with `SourceMetadata`, dry-run analysis, JSON export, optional HTML→component transformers, and a **`MigrationSink`-driven** migration loop with explicit write ordering. WordPress exports get **pre-DTO builder flattening**, optional **origin URL rewrite**, and **migration media refs** in `contentHtml`; hosts expand refs to CDN URLs at persist. The package **never** touches host storage or CMS APIs directly. Hosts implement the sink—sanitization, streaming uploads, slug rules, dynamic shortcode mapping, and orchestration—and own everything operational.

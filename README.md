@@ -15,7 +15,8 @@ src/
   normalizer/       Canonical DTOs + portable idempotency types
   sinks/            filesystem export, MigrationSink interface
   cli/              artinstack-migrate
-  transformers/     HtmlToGrapes, css-to-styles, rewrite-inline-images
+  transformers/     HtmlToGrapes, css-to-styles, inline image rewrite, media ref expand
+  lib/              content-asset-urls, migration-media-ref, origin-url-rewrite
 ```
 
 ## Install
@@ -114,6 +115,31 @@ Each file contains an array of normalized DTOs (`NormalizedPost`, `NormalizedPag
 
 Per-platform export file formats and API client usage are documented in [docs/architecture.md](./docs/architecture.md).
 
+## Migration media refs
+
+WordPress `contentHtml` is stamped with `artinstack-migration://asset/…` refs by default (not CDN URLs). Rationale, ref format, and OSS/host split: [docs/architecture.md § Migration media refs](./docs/architecture.md#migration-media-refs).
+
+**Host — expand refs before persist** (`htmlToGrapes`, hero promotion, sink write):
+
+```ts
+import {
+  expandMigrationMediaRefs,
+  formatMigrationMediaRef,
+  isMigrationMediaRef,
+  parseMigrationMediaRef,
+  rewriteInlineImages,
+  stampMigrationMediaRefs,
+} from "@artinstack/migrator";
+
+const { html, unresolved } = expandMigrationMediaRefs(contentHtml, (sourceId) =>
+  lookupPublicUrl(sourceId), // migration_entities → CDN
+);
+```
+
+**CLI / JSON export:** use `--rewrite-gateway` + `--rewrite-public` so gateway uploads normalize before refs are stamped. Unresolved upload URLs stay in HTML and appear in `conflicts.json` as `unresolvedInlineImages`.
+
+**Tests:** `fixtures/wordpress/pages-export.test.ts` (naikonpixels pages WXR).
+
 ## Development
 
 ```bash
@@ -129,6 +155,8 @@ pnpm dev          # watch build
 |-------|------------------------|------------------|
 | Parsers + normalizer DTOs | Yes | No |
 | WordPress builder flattening + origin URL rewrite (pre-DTO) | Yes | Optional same config on adapter input |
+| Stamp `artinstack-migration://asset/…` refs in content HTML | Yes | No |
+| Expand refs → CDN URLs at persist | Exported helper | Call site + DB lookup |
 | CLI + filesystem JSON export | Yes | No |
 | `MigrationSink` interface | Yes | Implementation |
 | Dynamic shortcodes (`[portfolio]`, `[recent_posts]`), forms, sanitize | No | Yes |

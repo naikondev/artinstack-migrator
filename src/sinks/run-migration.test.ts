@@ -123,7 +123,8 @@ describe("runMigration findExisting asset hydration", () => {
       rewriteInlineImages: {
         resolveAsset: (src) =>
           src.includes("hero.jpg") ? { originalSrc: src, sourceAssetId: "asset-1" } : undefined,
-        replaceWith: (_ref, uploaded) => uploaded.publicUrl ?? uploaded.targetId,
+        replaceWith: (_ref, uploaded) => uploaded!.publicUrl ?? uploaded!.targetId,
+        requireUploaded: true,
       },
     });
 
@@ -179,7 +180,8 @@ describe("runMigration canonical write order", () => {
       rewriteInlineImages: {
         resolveAsset: (src) =>
           src.includes("hero.jpg") ? { originalSrc: src, sourceAssetId: "asset-1" } : undefined,
-        replaceWith: (_ref, uploaded) => uploaded.publicUrl ?? uploaded.targetId,
+        replaceWith: (_ref, uploaded) => uploaded!.publicUrl ?? uploaded!.targetId,
+        requireUploaded: true,
       },
     });
 

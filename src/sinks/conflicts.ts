@@ -2,6 +2,7 @@ import * as cheerio from "cheerio";
 
 import type { EntityBundle } from "../normalizer/bundle.js";
 import { discoverRawImgSrcs, normalizeAssetUrl } from "../lib/content-asset-urls.js";
+import { isMigrationMediaRef } from "../lib/migration-media-ref.js";
 import { findUnsupportedBlockMarkers } from "../parsers/squarespace/parse-export.js";
 import { findWordPressShortcodeMarkers } from "../parsers/wordpress/builders/shortcode-conflicts.js";
 export interface DuplicateSlugConflict {
@@ -128,6 +129,7 @@ function findUnresolvedInlineImages(
 ): UnresolvedInlineImageConflict[] {
   const conflicts: UnresolvedInlineImageConflict[] = [];
   for (const raw of discoverRawImgSrcs(contentHtml)) {
+    if (isMigrationMediaRef(raw)) continue;
     const normalized = normalizeAssetUrl(raw);
     if (!normalized) continue;
     if (!mediaUrls.has(normalized) && !mediaUrls.has(raw)) {

@@ -144,15 +144,13 @@ describe("naikonpixels posts export", () => {
 
   it("prefers section hero over _w_<width> inline when thumbnail is missing", () => {
     const post = bundle.posts.find((p) => p.slug === "under-which-i-spoke-to-mom");
-    expect(post?.contentHtml).toContain("MoccasinCreek_w_1045.jpg");
+    expect(post?.contentHtml).toMatch(/MoccasinCreek_w_1045/);
 
+    const heroUrl = `${PUBLIC}/wp-content/uploads/MilkyWay_16x9.jpg`;
     const withHero =
-      `<div data-layout="section" data-bg-image="${PUBLIC}/wp-content/uploads/MilkyWay_16x9.jpg"></div>` +
-      (post?.contentHtml ?? "");
+      `<div data-layout="section" data-bg-image="${heroUrl}"></div>` + (post?.contentHtml ?? "");
 
-    expect(resolveFeaturedContentAssetUrl(withHero)).toBe(
-      `${PUBLIC}/wp-content/uploads/MilkyWay_16x9.jpg`,
-    );
-    expect(resolveFeaturedContentAssetUrl(post!.contentHtml!)).toContain("MoccasinCreek");
+    expect(resolveFeaturedContentAssetUrl(withHero)).toBe(heroUrl);
+    expect(post?.contentHtml).toContain("artinstack-migration://asset/");
   });
 });

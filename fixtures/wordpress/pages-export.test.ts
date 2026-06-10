@@ -4,6 +4,10 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import { collectEntities, bundleCounts } from "../../src/normalizer/bundle.js";
 import { createWpContentGatewayRewrite } from "../../src/lib/origin-url-rewrite.js";
+import {
+  formatMigrationMediaRef,
+  isMigrationMediaRef,
+} from "../../src/lib/migration-media-ref.js";
 import { findWordPressShortcodeMarkers } from "../../src/parsers/wordpress/builders/shortcode-conflicts.js";
 import { analyzeConflicts } from "../../src/sinks/conflicts.js";
 import { wordpressAdapter } from "../../src/parsers/wordpress/index.js";
@@ -178,10 +182,28 @@ describe("naikonpixels pages export", () => {
         `expected bundle media to include ${filename}`,
       ).toBe(true);
     }
+  });
 
+  it("stamps OSS-14 migration media refs for section heroes (no gateway URLs in contentHtml)", () => {
     const about = bundle.pages.find((p) => p.slug === "about");
-    expect(about?.contentHtml).toContain('data-bg-image="');
-    expect(about?.contentHtml).toContain("About_w_2048.jpg");
+    const gearList = bundle.pages.find((p) => p.slug === "gear-list");
+    expect(about?.contentHtml).toBeDefined();
+
+    const aboutHeroRef = formatMigrationMediaRef(
+      `url:${PUBLIC}/wp-content/uploads/About_w_2048.jpg`,
+    );
+    expect(about?.contentHtml).toContain(`data-bg-image="${aboutHeroRef}"`);
+    expect(about?.contentHtml).not.toMatch(/execute-api/i);
+    expect(about?.contentHtml).not.toContain(`${PUBLIC}/wp-content/uploads/About_w_2048.jpg`);
+
+    const gearHeroRef = formatMigrationMediaRef(
+      `url:${PUBLIC}/wp-content/uploads/Gear_List_w_2048.jpg`,
+    );
+    expect(gearList?.contentHtml).toContain(`data-bg-image="${gearHeroRef}"`);
+
+    const migrationRefs = about?.contentHtml?.match(/artinstack-migration:\/\/asset\/[^"'\s)]+/g) ?? [];
+    expect(migrationRefs.length).toBeGreaterThan(0);
+    expect(migrationRefs.every(isMigrationMediaRef)).toBe(true);
   });
 
   it("strips animate_icon shortcodes on contact page", () => {

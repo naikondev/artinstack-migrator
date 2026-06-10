@@ -5,8 +5,11 @@ import { XMLParser } from "fast-xml-parser";
 
 import {
   discoverContentAssetUrls,
+  normalizeAssetUrl,
   resolveFeaturedContentAssetUrl,
 } from "../../lib/content-asset-urls.js";
+import { buildMigrationMediaUrlIndex } from "../../lib/migration-media-url-index.js";
+import { stampMigrationMediaRefs } from "../../transformers/rewrite-inline-images.js";
 import {
   type OriginUrlRewriteConfig,
   rewriteOriginUrlsInText,
@@ -45,6 +48,11 @@ export interface WxrParseOptions {
   flattenBuilders?: boolean;
   /** Omit WooCommerce cart/checkout/my-account stub pages. Default: true. */
   skipWooCommerceStubPages?: boolean;
+  /**
+   * After asset discovery, stamp resolved upload URLs as OSS-14 migration media refs
+   * in emitted `contentHtml`. Default: true.
+   */
+  stampMigrationMediaRefs?: boolean;
 }
 
 interface WxrItem {
@@ -316,6 +324,12 @@ export async function* enumerateWxrEntities(
   const { categories, tags } = collectTaxonomies(items);
   const seenAssetUrls = new Set<string>();
   const emittedAttachmentIds = new Set<string>();
+  const attachmentUrlIndex = buildMigrationMediaUrlIndex(
+    [...attachmentIndex.entries()].map(([sourceId, entry]) => ({
+      sourceId,
+      sourceUrl: entry.sourceUrl,
+    })),
+  );
 
   for (const category of categories.values()) {
     yield category;
@@ -346,7 +360,7 @@ export async function* enumerateWxrEntities(
     const id = textValue(item.post_id);
     const link = maybeRewriteUrl(textValue(item.link), options.originUrlRewrite);
     const slug = sanitizeSlug(textValue(item.post_name) || textValue(item.title) || id);
-    const contentHtml = preprocessContent(getContentEncoded(item), options);
+    let contentHtml = preprocessContent(getContentEncoded(item), options);
 
     if (
       postType === "page" &&
@@ -356,13 +370,24 @@ export async function* enumerateWxrEntities(
       continue;
     }
 
-    for (const asset of collectInlineAssets(
+    const inlineAssets = collectInlineAssets(
       contentHtml,
       attachmentIndex,
       seenAssetUrls,
       options.exportedAt,
-    )) {
+    );
+    for (const asset of inlineAssets) {
       yield asset;
+    }
+
+    if (options.stampMigrationMediaRefs !== false) {
+      const urlIndex = new Map(attachmentUrlIndex);
+      for (const asset of inlineAssets) {
+        urlIndex.set(asset.sourceUrl, asset.sourceId);
+        const normalized = normalizeAssetUrl(asset.sourceUrl);
+        if (normalized) urlIndex.set(normalized, asset.sourceId);
+      }
+      contentHtml = stampMigrationMediaRefs(contentHtml, { urlToSourceId: urlIndex }).html;
     }
 
     const categorySlugs: string[] = [];

@@ -1,6 +1,14 @@
 import * as cheerio from "cheerio";
 
 import { normalizeAssetUrl } from "../lib/content-asset-urls.js";
+import {
+  createMigrationMediaRefReplaceWith,
+  isMigrationMediaRef,
+} from "../lib/migration-media-ref.js";
+import {
+  buildMigrationMediaUrlIndex,
+  resolveMigrationMediaSourceId,
+} from "../lib/migration-media-url-index.js";
 
 export interface RewriteInlineImageRef {
   originalSrc: string;
@@ -14,7 +22,16 @@ export interface UploadedAssetRef {
 
 export interface RewriteInlineImagesOptions {
   resolveAsset: (src: string) => RewriteInlineImageRef | undefined;
-  replaceWith: (ref: RewriteInlineImageRef, uploaded: UploadedAssetRef) => string;
+  /**
+   * Replace a resolved source id with a migration ref or CDN URL.
+   * When omitted, defaults to OSS-14 `artinstack-migration://asset/…` refs.
+   */
+  replaceWith?: (ref: RewriteInlineImageRef, uploaded?: UploadedAssetRef) => string;
+  /**
+   * When true, skip URLs that cannot be matched to an uploaded vault target.
+   * Default: false when using migration refs; true when a custom `replaceWith` is supplied.
+   */
+  requireUploaded?: boolean;
 }
 
 export interface RewriteInlineImagesResult {
@@ -27,6 +44,14 @@ export interface RewriteInlineImagesResult {
 const BACKGROUND_IMAGE_URL_PATTERN =
   /background(?:-image)?\s*:[^;]*?url\s*\(\s*(['"]?)([^'")]+)\1\s*\)/gi;
 
+function resolveRewriteOptions(
+  options: RewriteInlineImagesOptions,
+): Required<Pick<RewriteInlineImagesOptions, "replaceWith" | "requireUploaded">> {
+  const replaceWith = options.replaceWith ?? createMigrationMediaRefReplaceWith();
+  const requireUploaded = options.requireUploaded ?? Boolean(options.replaceWith);
+  return { replaceWith, requireUploaded };
+}
+
 function tryRewriteUrl(
   src: string,
   options: RewriteInlineImagesOptions,
@@ -37,6 +62,11 @@ function tryRewriteUrl(
   const normalized = normalizeAssetUrl(src);
   if (!normalized) return undefined;
 
+  if (isMigrationMediaRef(normalized)) {
+    referencedSources.add(normalized);
+    return normalized;
+  }
+
   referencedSources.add(normalized);
   const ref = options.resolveAsset(normalized);
   if (!ref?.sourceAssetId) {
@@ -44,13 +74,14 @@ function tryRewriteUrl(
     return undefined;
   }
 
+  const { replaceWith, requireUploaded } = resolveRewriteOptions(options);
   const uploaded = uploadedBySourceId.get(ref.sourceAssetId);
-  if (!uploaded) {
+  if (requireUploaded && !uploaded) {
     unresolved.add(normalized);
     return undefined;
   }
 
-  return options.replaceWith(ref, uploaded);
+  return replaceWith(ref, uploaded);
 }
 
 function rewriteBackgroundUrlsInStyle(
@@ -147,3 +178,36 @@ export function rewriteInlineImages(
     unresolved: [...unresolved],
   };
 }
+
+export interface StampMigrationMediaRefsOptions {
+  /** Pre-built url/pathname → sourceId map (from attachments + inline assets). */
+  urlToSourceId: Map<string, string>;
+  replaceWith?: RewriteInlineImagesOptions["replaceWith"];
+  requireUploaded?: boolean;
+}
+
+/**
+ * OSS-14 — replace resolved `wp-content/uploads` URLs with `artinstack-migration://asset/…`
+ * refs. Does not invent refs for unknown URLs (left unchanged + listed in `unresolved`).
+ */
+export function stampMigrationMediaRefs(
+  html: string,
+  options: StampMigrationMediaRefsOptions,
+): RewriteInlineImagesResult {
+  return rewriteInlineImages(
+    html,
+    {
+      resolveAsset: (src) => {
+        const sourceAssetId = resolveMigrationMediaSourceId(src, options.urlToSourceId);
+        if (!sourceAssetId) return undefined;
+        return { originalSrc: src, sourceAssetId };
+      },
+      replaceWith: options.replaceWith,
+      requireUploaded: options.requireUploaded ?? false,
+    },
+    new Map(),
+  );
+}
+
+/** Build a url index from attachment rows and/or normalized assets. */
+export { buildMigrationMediaUrlIndex };

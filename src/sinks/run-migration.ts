@@ -10,7 +10,11 @@ import type {
   NormalizedPost,
 } from "../normalizer/types.js";
 import { normalizeAssetUrl } from "../lib/content-asset-urls.js";
-import { rewriteInlineImages, type RewriteInlineImagesOptions } from "../transformers/rewrite-inline-images.js";
+import { createMigrationMediaRefReplaceWith } from "../lib/migration-media-ref.js";
+import {
+  rewriteInlineImages,
+  type RewriteInlineImagesOptions,
+} from "../transformers/rewrite-inline-images.js";
 import { buildRedirectMap } from "./conflicts.js";
 import type {
   MigrationRunOptions,
@@ -187,6 +191,9 @@ function mergeRewriteOptions(
     if (normalized) urlToSourceId.set(normalized, asset.sourceId);
   }
 
+  const replaceWith = options.replaceWith ?? createMigrationMediaRefReplaceWith();
+  const requireUploaded = options.requireUploaded ?? Boolean(options.replaceWith);
+
   return {
     resolveAsset: (src) => {
       const resolved = options.resolveAsset(src);
@@ -197,7 +204,8 @@ function mergeRewriteOptions(
       if (!sourceAssetId) return undefined;
       return { originalSrc: src, sourceAssetId };
     },
-    replaceWith: options.replaceWith,
+    replaceWith,
+    requireUploaded,
   };
 }
 

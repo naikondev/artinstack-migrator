@@ -26,8 +26,15 @@ export {
 } from "./validate-tiptap-doc.js";
 export {
   rewriteInlineImages,
+  stampMigrationMediaRefs,
+  buildMigrationMediaUrlIndex,
   type RewriteInlineImageRef,
   type RewriteInlineImagesOptions,
   type RewriteInlineImagesResult,
+  type StampMigrationMediaRefsOptions,
   type UploadedAssetRef,
 } from "./rewrite-inline-images.js";
+export {
+  expandMigrationMediaRefs,
+  type ExpandMigrationMediaRefsResult,
+} from "./expand-migration-media-refs.js";
