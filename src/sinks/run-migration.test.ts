@@ -89,7 +89,8 @@ describe("rewriteInlineImages", () => {
       {
         resolveAsset: (src) =>
           src.includes("hero.jpg") ? { originalSrc: src, sourceAssetId: "asset-1" } : undefined,
-        replaceWith: (_ref, uploadedAsset) => uploadedAsset.publicUrl ?? uploadedAsset.targetId,
+        replaceWith: (_ref, uploadedAsset) =>
+          uploadedAsset?.publicUrl ?? uploadedAsset?.targetId ?? "",
       },
       uploaded,
     );
