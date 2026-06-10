@@ -3,7 +3,10 @@ import { basename } from "node:path";
 
 import { XMLParser } from "fast-xml-parser";
 
-import { discoverContentAssetUrls } from "../../lib/content-asset-urls.js";
+import {
+  discoverContentAssetUrls,
+  resolveFeaturedContentAssetUrl,
+} from "../../lib/content-asset-urls.js";
 import {
   type OriginUrlRewriteConfig,
   rewriteOriginUrlsInText,
@@ -294,8 +297,8 @@ function resolveFeaturedAssetSourceId(
   if (thumbnailId && attachmentIndex.has(thumbnailId)) {
     return thumbnailId;
   }
-  const firstInline = discoverContentAssetUrls(contentHtml)[0];
-  return firstInline ? `url:${firstInline}` : undefined;
+  const featuredUrl = resolveFeaturedContentAssetUrl(contentHtml);
+  return featuredUrl ? `url:${featuredUrl}` : undefined;
 }
 
 function maybeRewriteUrl(url: string | undefined, config?: OriginUrlRewriteConfig): string | undefined {

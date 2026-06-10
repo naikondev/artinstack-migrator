@@ -49,6 +49,9 @@ export async function runMigrationFromBundle(
 
     const existingTargetId = await sink.findExisting?.(key);
     if (existingTargetId) {
+      if (stage === "assets" && key.entityType === "asset") {
+        uploadedAssets.set(key.sourceId, { targetId: existingTargetId });
+      }
       skipped += 1;
       onEntityProcessed?.(key, "skipped");
       return;

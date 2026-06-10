@@ -60,7 +60,24 @@ export interface FractionalLayoutMap {
   bgParamName?: string;
 }
 
-export type StructuralLayoutMap = PrefixedLayoutMap | FractionalLayoutMap;
+/** Profile C — multiple tokens per layout role (Blox prefixed, WPBakery inner columns, …). */
+export interface ExtendedPrefixedLayoutLevel {
+  role: "section" | "row" | "column";
+  tokens: string[];
+  bgParamName?: string;
+  colsParamName?: string;
+  widthParamName?: string;
+}
+
+export interface ExtendedPrefixedLayoutMap {
+  kind: "extended-prefixed";
+  levels: ExtendedPrefixedLayoutLevel[];
+}
+
+export type StructuralLayoutMap =
+  | PrefixedLayoutMap
+  | FractionalLayoutMap
+  | ExtendedPrefixedLayoutMap;
 
 function layoutEscapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -111,6 +128,13 @@ export function prefixedLayoutMap(config: {
 }
 
 /** Profile B — legacy Blox/Oshine mathematical column shortcodes. */
+/** Profile C — map several shortcode names per section/row/column role (longest token first). */
+export function extendedPrefixedLayoutMap(
+  levels: ExtendedPrefixedLayoutLevel[],
+): ExtendedPrefixedLayoutMap {
+  return { kind: "extended-prefixed", levels };
+}
+
 export function fractionalLayoutMap(config: {
   section: string;
   row: string;
@@ -142,6 +166,8 @@ export interface BuilderThemeConfig {
   id: string;
   detect: RegExp;
   layoutMap?: StructuralLayoutMap;
+  /** Additional layout maps applied after `layoutMap` (e.g. Blox prefixed + legacy fractional). */
+  layoutMaps?: StructuralLayoutMap[];
   urlRules?: BuilderUrlRule[];
   textRules?: BuilderTextRule[];
   wrapperRules?: BuilderWrapperRule[];
@@ -181,6 +207,7 @@ export const WORDPRESS_BUILDER_REGISTRY: BuilderThemeConfig[] = [
     ],
     urlRules: [
       { shortcodePrefix: "tatsu_image", urlParams: ["image", "url", "src"], tag: "img" },
+      { shortcodePrefix: "tatsu_single_image", urlParams: ["image", "url", "src"], tag: "img" },
       { shortcodePrefix: "tatsu_video", urlParams: ["video", "src", "url"], tag: "video" },
     ],
     iconImageRules: [
@@ -199,6 +226,39 @@ export const WORDPRESS_BUILDER_REGISTRY: BuilderThemeConfig[] = [
     }),
     urlRules: [{ shortcodePrefix: "et_pb_image", urlParams: ["src", "url"], tag: "img" }],
     scaffoldingPrefixes: ["et_pb_"],
+  },
+  {
+    id: "wpbakery",
+    detect: /\[(?:\/)?vc_/i,
+    layoutMap: extendedPrefixedLayoutMap([
+      { role: "section", tokens: ["vc_section"], bgParamName: "bg_image" },
+      { role: "row", tokens: ["vc_row"], colsParamName: "layout" },
+      { role: "column", tokens: ["vc_column_inner", "vc_column"], widthParamName: "width" },
+    ]),
+    urlRules: [
+      { shortcodePrefix: "vc_single_image", urlParams: ["image", "src", "url"], tag: "img" },
+    ],
+    scaffoldingPrefixes: ["vc_"],
+  },
+  {
+    id: "fusion",
+    detect: /\[(?:\/)?fusion_/i,
+    layoutMap: prefixedLayoutMap({
+      section: "fusion_builder_container",
+      row: "fusion_builder_row",
+      column: "fusion_builder_column",
+      bgParamName: "background_image",
+    }),
+    scaffoldingPrefixes: ["fusion_"],
+  },
+  {
+    id: "beaver",
+    detect: /\[(?:\/)?fl_(?:row|col|builder)/i,
+    layoutMap: extendedPrefixedLayoutMap([
+      { role: "row", tokens: ["fl_row"] },
+      { role: "column", tokens: ["fl_col"] },
+    ]),
+    scaffoldingPrefixes: ["fl_"],
   },
   {
     id: "elementor",
@@ -227,6 +287,17 @@ export const WORDPRESS_BUILDER_REGISTRY: BuilderThemeConfig[] = [
       ],
       bgParamName: "bg_image",
     }),
+    layoutMaps: [
+      extendedPrefixedLayoutMap([
+        { role: "section", tokens: ["blox_row"], bgParamName: "bg_image" },
+        { role: "row", tokens: ["blox_row_inner"], colsParamName: "columns" },
+        {
+          role: "column",
+          tokens: ["blox_column_inner", "blox_column"],
+          widthParamName: "width",
+        },
+      ]),
+    ],
     textRules: [
       {
         shortcodePrefix: "special_sub_title",
@@ -243,6 +314,10 @@ export const WORDPRESS_BUILDER_REGISTRY: BuilderThemeConfig[] = [
     wrapperRules: [
       { shortcodePrefix: "grid_content" },
       { shortcodePrefix: "testimonial", urlParams: ["author_image"] },
+      { shortcodePrefix: "blox_text" },
+    ],
+    urlRules: [
+      { shortcodePrefix: "blox_image", urlParams: ["image", "img", "src", "url"], tag: "img" },
     ],
     placeholderRules: [
       {

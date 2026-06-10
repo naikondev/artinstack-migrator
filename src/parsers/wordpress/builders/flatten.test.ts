@@ -7,10 +7,12 @@ import { discoverContentAssetUrls } from "../../../lib/content-asset-urls.js";
 import {
   applyStructuralLayoutMap,
   flattenWordPressBuilders,
+  parseFractionWidth,
   parseRowLayoutCols,
 } from "./flatten.js";
 import { findWordPressShortcodeMarkers } from "./shortcode-conflicts.js";
 import {
+  extendedPrefixedLayoutMap,
   fractionalLayoutMap,
   parseFractionalColumnWidth,
   prefixedLayoutMap,
@@ -52,6 +54,13 @@ describe("flattenWordPressBuilders", () => {
     expect(parseRowLayoutCols("1/2+1/2")).toBe(2);
     expect(parseRowLayoutCols("1/3+1/3+1/3")).toBe(3);
     expect(parseRowLayoutCols("1/1")).toBeUndefined();
+  });
+
+  it("parses fractional width strings into percentages", () => {
+    expect(parseFractionWidth("1/1")).toBe("100%");
+    expect(parseFractionWidth("1/2")).toBe("50%");
+    expect(parseFractionWidth("1/3")).toBe("33.33%");
+    expect(parseFractionWidth("2/3")).toBe("66.67%");
   });
 
   it("applies layoutMap dynamically for any namespace via the generic compiler", () => {
@@ -171,10 +180,40 @@ describe("flattenWordPressBuilders", () => {
     expect(html).not.toMatch(/\[blox_gmap/);
   });
 
+  it("converts Blox prefixed row/column/inner tokens to data-layout markers", () => {
+    const raw =
+      '[blox_row color="#f5f5f5"][blox_column width="1/1"][blox_row_inner columns="1/1"]' +
+      '[blox_column_inner width="1/1"][blox_text]<h3>Dedicated</h3>[/blox_text][/blox_column_inner][/blox_row_inner][/blox_column][/blox_row]';
+    const { html, detectedThemes } = flattenWordPressBuilders(raw);
+
+    expect(detectedThemes).toContain("oshine");
+    expect(html).toContain('data-layout="section"');
+    expect(html).toContain('data-layout="row"');
+    expect(html).toContain('data-layout="column" data-col-width="100%"');
+    expect(html).toContain("<h3>Dedicated</h3>");
+    expect(html).not.toMatch(/\[blox_/);
+  });
+
+  it("registers WPBakery vc_ structural tokens via extended prefixed layoutMap", () => {
+    const raw =
+      '[vc_section bg_image="https://example.com/hero.jpg"][vc_row layout="1/2+1/2"]' +
+      '[vc_column width="1/2"]<p>Left</p>[/vc_column][vc_column_inner width="1/2"]<p>Right</p>[/vc_column_inner][/vc_row][/vc_section]';
+    const { html, detectedThemes } = flattenWordPressBuilders(raw);
+
+    expect(detectedThemes).toContain("wpbakery");
+    expect(html).toContain('data-layout="section"');
+    expect(html).toContain('data-bg-image="https://example.com/hero.jpg"');
+    expect(html).toContain('data-cols="2"');
+    expect(html).toContain('data-layout="column" data-col-width="50%"');
+    expect(html).not.toMatch(/\[vc_/);
+  });
+
   it("strips blox_row scaffolding and leaves portfolio shortcode for conflicts", () => {
     const raw =
       '[blox_row][blox_column width="1/1"][portfolio col="two" category="photography"][/portfolio][/blox_column][/blox_row]';
     const { html } = flattenWordPressBuilders(raw);
+    expect(html).toContain('data-layout="section"');
+    expect(html).toContain('data-layout="column"');
     expect(html).not.toMatch(/\[blox_/);
     expect(html).toMatch(/\[portfolio/);
     expect(findWordPressShortcodeMarkers(html)).toEqual([

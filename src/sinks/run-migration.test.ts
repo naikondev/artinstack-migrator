@@ -99,6 +99,43 @@ describe("rewriteInlineImages", () => {
   });
 });
 
+describe("runMigration findExisting asset hydration", () => {
+  it("hydrates uploadedAssets when findExisting skips asset upload", async () => {
+    const uploadAsset = vi.fn(async () => ({
+      targetId: "should-not-run",
+      publicUrl: "https://cdn.example/hero.jpg",
+    }));
+    const createPost = vi.fn(async () => ({ targetId: "post-1", publicPath: "/blog/hello" }));
+
+    const sink: MigrationSink = {
+      uploadAsset,
+      createPost,
+      createPage: vi.fn(async () => ({ targetId: "page-1", publicPath: "/about" })),
+      findExisting: vi.fn(async (key) =>
+        key.entityType === "asset" && key.sourceId === "asset-1" ? "existing-vault-id" : undefined,
+      ),
+    };
+
+    await runMigrationFromBundle(shuffledBundle(), {
+      sink,
+      platform: "wordpress",
+      entities: (async function* empty() {})(),
+      rewriteInlineImages: {
+        resolveAsset: (src) =>
+          src.includes("hero.jpg") ? { originalSrc: src, sourceAssetId: "asset-1" } : undefined,
+        replaceWith: (_ref, uploaded) => uploaded.publicUrl ?? uploaded.targetId,
+      },
+    });
+
+    expect(uploadAsset).not.toHaveBeenCalled();
+    expect(createPost).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentHtml: expect.stringContaining("existing-vault-id"),
+      }),
+    );
+  });
+});
+
 describe("runMigration canonical write order", () => {
   it("dispatches taxonomy → assets → portfolios → content → bindings → redirects", async () => {
     const calls: string[] = [];

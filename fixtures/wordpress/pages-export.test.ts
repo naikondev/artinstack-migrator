@@ -110,6 +110,21 @@ describe("naikonpixels pages export", () => {
     const awards = reports.get("awardsandhonors");
     expect(awards?.sections).toBeGreaterThanOrEqual(0);
     expect(awards?.tatsuLeft).toBe(0);
+
+    const toMyMother = reports.get("to-my-mother");
+    expect(toMyMother?.sections).toBeGreaterThanOrEqual(1);
+    expect(toMyMother?.rows).toBeGreaterThanOrEqual(2);
+    expect(toMyMother?.columns).toBeGreaterThanOrEqual(3);
+    expect(toMyMother?.bloxLeft).toBe(0);
+  });
+
+  it("flattens Blox prefixed layout on to-my-mother page", () => {
+    const page = bundle.pages.find((p) => p.slug === "to-my-mother");
+    expect(page?.contentHtml).toContain('data-layout="section"');
+    expect(page?.contentHtml).toContain('data-layout="row"');
+    expect(page?.contentHtml).toContain('data-layout="column"');
+    expect(page?.contentHtml).toContain("dedicated to my Late Mother");
+    expect(page?.contentHtml).not.toMatch(/\[blox_/);
   });
 
   it("flattens Tatsu structure and Oshine text on about page", () => {
@@ -149,6 +164,24 @@ describe("naikonpixels pages export", () => {
   it("rewrites gateway asset URLs to public origin", () => {
     expect(bundle.media.some((a) => a.sourceUrl.includes("execute-api"))).toBe(false);
     expect(bundle.media.some((a) => a.sourceUrl.startsWith(`${PUBLIC}/wp-content/`))).toBe(true);
+  });
+
+  it("discovers section hero backgrounds in bundle media", () => {
+    const heroAssets = [
+      "About_w_2048.jpg",
+      "Gear_List_w_2048.jpg",
+    ];
+
+    for (const filename of heroAssets) {
+      expect(
+        bundle.media.some((asset) => asset.sourceUrl.includes(filename)),
+        `expected bundle media to include ${filename}`,
+      ).toBe(true);
+    }
+
+    const about = bundle.pages.find((p) => p.slug === "about");
+    expect(about?.contentHtml).toContain('data-bg-image="');
+    expect(about?.contentHtml).toContain("About_w_2048.jpg");
   });
 
   it("strips animate_icon shortcodes on contact page", () => {

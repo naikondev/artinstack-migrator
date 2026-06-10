@@ -7,6 +7,7 @@ import type {
   BuilderUrlRule,
   BuilderWrapperRule,
   FractionalLayoutMap,
+  ExtendedPrefixedLayoutMap,
   PrefixedLayoutMap,
   StructuralLayoutMap,
   TextHtmlTag,
@@ -64,6 +65,22 @@ function escapeLayoutAttr(value: string): string {
     .replace(/</g, "&lt;");
 }
 
+/** Parse `width="1/2"` / `columns="1/3+1/3+1/3"` style strings → percentage or column count. */
+export function parseFractionWidth(fraction: string | undefined): string | undefined {
+  if (!fraction?.trim()) return undefined;
+  const trimmed = fraction.trim();
+  const match = trimmed.match(/^(\d+)\s*\/\s*(\d+)$/);
+  if (!match) return undefined;
+  const numerator = Number(match[1]);
+  const denominator = Number(match[2]);
+  if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator <= 0) {
+    return undefined;
+  }
+  const percent = (numerator / denominator) * 100;
+  const rounded = Math.round(percent * 100) / 100;
+  return `${rounded % 1 === 0 ? rounded.toFixed(0) : rounded}%`;
+}
+
 /** Parse row `layout="1/2+1/2"` style strings → column count. */
 export function parseRowLayoutCols(layout: string | undefined): number | undefined {
   if (!layout?.trim()) return undefined;
@@ -84,6 +101,13 @@ function openRowDiv(params: string, colsParamName?: string): string {
   const attrs = ['data-layout="row"'];
   const cols = parseRowLayoutCols(extractQuotedParam(params, colsParamName ?? "layout"));
   if (cols) attrs.push(`data-cols="${cols}"`);
+  return `<div ${attrs.join(" ")}>`;
+}
+
+function openColumnDiv(params: string, widthParamName?: string): string {
+  const attrs = ['data-layout="column"'];
+  const width = parseFractionWidth(extractQuotedParam(params, widthParamName ?? "width"));
+  if (width) attrs.push(`data-col-width="${width}"`);
   return `<div ${attrs.join(" ")}>`;
 }
 
@@ -120,6 +144,37 @@ function applyFractionalLayoutMap(content: string, map: FractionalLayoutMap): st
   return html;
 }
 
+function applyExtendedPrefixedLayoutMap(content: string, map: ExtendedPrefixedLayoutMap): string {
+  let html = content;
+  const levels = [...map.levels].sort((left, right) => {
+    const leftMax = Math.max(...left.tokens.map((token) => token.length));
+    const rightMax = Math.max(...right.tokens.map((token) => token.length));
+    return rightMax - leftMax;
+  });
+
+  for (const level of levels) {
+    const tokens = [...level.tokens].sort((left, right) => right.length - left.length);
+    for (const token of tokens) {
+      const openRegex = new RegExp(`\\[${escapeRegExp(token)}\\b([^\\]]*)\\]`, "gi");
+      const closeRegex = new RegExp(`\\[\\/${escapeRegExp(token)}\\b[^\\]]*\\]`, "gi");
+
+      html = html.replace(openRegex, (_, params: string) => {
+        switch (level.role) {
+          case "section":
+            return openSectionDiv(params, level.bgParamName);
+          case "row":
+            return openRowDiv(params, level.colsParamName);
+          case "column":
+            return openColumnDiv(params, level.widthParamName);
+        }
+      });
+      html = html.replace(closeRegex, "</div>");
+    }
+  }
+
+  return html;
+}
+
 /** Map builder layout shortcodes → editor-neutral `data-layout` HTML. */
 export function applyStructuralLayoutMap(content: string, map: StructuralLayoutMap): string {
   switch (map.kind) {
@@ -127,7 +182,16 @@ export function applyStructuralLayoutMap(content: string, map: StructuralLayoutM
       return applyPrefixedLayoutMap(content, map);
     case "fractional":
       return applyFractionalLayoutMap(content, map);
+    case "extended-prefixed":
+      return applyExtendedPrefixedLayoutMap(content, map);
   }
+}
+
+function collectLayoutMaps(theme: BuilderThemeConfig): StructuralLayoutMap[] {
+  const maps: StructuralLayoutMap[] = [];
+  if (theme.layoutMap) maps.push(theme.layoutMap);
+  if (theme.layoutMaps?.length) maps.push(...theme.layoutMaps);
+  return maps;
 }
 
 function extractShortcodeParam(params: string, names: string[]): string | undefined {
@@ -319,8 +383,8 @@ export function flattenWordPressBuilders(
     for (const rule of theme.iconImageRules ?? []) {
       html = convertIconImageRule(html, rule);
     }
-    if (theme.layoutMap) {
-      html = applyStructuralLayoutMap(html, theme.layoutMap);
+    for (const layoutMap of collectLayoutMaps(theme)) {
+      html = applyStructuralLayoutMap(html, layoutMap);
     }
     for (const prefix of theme.scaffoldingPrefixes ?? []) {
       html = stripScaffoldingPrefix(html, prefix);

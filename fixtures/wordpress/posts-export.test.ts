@@ -4,6 +4,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import { collectEntities, bundleCounts, type EntityBundle } from "../../src/normalizer/bundle.js";
 import { createWpContentGatewayRewrite } from "../../src/lib/origin-url-rewrite.js";
+import { resolveFeaturedContentAssetUrl } from "../../src/lib/content-asset-urls.js";
 import { findWordPressShortcodeMarkers } from "../../src/parsers/wordpress/builders/shortcode-conflicts.js";
 import { wordpressAdapter } from "../../src/parsers/wordpress/index.js";
 import { htmlToTiptap, type TiptapDoc, type TiptapNode } from "../../src/transformers/html-to-tiptap/index.js";
@@ -139,5 +140,19 @@ describe("naikonpixels posts export", () => {
   it("rewrites gateway asset URLs to public origin", () => {
     expect(bundle.media.some((a) => a.sourceUrl.includes("execute-api"))).toBe(false);
     expect(bundle.media.some((a) => a.sourceUrl.startsWith(`${PUBLIC}/wp-content/`))).toBe(true);
+  });
+
+  it("prefers section hero over _w_<width> inline when thumbnail is missing", () => {
+    const post = bundle.posts.find((p) => p.slug === "under-which-i-spoke-to-mom");
+    expect(post?.contentHtml).toContain("MoccasinCreek_w_1045.jpg");
+
+    const withHero =
+      `<div data-layout="section" data-bg-image="${PUBLIC}/wp-content/uploads/MilkyWay_16x9.jpg"></div>` +
+      (post?.contentHtml ?? "");
+
+    expect(resolveFeaturedContentAssetUrl(withHero)).toBe(
+      `${PUBLIC}/wp-content/uploads/MilkyWay_16x9.jpg`,
+    );
+    expect(resolveFeaturedContentAssetUrl(post!.contentHtml!)).toContain("MoccasinCreek");
   });
 });
