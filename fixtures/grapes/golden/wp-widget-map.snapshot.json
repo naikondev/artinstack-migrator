@@ -1,0 +1,19 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "tagName": "p",
+      "content": "Find us on the map."
+    },
+    {
+      "type": "wp-widget",
+      "tagName": "div",
+      "attributes": {
+        "data-wp-widget": "map",
+        "data-embed-url": "https://www.google.com/maps/embed?pb=example"
+      }
+    }
+  ],
+  "styles": [],
+  "contentHtml": "<p>Find us on the map.</p>\n<div data-wp-widget=\"map\" data-embed-url=\"https://www.google.com/maps/embed?pb=example\">​</div>"
+}

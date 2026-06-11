@@ -4,9 +4,9 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { extractMainContentHtml, parseSitemapUrls, parseUrlList } from "./snapshot.js";
+import { extractMainContentHtml, parseSitemapUrls, parseUrlList } from "../../../parsers/wix/snapshot.js";
 
-const FIXTURES_ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../fixtures/wix");
+const FIXTURES_ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../../fixtures/wix");
 
 describe("extractMainContentHtml", () => {
   it("extracts article content and title from Wix-like HTML", () => {

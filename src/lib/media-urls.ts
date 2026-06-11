@@ -1,5 +1,49 @@
 import * as cheerio from "cheerio";
 
+// --- Origin URL rewrite (gateway → public origin before parse/discovery) ---
+
+export interface OriginUrlRewriteRule {
+  /** Literal substring or regex matched against the full text block. */
+  match: string | RegExp;
+  replace: string;
+}
+
+export interface OriginUrlRewriteConfig {
+  rules: OriginUrlRewriteRule[];
+}
+
+/** Swap legacy gateway/staging host fragments before parse, fetch, or asset discovery. */
+export function rewriteOriginUrlsInText(text: string, config: OriginUrlRewriteConfig): string {
+  if (!text || config.rules.length === 0) return text;
+
+  let result = text;
+  for (const rule of config.rules) {
+    if (typeof rule.match === "string") {
+      if (!rule.match) continue;
+      result = result.split(rule.match).join(rule.replace);
+      continue;
+    }
+    result = result.replace(rule.match, rule.replace);
+  }
+  return result;
+}
+
+/** Build a rule that rewrites API-gateway `/prod/wp-content/` paths to a public origin. */
+export function createWpContentGatewayRewrite(gatewayBase: string, publicOrigin: string): OriginUrlRewriteConfig {
+  const normalizedGateway = gatewayBase.replace(/\/$/, "");
+  const normalizedPublic = publicOrigin.replace(/\/$/, "");
+  return {
+    rules: [
+      {
+        match: `${normalizedGateway}/wp-content/`,
+        replace: `${normalizedPublic}/wp-content/`,
+      },
+    ],
+  };
+}
+
+// --- Content asset URL discovery & normalization ---
+
 const IMAGE_EXTENSIONS = "jpe?g|png|gif|webp|avif|svg";
 /** Image file extension in a path or URL (allows trailing `?query` / `#hash`). */
 const IMAGE_EXTENSION_PATTERN = new RegExp(String.raw`\.(?:${IMAGE_EXTENSIONS})\b`, "i");
@@ -216,4 +260,134 @@ export function discoverContentAssetUrls(content: string): string[] {
 /** @deprecated Use discoverContentAssetUrls — kept for call-site clarity during transition. */
 export function extractInlineImageSrcs(content: string): string[] {
   return discoverContentAssetUrls(content);
+}
+
+// --- Migration media refs (`artinstack-migration://asset/{sourceId}`) ---
+
+/** Pseudo-URL scheme for portable migration asset pointers (not WordPress shortcodes). */
+export const MIGRATION_MEDIA_REF_SCHEME = "artinstack-migration://asset/";
+
+/** Build `artinstack-migration://asset/{sourceId}` (percent-encodes the normalizer source id). */
+export function formatMigrationMediaRef(sourceAssetId: string): string {
+  return `${MIGRATION_MEDIA_REF_SCHEME}${encodeURIComponent(sourceAssetId)}`;
+}
+
+export function isMigrationMediaRef(value: string): boolean {
+  return value.trim().startsWith(MIGRATION_MEDIA_REF_SCHEME);
+}
+
+/** Parse a migration media ref back to the normalizer `sourceId`, or `undefined` if not a ref. */
+export function parseMigrationMediaRef(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith(MIGRATION_MEDIA_REF_SCHEME)) return undefined;
+  const encoded = trimmed.slice(MIGRATION_MEDIA_REF_SCHEME.length);
+  if (!encoded) return undefined;
+  try {
+    return decodeURIComponent(encoded);
+  } catch {
+    return undefined;
+  }
+}
+
+/** Default `replaceWith` for `rewriteInlineImages` / `stampMigrationMediaRefs` (OSS-14). */
+export function createMigrationMediaRefReplaceWith(): (
+  ref: { sourceAssetId?: string },
+) => string {
+  return (ref) => {
+    if (!ref.sourceAssetId) return "";
+    return formatMigrationMediaRef(ref.sourceAssetId);
+  };
+}
+
+// --- Canonical inline keys & lookup index (OSS-15) ---
+
+export interface CanonicalInlineAssetUrl {
+  /** Canonical absolute URL stored on `NormalizedAsset.sourceUrl`. */
+  canonicalUrl: string;
+  /** Normalizer id: `url:{canonicalUrl}`. */
+  sourceId: string;
+}
+
+/**
+ * OSS-15: one canonical key for inline `url:` assets — apply origin rewrite then
+ * `normalizeAssetUrl` so discovery, refs, and vault entities share the same id.
+ */
+export function canonicalizeInlineAssetUrl(
+  raw: string,
+  originUrlRewrite?: OriginUrlRewriteConfig,
+): CanonicalInlineAssetUrl | undefined {
+  let value = raw.trim();
+  if (!value || value.startsWith("data:")) return undefined;
+
+  if (originUrlRewrite) {
+    value = rewriteOriginUrlsInText(value, originUrlRewrite);
+  }
+
+  const canonicalUrl = normalizeAssetUrl(value);
+  if (!canonicalUrl) return undefined;
+
+  return {
+    canonicalUrl,
+    sourceId: `url:${canonicalUrl}`,
+  };
+}
+
+function urlPathname(url: string): string | undefined {
+  try {
+    return new URL(url, "http://migration.local").pathname;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Map normalized upload URLs (and pathnames) → normalizer `sourceId`.
+ * Attachment ids are WXR `post_id` strings; inline discoveries use `url:{src}`.
+ */
+export function buildMigrationMediaUrlIndex(
+  entries: Iterable<{ sourceUrl: string; sourceId: string }>,
+): Map<string, string> {
+  const index = new Map<string, string>();
+
+  for (const entry of entries) {
+    index.set(entry.sourceUrl, entry.sourceId);
+    const normalized = normalizeAssetUrl(entry.sourceUrl);
+    if (normalized) index.set(normalized, entry.sourceId);
+    const pathname = urlPathname(entry.sourceUrl);
+    if (pathname) index.set(pathname, entry.sourceId);
+  }
+
+  return index;
+}
+
+export function resolveMigrationMediaSourceId(
+  src: string,
+  urlIndex: Map<string, string>,
+  originUrlRewrite?: OriginUrlRewriteConfig,
+): string | undefined {
+  const canonical = canonicalizeInlineAssetUrl(src, originUrlRewrite);
+  const normalized = canonical?.canonicalUrl ?? normalizeAssetUrl(src);
+  if (!normalized) return undefined;
+
+  return (
+    urlIndex.get(normalized) ??
+    urlIndex.get(src) ??
+    (urlPathname(normalized) ? urlIndex.get(urlPathname(normalized)!) : undefined)
+  );
+}
+
+/** Merge attachment + inline asset rows into one stamp/lookup index (OSS-15). */
+export function buildContentMediaUrlIndex(
+  entries: Iterable<{ sourceUrl: string; sourceId: string }>,
+  originUrlRewrite?: OriginUrlRewriteConfig,
+): Map<string, string> {
+  const canonicalEntries: { sourceUrl: string; sourceId: string }[] = [];
+  for (const entry of entries) {
+    const canonical = canonicalizeInlineAssetUrl(entry.sourceUrl, originUrlRewrite);
+    canonicalEntries.push({
+      sourceUrl: canonical?.canonicalUrl ?? entry.sourceUrl,
+      sourceId: entry.sourceId,
+    });
+  }
+  return buildMigrationMediaUrlIndex(canonicalEntries);
 }

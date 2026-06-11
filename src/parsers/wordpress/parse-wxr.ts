@@ -4,16 +4,15 @@ import { basename } from "node:path";
 import { XMLParser } from "fast-xml-parser";
 
 import {
+  buildContentMediaUrlIndex,
+  canonicalizeInlineAssetUrl,
   discoverContentAssetUrls,
-  normalizeAssetUrl,
+  parseMigrationMediaRef,
   resolveFeaturedContentAssetUrl,
-} from "../../lib/content-asset-urls.js";
-import { buildMigrationMediaUrlIndex } from "../../lib/migration-media-url-index.js";
-import { stampMigrationMediaRefs } from "../../transformers/rewrite-inline-images.js";
-import {
-  type OriginUrlRewriteConfig,
   rewriteOriginUrlsInText,
-} from "../../lib/origin-url-rewrite.js";
+  type OriginUrlRewriteConfig,
+} from "../../lib/media-urls.js";
+import { stampMigrationMediaRefs } from "../../transformers/rewrite-inline-images.js";
 import { linkToPath, sanitizeSlug } from "../../lib/utility.js";
 import { flattenWordPressBuilders } from "./builders/flatten.js";
 import type {
@@ -173,11 +172,11 @@ function buildAttachmentIndex(
   for (const item of items) {
     if (textValue(item.post_type) !== "attachment") continue;
     const id = textValue(item.post_id);
-    let url = textValue(item.attachment_url) || textValue(item.link);
-    if (!id || !url) continue;
-    if (originUrlRewrite) {
-      url = rewriteOriginUrlsInText(url, originUrlRewrite);
-    }
+    const rawUrl = textValue(item.attachment_url) || textValue(item.link);
+    if (!id || !rawUrl) continue;
+    const canonical = canonicalizeInlineAssetUrl(rawUrl, originUrlRewrite);
+    if (!canonical) continue;
+    const url = canonical.canonicalUrl;
 
     const filename = basename(new URL(url, "http://local.invalid").pathname) || `attachment-${id}`;
     index.set(id, {
@@ -253,24 +252,28 @@ function collectInlineAssets(
   attachmentIndex: Map<string, AttachmentIndexEntry>,
   seenUrls: Set<string>,
   exportedAt?: string,
+  originUrlRewrite?: OriginUrlRewriteConfig,
 ): NormalizedAsset[] {
   const assets: NormalizedAsset[] = [];
-  for (const src of discoverContentAssetUrls(html)) {
-    if (seenUrls.has(src)) continue;
-    seenUrls.add(src);
+  for (const discovered of discoverContentAssetUrls(html)) {
+    const canonical = canonicalizeInlineAssetUrl(discovered, originUrlRewrite);
+    if (!canonical) continue;
+    if (seenUrls.has(canonical.canonicalUrl)) continue;
+    seenUrls.add(canonical.canonicalUrl);
 
     let filename: string;
     try {
-      filename = basename(new URL(src, "http://local.invalid").pathname) || "inline-asset";
+      filename =
+        basename(new URL(canonical.canonicalUrl, "http://local.invalid").pathname) || "inline-asset";
     } catch {
       filename = "inline-asset";
     }
 
     assets.push({
       type: "asset",
-      source: sourceMeta(`url:${src}`, src, exportedAt),
-      sourceId: `url:${src}`,
-      sourceUrl: src,
+      source: sourceMeta(canonical.sourceId, canonical.canonicalUrl, exportedAt),
+      sourceId: canonical.sourceId,
+      sourceUrl: canonical.canonicalUrl,
       filename,
       mimeType: guessMime(filename),
     });
@@ -301,12 +304,18 @@ function resolveFeaturedAssetSourceId(
   thumbnailId: string | undefined,
   attachmentIndex: Map<string, AttachmentIndexEntry>,
   contentHtml: string,
+  originUrlRewrite?: OriginUrlRewriteConfig,
 ): string | undefined {
   if (thumbnailId && attachmentIndex.has(thumbnailId)) {
     return thumbnailId;
   }
   const featuredUrl = resolveFeaturedContentAssetUrl(contentHtml);
-  return featuredUrl ? `url:${featuredUrl}` : undefined;
+  if (!featuredUrl) return undefined;
+
+  const fromRef = parseMigrationMediaRef(featuredUrl);
+  if (fromRef) return fromRef;
+
+  return canonicalizeInlineAssetUrl(featuredUrl, originUrlRewrite)?.sourceId;
 }
 
 function maybeRewriteUrl(url: string | undefined, config?: OriginUrlRewriteConfig): string | undefined {
@@ -324,12 +333,6 @@ export async function* enumerateWxrEntities(
   const { categories, tags } = collectTaxonomies(items);
   const seenAssetUrls = new Set<string>();
   const emittedAttachmentIds = new Set<string>();
-  const attachmentUrlIndex = buildMigrationMediaUrlIndex(
-    [...attachmentIndex.entries()].map(([sourceId, entry]) => ({
-      sourceId,
-      sourceUrl: entry.sourceUrl,
-    })),
-  );
 
   for (const category of categories.values()) {
     yield category;
@@ -375,19 +378,30 @@ export async function* enumerateWxrEntities(
       attachmentIndex,
       seenAssetUrls,
       options.exportedAt,
+      options.originUrlRewrite,
     );
     for (const asset of inlineAssets) {
       yield asset;
     }
 
     if (options.stampMigrationMediaRefs !== false) {
-      const urlIndex = new Map(attachmentUrlIndex);
-      for (const asset of inlineAssets) {
-        urlIndex.set(asset.sourceUrl, asset.sourceId);
-        const normalized = normalizeAssetUrl(asset.sourceUrl);
-        if (normalized) urlIndex.set(normalized, asset.sourceId);
-      }
-      contentHtml = stampMigrationMediaRefs(contentHtml, { urlToSourceId: urlIndex }).html;
+      const urlIndex = buildContentMediaUrlIndex(
+        [
+          ...[...attachmentIndex.entries()].map(([sourceId, entry]) => ({
+            sourceId,
+            sourceUrl: entry.sourceUrl,
+          })),
+          ...inlineAssets.map((asset) => ({
+            sourceId: asset.sourceId,
+            sourceUrl: asset.sourceUrl,
+          })),
+        ],
+        options.originUrlRewrite,
+      );
+      contentHtml = stampMigrationMediaRefs(contentHtml, {
+        urlToSourceId: urlIndex,
+        originUrlRewrite: options.originUrlRewrite,
+      }).html;
     }
 
     const categorySlugs: string[] = [];
@@ -406,6 +420,7 @@ export async function* enumerateWxrEntities(
         thumbnailId,
         attachmentIndex,
         contentHtml,
+        options.originUrlRewrite,
       );
 
       const post: NormalizedPost = {

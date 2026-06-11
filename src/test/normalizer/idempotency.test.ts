@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { shouldProcessEntity } from "./idempotency.js";
-import { entityKey } from "./types.js";
-import type { NormalizedPost } from "./types.js";
+import { shouldProcessEntity } from "../../normalizer/idempotency.js";
+import { entityKey } from "../../normalizer/types.js";
+import type { NormalizedPost } from "../../normalizer/types.js";
 
 describe("entityKey", () => {
   it("builds a stable key from a normalized post", () => {

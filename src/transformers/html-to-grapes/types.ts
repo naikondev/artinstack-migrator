@@ -14,6 +14,8 @@ export interface HtmlToGrapesOptions {
   tagMap?: Record<string, string>;
   /** Map `data-layout` section/row/column markers to Grapes component types. */
   layoutTypeMap?: LayoutTypeMap;
+  /** Grapes type for OSS-12 `data-wp-widget` markers. Default: `wp-widget`. */
+  widgetComponentType?: string;
 }
 
 export interface GrapesStyleRule {

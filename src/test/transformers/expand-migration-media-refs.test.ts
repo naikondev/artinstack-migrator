@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { formatMigrationMediaRef } from "../lib/migration-media-ref.js";
-import { expandMigrationMediaRefs } from "./expand-migration-media-refs.js";
+import { formatMigrationMediaRef } from "../../lib/media-urls.js";
+import { expandMigrationMediaRefs } from "../../transformers/expand-migration-media-refs.js";
 
 describe("expandMigrationMediaRefs", () => {
   const sourceId = "url:https://www.naikonpixels.com/wp-content/uploads/About_w_2048.jpg";

@@ -69,6 +69,34 @@
         }
       },
       "gates": ["tag_map"]
+    },
+    {
+      "id": "wp-widget-map",
+      "html": "html/wp-widget-map.html",
+      "golden": "golden/wp-widget-map.snapshot.json",
+      "description": "OSS-13 data-wp-widget map stub stays atomic beside paragraph text",
+      "gates": ["wp_widget"]
+    },
+    {
+      "id": "wp-widget-contact",
+      "html": "html/wp-widget-contact.html",
+      "golden": "golden/wp-widget-contact.snapshot.json",
+      "description": "OSS-13 contact-form widget attrs preserved on section shell",
+      "gates": ["wp_widget"]
+    },
+    {
+      "id": "wp-widget-guard",
+      "html": "html/wp-widget-guard.html",
+      "golden": "golden/wp-widget-guard.snapshot.json",
+      "description": "OSS-13 widget stub must not merge into preceding paragraph",
+      "gates": ["wp_widget"]
+    },
+    {
+      "id": "wp-widget-embed",
+      "html": "html/wp-widget-embed.html",
+      "golden": "golden/wp-widget-embed.snapshot.json",
+      "description": "OSS-13 known embed iframes map to void embed components",
+      "gates": ["wp_widget_embed"]
     }
   ]
 }

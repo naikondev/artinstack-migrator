@@ -3,8 +3,10 @@ import { fileURLToPath } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { collectEntities, bundleCounts, type EntityBundle } from "../../src/normalizer/bundle.js";
-import { createWpContentGatewayRewrite } from "../../src/lib/origin-url-rewrite.js";
-import { resolveFeaturedContentAssetUrl } from "../../src/lib/content-asset-urls.js";
+import {
+  createWpContentGatewayRewrite,
+  resolveFeaturedContentAssetUrl,
+} from "../../src/lib/media-urls.js";
 import { findWordPressShortcodeMarkers } from "../../src/parsers/wordpress/builders/shortcode-conflicts.js";
 import { wordpressAdapter } from "../../src/parsers/wordpress/index.js";
 import { htmlToTiptap, type TiptapDoc, type TiptapNode } from "../../src/transformers/html-to-tiptap/index.js";

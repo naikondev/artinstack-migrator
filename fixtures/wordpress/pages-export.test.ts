@@ -3,11 +3,12 @@ import { fileURLToPath } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { collectEntities, bundleCounts } from "../../src/normalizer/bundle.js";
-import { createWpContentGatewayRewrite } from "../../src/lib/origin-url-rewrite.js";
+import { createWpContentGatewayRewrite } from "../../src/lib/media-urls.js";
 import {
   formatMigrationMediaRef,
   isMigrationMediaRef,
-} from "../../src/lib/migration-media-ref.js";
+  parseMigrationMediaRef,
+} from "../../src/lib/media-urls.js";
 import { findWordPressShortcodeMarkers } from "../../src/parsers/wordpress/builders/shortcode-conflicts.js";
 import { analyzeConflicts } from "../../src/sinks/conflicts.js";
 import { wordpressAdapter } from "../../src/parsers/wordpress/index.js";
@@ -18,7 +19,7 @@ const FIXTURES_ROOT = join(dirname(fileURLToPath(import.meta.url)));
 const GATEWAY = "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod";
 const PUBLIC = "https://www.naikonpixels.com";
 
-const ALLOWED_UNRESOLVABLE_SHORTCODES = new Set(["portfolio", "recent_posts"]);
+const ALLOWED_UNRESOLVABLE_SHORTCODES = new Set(["recent_posts"]);
 const LEGACY_LAYOUT_SHORTCODE =
   /\[(section|row|one_col|one_third|one_half|one_fourth|two_third|three_fourth)\b/i;
 
@@ -138,20 +139,21 @@ describe("naikonpixels pages export", () => {
     expect(about?.contentHtml).toContain('data-cols="3"');
     expect(about?.contentHtml).toContain("<p>I am Prashant Naik.");
     expect(about?.contentHtml).not.toMatch(/\[special_sub_title|\[tatsu_/);
-    expect(about?.contentHtml).toContain('data-unresolved-shortcode="blox_gmap"');
+    expect(about?.contentHtml).toContain('data-wp-widget="map"');
     expect(about?.contentHtml).toContain("International Dark-Sky Association");
   });
 
-  it("reports unresolvable portfolio and recent_posts shortcodes", () => {
+  it("flattens portfolio page to widget stub and reports recent_posts shortcodes", () => {
+    const portfolioPage = bundle.pages.find((p) => p.slug === "portfolio");
+    expect(portfolioPage?.contentHtml).toContain('data-wp-widget="portfolio"');
+    expect(portfolioPage?.contentHtml).toContain('data-wp-portfolio-category="photography"');
+    expect(portfolioPage?.contentHtml).not.toMatch(/\[portfolio\b/);
+
     const conflicts = analyzeConflicts(bundle);
-    const portfolio = conflicts.unsupportedBlocks.filter((b) =>
-      b.blockType.includes("portfolio"),
-    );
     const recentPosts = conflicts.unsupportedBlocks.filter((b) =>
       b.blockType.includes("recent_posts"),
     );
 
-    expect(portfolio.length).toBeGreaterThan(0);
     expect(recentPosts.length).toBeGreaterThan(0);
     expect(
       conflicts.unsupportedBlocks.some((b) => b.blockType.includes("woocommerce")),
@@ -182,6 +184,18 @@ describe("naikonpixels pages export", () => {
         `expected bundle media to include ${filename}`,
       ).toBe(true);
     }
+  });
+
+  it("OSS-15: hero ref sourceId matches inline asset sourceId (canonical url: key)", () => {
+    const about = bundle.pages.find((p) => p.slug === "about");
+    const heroAsset = bundle.media.find((a) => a.sourceUrl.includes("About_w_2048.jpg"));
+    expect(about?.contentHtml).toBeDefined();
+    expect(heroAsset?.sourceId).toBeDefined();
+
+    const heroRef = about?.contentHtml?.match(/data-bg-image="([^"]+)"/)?.[1];
+    expect(heroRef).toBeDefined();
+    expect(parseMigrationMediaRef(heroRef!)).toBe(heroAsset!.sourceId);
+    expect(heroAsset!.sourceId).not.toMatch(/execute-api/i);
   });
 
   it("stamps OSS-14 migration media refs for section heroes (no gateway URLs in contentHtml)", () => {

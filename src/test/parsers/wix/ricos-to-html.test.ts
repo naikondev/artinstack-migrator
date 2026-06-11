@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ricosToHtml } from "./ricos-to-html.js";
+import { ricosToHtml } from "../../../parsers/wix/ricos-to-html.js";
 
 describe("ricosToHtml", () => {
   it("renders paragraphs, headings, images, and links", () => {

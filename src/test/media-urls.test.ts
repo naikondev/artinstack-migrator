@@ -1,11 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  canonicalizeInlineAssetUrl,
+  createWpContentGatewayRewrite,
   discoverContentAssetUrls,
+  formatMigrationMediaRef,
   isLikelyImageUrl,
+  isMigrationMediaRef,
   normalizeAssetUrl,
+  parseMigrationMediaRef,
   resolveFeaturedContentAssetUrl,
-} from "./content-asset-urls.js";
+  rewriteOriginUrlsInText,
+} from "../lib/media-urls.js";
 
 describe("discoverContentAssetUrls", () => {
   it("extracts standard img tags", () => {
@@ -158,5 +164,73 @@ describe("resolveFeaturedContentAssetUrl", () => {
 describe("normalizeAssetUrl", () => {
   it("prefixes protocol-relative URLs with https", () => {
     expect(normalizeAssetUrl("//cdn.example.com/a.jpg")).toBe("https://cdn.example.com/a.jpg");
+  });
+});
+
+describe("migration media refs", () => {
+  it("round-trips a normal attachment source id", () => {
+    const ref = formatMigrationMediaRef("4507");
+    expect(ref).toBe("artinstack-migration://asset/4507");
+    expect(isMigrationMediaRef(ref)).toBe(true);
+    expect(parseMigrationMediaRef(ref)).toBe("4507");
+  });
+
+  it("percent-encodes inline url source ids", () => {
+    const sourceId = "url:https://www.naikonpixels.com/wp-content/uploads/About_w_2048.jpg";
+    const ref = formatMigrationMediaRef(sourceId);
+    expect(parseMigrationMediaRef(ref)).toBe(sourceId);
+  });
+
+  it("rejects non-ref strings", () => {
+    expect(parseMigrationMediaRef("https://example.com/a.jpg")).toBeUndefined();
+    expect(isMigrationMediaRef("https://example.com/a.jpg")).toBe(false);
+  });
+});
+
+describe("canonicalizeInlineAssetUrl", () => {
+  const GATEWAY = "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod";
+  const PUBLIC = "https://www.naikonpixels.com";
+  const rewrite = createWpContentGatewayRewrite(GATEWAY, PUBLIC);
+
+  it("rewrites gateway host then builds url: sourceId", () => {
+    const result = canonicalizeInlineAssetUrl(
+      `${GATEWAY}/wp-content/uploads/About_w_2048.jpg`,
+      rewrite,
+    );
+    expect(result?.canonicalUrl).toBe(`${PUBLIC}/wp-content/uploads/About_w_2048.jpg`);
+    expect(result?.sourceId).toBe(`url:${PUBLIC}/wp-content/uploads/About_w_2048.jpg`);
+  });
+
+  it("normalizes protocol-relative URLs", () => {
+    const result = canonicalizeInlineAssetUrl("//cdn.example.com/wp-content/uploads/a.jpg");
+    expect(result?.canonicalUrl).toBe("https://cdn.example.com/wp-content/uploads/a.jpg");
+    expect(result?.sourceId).toBe("url:https://cdn.example.com/wp-content/uploads/a.jpg");
+  });
+
+  it("is idempotent when input is already public origin", () => {
+    const url = `${PUBLIC}/wp-content/uploads/About_w_2048.jpg`;
+    const result = canonicalizeInlineAssetUrl(url, rewrite);
+    expect(result?.sourceId).toBe(`url:${url}`);
+  });
+});
+
+describe("rewriteOriginUrlsInText", () => {
+  it("replaces gateway wp-content paths with public origin", () => {
+    const config = createWpContentGatewayRewrite(
+      "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod",
+      "https://naikonpixels.com",
+    );
+    const raw =
+      '[tatsu_image image= "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod/wp-content/uploads/2022/05/photo.jpg"]';
+    expect(rewriteOriginUrlsInText(raw, config)).toContain(
+      "https://naikonpixels.com/wp-content/uploads/2022/05/photo.jpg",
+    );
+  });
+
+  it("supports regex rules", () => {
+    const result = rewriteOriginUrlsInText("https://staging.example/a.jpg", {
+      rules: [{ match: /staging\.example/, replace: "cdn.example" }],
+    });
+    expect(result).toBe("https://cdn.example/a.jpg");
   });
 });

@@ -4,8 +4,8 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { flattenWordPressBuilders } from "../../parsers/wordpress/builders/flatten.js";
-import { htmlToTiptap } from "./index.js";
-import { validateTiptapDoc } from "../validate-tiptap-doc.js";
+import { htmlToTiptap } from "../../transformers/html-to-tiptap/index.js";
+import { validateTiptapDoc } from "../../transformers/validate-tiptap-doc.js";
 
 const TIPTAP_FIXTURES = join(
   dirname(fileURLToPath(import.meta.url)),

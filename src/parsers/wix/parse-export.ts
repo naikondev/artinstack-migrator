@@ -3,7 +3,7 @@ import { basename, extname } from "node:path";
 
 import { XMLParser } from "fast-xml-parser";
 
-import { discoverContentAssetUrls } from "../../lib/content-asset-urls.js";
+import { discoverContentAssetUrls } from "../../lib/media-urls.js";
 import { linkToPath, sanitizeSlug } from "../../lib/utility.js";
 import type {
   NormalizedAsset,

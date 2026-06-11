@@ -1,0 +1,15 @@
+{
+  "content": [
+    {
+      "type": "wp-widget",
+      "tagName": "section",
+      "attributes": {
+        "data-wp-widget": "contact-form",
+        "data-wp-form-source": "contact-form-7",
+        "data-wp-form-id": "123"
+      }
+    }
+  ],
+  "styles": [],
+  "contentHtml": "<section data-wp-widget=\"contact-form\" data-wp-form-source=\"contact-form-7\" data-wp-form-id=\"123\">​</section>"
+}

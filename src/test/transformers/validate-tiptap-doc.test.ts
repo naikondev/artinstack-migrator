@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { validateTiptapDoc } from "./validate-tiptap-doc.js";
+import { validateTiptapDoc } from "../../transformers/validate-tiptap-doc.js";
 
 describe("validateTiptapDoc", () => {
   it("accepts a minimal valid doc", () => {

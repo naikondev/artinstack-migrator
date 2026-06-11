@@ -16,7 +16,8 @@ src/
   sinks/            filesystem export, MigrationSink interface
   cli/              artinstack-migrate
   transformers/     HtmlToGrapes, css-to-styles, inline image rewrite, media ref expand
-  lib/              content-asset-urls, migration-media-ref, origin-url-rewrite
+  lib/              media-urls, utility (shared helpers)
+  test/             unit tests (mirrors src/ layout; vitest only)
 ```
 
 ## Install

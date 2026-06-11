@@ -1,14 +1,29 @@
 import type { AdapterContext, MigrationAdapter, ValidationResult } from "../../normalizer/types.js";
-import type { OriginUrlRewriteConfig } from "../../lib/origin-url-rewrite.js";
+import type { OriginUrlRewriteConfig } from "../../lib/media-urls.js";
 import { enumerateWxrEntities, validateWxrFile, type WxrParseOptions } from "./parse-wxr.js";
 
-export { flattenWordPressBuilders, extractQuotedParam } from "./builders/flatten.js";
-export { WORDPRESS_BUILDER_REGISTRY, UNRESOLVABLE_SHORTCODE_PREFIXES } from "./builders/registry.js";
+export {
+  flattenWordPressBuilders,
+  extractQuotedParam,
+  normalizeVideoEmbedUrl,
+} from "./builders/flatten.js";
+export {
+  WORDPRESS_BUILDER_REGISTRY,
+  WORDPRESS_WIDGET_REGISTRY,
+  UNRESOLVABLE_SHORTCODE_PREFIXES,
+} from "./builders/registry.js";
 export {
   findWordPressShortcodeMarkers,
   hasUnresolvableShortcodes,
 } from "./builders/shortcode-conflicts.js";
-export type { BuilderThemeConfig, BuilderContentRule, BuilderUrlRule, BuilderTextRule } from "./builders/registry.js";
+export type {
+  BuilderThemeConfig,
+  BuilderContentRule,
+  BuilderUrlRule,
+  BuilderTextRule,
+  WordPressWidgetRegistry,
+  WordPressContactFormWidgetRule,
+} from "./builders/registry.js";
 export type { WxrParseOptions } from "./parse-wxr.js";
 
 export interface WordPressParseInput {

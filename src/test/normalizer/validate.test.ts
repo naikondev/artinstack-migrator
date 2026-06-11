@@ -4,7 +4,7 @@ import {
   validateNormalizedEntity,
   validateNormalizedPage,
   validateNormalizedPost,
-} from "./validate.js";
+} from "../../normalizer/validate.js";
 
 const validPost = {
   type: "post",

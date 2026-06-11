@@ -3,23 +3,24 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { discoverContentAssetUrls } from "../../../lib/content-asset-urls.js";
+import { discoverContentAssetUrls } from "../../../../lib/media-urls.js";
 import {
   applyStructuralLayoutMap,
   flattenWordPressBuilders,
+  normalizeVideoEmbedUrl,
   parseFractionWidth,
   parseRowLayoutCols,
-} from "./flatten.js";
-import { findWordPressShortcodeMarkers } from "./shortcode-conflicts.js";
+} from "../../../../parsers/wordpress/builders/flatten.js";
+import { findWordPressShortcodeMarkers } from "../../../../parsers/wordpress/builders/shortcode-conflicts.js";
 import {
   extendedPrefixedLayoutMap,
   fractionalLayoutMap,
   parseFractionalColumnWidth,
   prefixedLayoutMap,
   type BuilderThemeConfig,
-} from "./registry.js";
+} from "../../../../parsers/wordpress/builders/registry.js";
 
-const FIXTURES_ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../../fixtures/wordpress");
+const FIXTURES_ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../../../fixtures/wordpress");
 
 function extractAboutPageRawContent(): string {
   const xml = readFileSync(join(FIXTURES_ROOT, "naikonpixels.WordPress.Pages.2026-06-09.xml"), "utf8");
@@ -120,7 +121,7 @@ describe("flattenWordPressBuilders", () => {
     expect(html).toContain('data-cols="3"');
     expect(html).toContain("<p>I am Prashant Naik.");
     expect(html).toContain("International Dark-Sky Association");
-    expect(html).toContain('data-unresolved-shortcode="blox_gmap"');
+    expect(html).toContain('data-wp-widget="map"');
     expect(html).not.toMatch(/\[tatsu_/);
     expect((html.match(/data-layout="row"/g) ?? []).length).toBeGreaterThanOrEqual(3);
     expect((html.match(/data-layout="column"/g) ?? []).length).toBeGreaterThanOrEqual(5);
@@ -173,10 +174,10 @@ describe("flattenWordPressBuilders", () => {
     expect(html).not.toMatch(/\[testimonial|\[testimonials/);
   });
 
-  it("replaces blox_gmap with a static placeholder", () => {
+  it("replaces blox_gmap with a map widget stub", () => {
     const raw = '[blox_gmap type="gmap"]';
     const { html } = flattenWordPressBuilders(raw);
-    expect(html).toContain('data-unresolved-shortcode="blox_gmap"');
+    expect(html).toContain('data-wp-widget="map"');
     expect(html).not.toMatch(/\[blox_gmap/);
   });
 
@@ -208,17 +209,77 @@ describe("flattenWordPressBuilders", () => {
     expect(html).not.toMatch(/\[vc_/);
   });
 
-  it("strips blox_row scaffolding and leaves portfolio shortcode for conflicts", () => {
+  it("strips blox_row scaffolding and flattens portfolio to widget stub", () => {
     const raw =
       '[blox_row][blox_column width="1/1"][portfolio col="two" category="photography"][/portfolio][/blox_column][/blox_row]';
     const { html } = flattenWordPressBuilders(raw);
     expect(html).toContain('data-layout="section"');
     expect(html).toContain('data-layout="column"');
     expect(html).not.toMatch(/\[blox_/);
-    expect(html).toMatch(/\[portfolio/);
-    expect(findWordPressShortcodeMarkers(html)).toEqual([
-      { shortcode: "portfolio", unresolvable: true },
-    ]);
+    expect(html).toContain('data-wp-widget="portfolio"');
+    expect(html).toContain('data-wp-portfolio-category="photography"');
+    expect(html).not.toMatch(/\[portfolio/);
+  });
+
+  it("expands inline [gallery ids] to attachment img stubs (not portfolio widget)", () => {
+    const raw = '[gallery ids="142,143,144"]';
+    const { html } = flattenWordPressBuilders(raw);
+    expect(html).toContain('data-wp-inline-gallery');
+    expect(html).toContain('data-wp-attachment-id="142"');
+    expect(html).toContain('data-wp-attachment-id="144"');
+    expect(html).not.toContain('data-wp-widget="portfolio"');
+    expect(html).not.toMatch(/\[gallery/);
+  });
+
+  it("emits portfolio widget stub for dynamic [gallery] without ids", () => {
+    const raw = '[gallery category="photography"]';
+    const { html } = flattenWordPressBuilders(raw);
+    expect(html).toContain('data-wp-widget="portfolio"');
+    expect(html).toContain('data-wp-gallery-dynamic="1"');
+    expect(html).not.toMatch(/\[gallery/);
+  });
+
+  it("flattens contact-form-7 to contact-form widget stub", () => {
+    const raw = '[contact-form-7 id="123" title="Contact"]';
+    const { html } = flattenWordPressBuilders(raw);
+    expect(html).toContain('data-wp-widget="contact-form"');
+    expect(html).toContain('data-wp-form-source="contact-form-7"');
+    expect(html).toContain('data-wp-form-id="123"');
+    expect(html).not.toMatch(/\[contact-form-7/);
+  });
+
+  it("normalizes YouTube watch URLs to youtube-nocookie embed (OSS-16)", () => {
+    expect(normalizeVideoEmbedUrl("https://youtube.com/watch?v=ABC123xyz&t=45s")).toEqual({
+      provider: "youtube",
+      embedUrl: "https://www.youtube-nocookie.com/embed/ABC123xyz?start=45",
+    });
+    expect(normalizeVideoEmbedUrl("https://youtu.be/ABC123xyz?feature=shared")).toEqual({
+      provider: "youtube",
+      embedUrl: "https://www.youtube-nocookie.com/embed/ABC123xyz",
+    });
+    expect(normalizeVideoEmbedUrl("https://vimeo.com/74921042?autoplay=1")).toEqual({
+      provider: "vimeo",
+      embedUrl: "https://player.vimeo.com/video/74921042",
+    });
+  });
+
+  it("flattens youtube shortcode to video widget stub", () => {
+    const raw = "[youtube]https://www.youtube.com/watch?v=ABC123xyz[/youtube]";
+    const { html } = flattenWordPressBuilders(raw);
+    expect(html).toContain('data-wp-widget="video"');
+    expect(html).toContain('data-video-provider="youtube"');
+    expect(html).toContain('data-embed-url="https://www.youtube-nocookie.com/embed/ABC123xyz"');
+    expect(html).not.toMatch(/\[youtube/);
+  });
+
+  it("flattens tatsu_video with YouTube URL to video widget stub", () => {
+    const raw =
+      '[tatsu_video video= "https://www.youtube.com/watch?v=ABC123xyz"][/tatsu_video]';
+    const { html, detectedThemes } = flattenWordPressBuilders(raw);
+    expect(detectedThemes).toContain("tatsu");
+    expect(html).toContain('data-wp-widget="video"');
+    expect(html).toContain("youtube-nocookie.com/embed/ABC123xyz");
+    expect(html).not.toMatch(/\[tatsu_video/);
   });
 
   it("parses fractional column token names into width percentages", () => {
@@ -274,10 +335,12 @@ describe("flattenWordPressBuilders", () => {
 
 describe("findWordPressShortcodeMarkers", () => {
   it("flags unresolvable dynamic shortcodes", () => {
-    const markers = findWordPressShortcodeMarkers(
+    const { html } = flattenWordPressBuilders(
       '[portfolio col="two"][/portfolio][recent_posts number="three"][/recent_posts][woocommerce_cart]',
     );
-    expect(markers.map((m) => m.shortcode)).toEqual(["portfolio", "recent_posts", "woocommerce_cart"]);
+    const markers = findWordPressShortcodeMarkers(html);
+    expect(markers.map((m) => m.shortcode)).toEqual(["recent_posts", "woocommerce_cart"]);
     expect(markers.every((m) => m.unresolvable)).toBe(true);
+    expect(html).toContain('data-wp-widget="portfolio"');
   });
 });

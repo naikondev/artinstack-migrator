@@ -107,6 +107,25 @@ export async function validateGrapesFixture(
       errors.push("tag_map: expected section from componentMap over tagMap");
     }
   }
+  if (gates.includes("wp_widget")) {
+    const widgets = actual.content.filter((c) => c.type === "wp-widget");
+    if (widgets.length === 0) {
+      errors.push("wp_widget: expected at least one wp-widget component");
+    }
+    for (const widget of widgets) {
+      if (!widget.attributes?.["data-wp-widget"]) {
+        errors.push("wp_widget: expected data-wp-widget attribute on wp-widget component");
+      }
+    }
+  }
+  if (gates.includes("wp_widget_embed")) {
+    if (actual.content[0]?.type !== "embed") {
+      errors.push("wp_widget_embed: expected embed component for iframe");
+    }
+    if (actual.content[0]?.tagName !== "iframe") {
+      errors.push("wp_widget_embed: expected iframe tagName");
+    }
+  }
   return { id: entry.id, ok: errors.length === 0, errors };
 }
 

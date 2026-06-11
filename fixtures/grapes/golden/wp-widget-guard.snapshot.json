@@ -1,0 +1,18 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "tagName": "p",
+      "content": "International Dark-Sky Association"
+    },
+    {
+      "type": "wp-widget",
+      "tagName": "div",
+      "attributes": {
+        "data-wp-widget": "map"
+      }
+    }
+  ],
+  "styles": [],
+  "contentHtml": "<p>International Dark-Sky Association</p>\n<div data-wp-widget=\"map\">​</div>"
+}

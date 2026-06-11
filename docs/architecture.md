@@ -79,7 +79,8 @@ src/
     wordpress/          WXR parse, builder flattening (theme registry), asset discovery
     squarespace/        parse-export.ts — block flattening + static HTML snapshots
   normalizer/           Canonical types, idempotency, opt-in validate.ts (Zod)
-  lib/                  content-asset-urls, migration-media-ref, origin-url-rewrite
+  lib/                  media-urls, utility
+  test/                 all unit tests (mirrors src/ layout; not shipped)
   transformers/         HtmlToGrapes, css-to-styles, rewrite-inline-images, expand-migration-media-refs
   cli/                  artinstack-migrate
   sinks/
@@ -274,30 +275,9 @@ Stamped:  artinstack-migration://asset/url%3Ahttps%3A%2F%2Fwww.naikonpixels.com%
 
 The host never needs to know which origin host the URL came from — only `sourceId` → `targetId` → `publicUrl`. Unresolved URLs are left unchanged and surface in `conflicts.unresolvedInlineImages` (refs are not counted as unresolved).
 
-### `rewriteInlineImages` and `stampMigrationMediaRefs`
+OSS stamps via `parse-wxr` (default `stampMigrationMediaRefs: true`), `rewriteInlineImages`, and builder flatten. Discovery runs on raw URLs first; stamping is a second pass once the URL → `sourceId` index exists. The host expands via `expandMigrationMediaRefs` **before** DB write — Page Editor expects `data-bg-image` to be a real URL at persist time, not only at render time. These helpers are separate from page-builder flatten, which runs in the adapter before DTOs are emitted.
 
-Public helpers. **Not** the WordPress page-builder flatten step; that runs in the adapter before DTOs are emitted.
-
-```ts
-function rewriteInlineImages(html: string, options: {
-  resolveAsset: (src: string) => { originalSrc: string; sourceAssetId?: string } | undefined;
-  /** Default: stamp `artinstack-migration://asset/…` refs (OSS-14). Host may override for immediate CDN injection. */
-  replaceWith?: (ref, uploaded?: { targetId: string; publicUrl?: string }) => string;
-}): { html: string; referencedSources: string[]; unresolved: string[] };
-
-function stampMigrationMediaRefs(html: string, options: {
-  urlToSourceId: Map<string, string>;
-}): RewriteInlineImagesResult;
-
-function expandMigrationMediaRefs(
-  html: string,
-  resolvePublicUrl: (sourceId: string) => string | undefined,
-): { html: string; unresolved: string[] };
-```
-
-`parse-wxr` stamps refs in `contentHtml` by default after inline asset discovery (`stampMigrationMediaRefs: true`). Discovery still runs on raw URLs first; stamping is a second pass once the URL → `sourceId` index exists.
-
-Expand **before** DB write — Page Editor expects `data-bg-image` to be a real URL at persist time, not only at render time.
+Imports and call-site usage: [README § Migration media refs](../README.md#migration-media-refs).
 
 ---
 

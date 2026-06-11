@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { cssToStyles } from "./index.js";
+import { cssToStyles } from "../../transformers/css-to-styles/index.js";
 
 describe("cssToStyles", () => {
   it("parses class rules into Grapes style entries", () => {

@@ -7,7 +7,7 @@ export default defineConfig({
     "normalizer/index": "src/normalizer/index.ts",
     "sinks/index": "src/sinks/index.ts",
     "transformers/index": "src/transformers/index.ts",
-    "lib/index": "src/lib/content-asset-urls.ts",
+    "lib/index": "src/lib/index.ts",
   },
   format: ["esm"],
   dts: true,

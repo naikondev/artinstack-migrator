@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { flattenWordPressBuilders } from "../../parsers/wordpress/builders/flatten.js";
-import { htmlToGrapes } from "./index.js";
+import { htmlToGrapes } from "../../transformers/html-to-grapes/index.js";
 
 const GRAPES_FIXTURES = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -183,6 +183,69 @@ describe("htmlToGrapes", () => {
     expect(result.content[0]?.components?.[0]?.components?.[0]?.type).toBe("column-cell");
   });
 
+  it("OSS-13: treats data-wp-widget markers as atomic wp-widget blocks", () => {
+    const html = readFileSync(join(GRAPES_FIXTURES, "html/wp-widget-map.html"), "utf8");
+    const result = htmlToGrapes(html);
+
+    expect(result.content).toHaveLength(2);
+    expect(result.content[0]).toMatchObject({
+      type: "text",
+      tagName: "p",
+      content: "Find us on the map.",
+    });
+    expect(result.content[1]).toMatchObject({
+      type: "wp-widget",
+      tagName: "div",
+      attributes: {
+        "data-wp-widget": "map",
+        "data-embed-url": "https://www.google.com/maps/embed?pb=example",
+      },
+    });
+    expect(result.content[1]).not.toHaveProperty("components");
+  });
+
+  it("OSS-13: does not merge widget stubs into preceding paragraph text", () => {
+    const html = readFileSync(join(GRAPES_FIXTURES, "html/wp-widget-guard.html"), "utf8");
+    const result = htmlToGrapes(html);
+
+    expect(result.content).toHaveLength(2);
+    expect(result.content[0]?.type).toBe("text");
+    expect(result.content[1]?.type).toBe("wp-widget");
+    expect(result.content[1]?.attributes?.["data-wp-widget"]).toBe("map");
+  });
+
+  it("OSS-13: preserves contact-form widget attrs on section shells", () => {
+    const html = readFileSync(join(GRAPES_FIXTURES, "html/wp-widget-contact.html"), "utf8");
+    const result = htmlToGrapes(html);
+
+    expect(result.content).toEqual([
+      {
+        type: "wp-widget",
+        tagName: "section",
+        attributes: {
+          "data-wp-widget": "contact-form",
+          "data-wp-form-source": "contact-form-7",
+          "data-wp-form-id": "123",
+        },
+      },
+    ]);
+  });
+
+  it("OSS-13: maps known embed iframes to void embed components", () => {
+    const html = readFileSync(join(GRAPES_FIXTURES, "html/wp-widget-embed.html"), "utf8");
+    const result = htmlToGrapes(html);
+
+    expect(result.content[0]).toMatchObject({
+      type: "embed",
+      tagName: "iframe",
+      void: true,
+      attributes: {
+        src: "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
+        title: "Video",
+      },
+    });
+  });
+
   it("converts flattened naikonpixels about excerpt to nested layout components", () => {
     const xml = readFileSync(
       join(WP_FIXTURES, "naikonpixels.WordPress.Pages.2026-06-09.xml"),
@@ -211,8 +274,30 @@ describe("htmlToGrapes", () => {
     expect(colCount).toBeGreaterThanOrEqual(5);
     expect(JSON.stringify(snapshot.content)).toContain("data-cols");
     expect(JSON.stringify(snapshot.content)).not.toContain('"data-layout"');
+
+    const mapWidgets = findComponents(snapshot.content, (c) => c.type === "wp-widget" && c.attributes?.["data-wp-widget"] === "map");
+    expect(mapWidgets.length).toBeGreaterThanOrEqual(1);
   });
 });
+
+function findComponents(
+  components: { type: string; attributes?: Record<string, string>; components?: unknown[] }[],
+  predicate: (c: { type: string; attributes?: Record<string, string> }) => boolean,
+): { type: string; attributes?: Record<string, string> }[] {
+  const found: { type: string; attributes?: Record<string, string> }[] = [];
+  for (const component of components) {
+    if (predicate(component)) found.push(component);
+    if (component.components?.length) {
+      found.push(
+        ...findComponents(
+          component.components as { type: string; attributes?: Record<string, string>; components?: unknown[] }[],
+          predicate,
+        ),
+      );
+    }
+  }
+  return found;
+}
 
 function countComponentType(components: { type: string; components?: unknown[] }[], type: string): number {
   let count = 0;

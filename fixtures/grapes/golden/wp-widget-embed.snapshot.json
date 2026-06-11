@@ -1,0 +1,16 @@
+{
+  "content": [
+    {
+      "type": "embed",
+      "tagName": "iframe",
+      "void": true,
+      "attributes": {
+        "src": "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
+        "title": "Video",
+        "allowfullscreen": ""
+      }
+    }
+  ],
+  "styles": [],
+  "contentHtml": "<iframe src=\"https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ\" title=\"Video\" allowfullscreen=\"\"></iframe>"
+}

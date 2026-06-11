@@ -1,4 +1,4 @@
-import { normalizeAssetUrl } from "../../../lib/content-asset-urls.js";
+import { normalizeAssetUrl } from "../../../lib/media-urls.js";
 import type {
   BuilderIconImageRule,
   BuilderPlaceholderRule,
@@ -13,10 +13,16 @@ import type {
   TextHtmlTag,
   BuilderHtmlTag,
 } from "./registry.js";
-import { WORDPRESS_BUILDER_REGISTRY } from "./registry.js";
+import {
+  WORDPRESS_BUILDER_REGISTRY,
+  WORDPRESS_WIDGET_REGISTRY,
+  WP_WIDGET_PLACEHOLDER,
+  type WordPressWidgetRegistry,
+} from "./registry.js";
 
 export interface FlattenWordPressBuildersOptions {
   registry?: BuilderThemeConfig[];
+  widgetRegistry?: WordPressWidgetRegistry;
 }
 
 export interface FlattenWordPressBuildersResult {
@@ -348,6 +354,227 @@ function detectThemes(content: string, registry: BuilderThemeConfig[]): BuilderT
   return registry.filter((theme) => theme.detect.test(content));
 }
 
+function extractBareOrQuotedParam(params: string, name: string): string | undefined {
+  const quoted = extractQuotedParam(params, name);
+  if (quoted) return quoted;
+  const pattern = new RegExp(`\\b${escapeRegExp(name)}\\s*=\\s*([^\\s"'\\]]+)`, "i");
+  const match = pattern.exec(params);
+  return match?.[1]?.trim() || undefined;
+}
+
+function emitWidgetStub(
+  widget: string,
+  attrs: Record<string, string | undefined>,
+  tag: "div" | "section" = "div",
+): string {
+  const parts = [`data-wp-widget="${escapeLayoutAttr(widget)}"`];
+  for (const [key, value] of Object.entries(attrs)) {
+    if (value) parts.push(`${key}="${escapeLayoutAttr(value)}"`);
+  }
+  return `<${tag} ${parts.join(" ")}>${WP_WIDGET_PLACEHOLDER}</${tag}>`;
+}
+
+/** OSS-16 — normalize YouTube/Vimeo share URLs to canonical embed URLs. */
+export function normalizeVideoEmbedUrl(
+  raw: string,
+): { provider: "youtube" | "vimeo" | "external"; embedUrl: string } | undefined {
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.startsWith("data:")) return undefined;
+
+  try {
+    const url = new URL(trimmed.startsWith("//") ? `https:${trimmed}` : trimmed);
+    const host = url.hostname.replace(/^www\./, "").replace(/^m\./, "");
+
+    if (host === "youtu.be") {
+      const id = url.pathname.split("/").filter(Boolean)[0];
+      if (id) {
+        return { provider: "youtube", embedUrl: `https://www.youtube-nocookie.com/embed/${id}` };
+      }
+    }
+
+    if (host === "youtube.com" || host === "youtube-nocookie.com") {
+      const embedMatch = url.pathname.match(/\/embed\/([^/?#]+)/);
+      if (embedMatch?.[1]) {
+        const start = url.searchParams.get("start");
+        const suffix = start ? `?start=${start}` : "";
+        return {
+          provider: "youtube",
+          embedUrl: `https://www.youtube-nocookie.com/embed/${embedMatch[1]}${suffix}`,
+        };
+      }
+      const videoId = url.searchParams.get("v");
+      if (videoId) {
+        const t = url.searchParams.get("t") ?? url.searchParams.get("start");
+        const startSeconds = t?.endsWith("s") ? t.slice(0, -1) : t;
+        const suffix = startSeconds ? `?start=${startSeconds}` : "";
+        return {
+          provider: "youtube",
+          embedUrl: `https://www.youtube-nocookie.com/embed/${videoId}${suffix}`,
+        };
+      }
+    }
+
+    if (host === "vimeo.com") {
+      const segments = url.pathname.split("/").filter(Boolean);
+      const id = segments[segments.length - 1];
+      if (id && /^\d+$/.test(id)) {
+        return { provider: "vimeo", embedUrl: `https://player.vimeo.com/video/${id}` };
+      }
+    }
+
+    if (host === "player.vimeo.com") {
+      const match = url.pathname.match(/\/video\/(\d+)/);
+      if (match?.[1]) {
+        return { provider: "vimeo", embedUrl: `https://player.vimeo.com/video/${match[1]}` };
+      }
+    }
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
+}
+
+function emitVideoWidgetFromParams(params: string, inner: string): string {
+  const url =
+    extractShortcodeParam(params, ["url", "src", "video", "link", "youtube_url", "vimeo_url"]) ??
+    inner.trim().match(/^https?:\/\/\S+/)?.[0];
+
+  if (!url) {
+    return emitWidgetStub("video", { "data-video-provider": "external" });
+  }
+
+  const normalized = normalizeVideoEmbedUrl(url);
+  if (normalized) {
+    return emitWidgetStub("video", {
+      "data-video-provider": normalized.provider,
+      "data-embed-url": normalized.embedUrl,
+    });
+  }
+
+  if (/\.(mp4|webm|ogg)(\?|#|$)/i.test(url)) {
+    return emitHtmlTag("video", url);
+  }
+
+  return emitWidgetStub("video", {
+    "data-video-provider": "external",
+    "data-embed-url": url,
+  });
+}
+
+function flattenMapShortcodes(content: string, widgetRegistry: WordPressWidgetRegistry): string {
+  let html = content;
+  for (const prefix of widgetRegistry.mapShortcodePrefixes) {
+    const pattern = new RegExp(
+      `\\[${escapeRegExp(prefix)}\\b([^\\]]*)\\]\\s*(?:\\[\\/${escapeRegExp(prefix)}\\b[^\\]]*\\])?`,
+      "gi",
+    );
+    html = html.replace(pattern, (_, params: string) => {
+      const embedUrl = extractShortcodeParam(params, ["embed_url", "url", "src", "map_url"]);
+      const query = extractBareOrQuotedParam(params, "address") ?? extractBareOrQuotedParam(params, "q");
+      return emitWidgetStub("map", {
+        ...(embedUrl?.includes("google.com/maps") ? { "data-embed-url": embedUrl } : {}),
+        ...(query && !embedUrl ? { "data-wp-map-query": query } : {}),
+      });
+    });
+  }
+  return html;
+}
+
+function flattenContactFormShortcodes(content: string, widgetRegistry: WordPressWidgetRegistry): string {
+  let html = content;
+  for (const rule of widgetRegistry.contactFormRules) {
+    const pattern = new RegExp(
+      `\\[${escapeRegExp(rule.tag)}\\b([^\\]]*)\\]\\s*(?:\\[\\/${escapeRegExp(rule.tag)}\\b[^\\]]*\\])?`,
+      "gi",
+    );
+    html = html.replace(pattern, (_, params: string) => {
+      const id = extractBareOrQuotedParam(params, rule.idParam);
+      return emitWidgetStub(
+        "contact-form",
+        {
+          "data-wp-form-source": rule.source,
+          ...(id ? { "data-wp-form-id": id } : {}),
+        },
+        "section",
+      );
+    });
+  }
+  return html;
+}
+
+function flattenGalleryShortcodes(content: string, widgetRegistry: WordPressWidgetRegistry): string {
+  const tag = escapeRegExp(widgetRegistry.galleryShortcode);
+  const pattern = new RegExp(`\\[${tag}\\b([^\\]]*)\\](?:\\s*\\[\\/${tag}\\])?`, "gi");
+  return content.replace(pattern, (_, params: string) => {
+    const ids = extractBareOrQuotedParam(params, "ids");
+    const idList = ids
+      ?.split(",")
+      .map((part) => part.trim())
+      .filter((part) => /^\d+$/.test(part));
+
+    if (idList?.length) {
+      const images = idList
+        .map((id) => `<img data-wp-attachment-id="${escapeLayoutAttr(id)}" alt="" />`)
+        .join("");
+      return `<figure data-wp-inline-gallery>${images}</figure>`;
+    }
+
+    const category = extractBareOrQuotedParam(params, "category") ?? extractBareOrQuotedParam(params, "type");
+    return emitWidgetStub("portfolio", {
+      "data-wp-gallery-dynamic": "1",
+      ...(category ? { "data-wp-portfolio-category": category } : {}),
+    });
+  });
+}
+
+function flattenPortfolioShortcodes(content: string, widgetRegistry: WordPressWidgetRegistry): string {
+  const tag = escapeRegExp(widgetRegistry.portfolioShortcode);
+  const pattern = new RegExp(`\\[${tag}\\b([^\\]]*)\\](?:\\s*\\[\\/${tag}\\])?`, "gi");
+  return content.replace(pattern, (_, params: string) => {
+    const category = extractBareOrQuotedParam(params, "category");
+    const slug = extractBareOrQuotedParam(params, "slug");
+    return emitWidgetStub("portfolio", {
+      ...(category ? { "data-wp-portfolio-category": category } : {}),
+      ...(slug ? { "data-wp-portfolio-slug": slug } : {}),
+    });
+  });
+}
+
+function flattenVideoShortcodes(content: string, widgetRegistry: WordPressWidgetRegistry): string {
+  let html = content;
+  for (const prefix of widgetRegistry.videoShortcodePrefixes) {
+    const wrapped = new RegExp(
+      `\\[${escapeRegExp(prefix)}\\b([^\\]]*)\\]([\\s\\S]*?)\\[\\/${escapeRegExp(prefix)}\\b[^\\]]*\\]`,
+      "gi",
+    );
+    html = html.replace(wrapped, (_, params: string, inner: string) =>
+      emitVideoWidgetFromParams(params, inner),
+    );
+
+    const selfClosing = new RegExp(
+      `\\[${escapeRegExp(prefix)}\\b([^\\]]*)\\]`,
+      "gi",
+    );
+    html = html.replace(selfClosing, (_, params: string) => emitVideoWidgetFromParams(params, ""));
+  }
+  return html;
+}
+
+/** OSS-12 / OSS-16 — cross-builder widget + video stubs (before scaffolding strip). */
+function flattenWordPressWidgets(
+  content: string,
+  widgetRegistry: WordPressWidgetRegistry = WORDPRESS_WIDGET_REGISTRY,
+): string {
+  let html = content;
+  html = flattenGalleryShortcodes(html, widgetRegistry);
+  html = flattenPortfolioShortcodes(html, widgetRegistry);
+  html = flattenMapShortcodes(html, widgetRegistry);
+  html = flattenContactFormShortcodes(html, widgetRegistry);
+  html = flattenVideoShortcodes(html, widgetRegistry);
+  return html;
+}
+
 /**
  * Pre-DTO WordPress builder flattening — Bucket 1 (asset/text shortcodes → HTML) then
  * Bucket 2 (layout scaffolding stripped). Decoupled from sink-time rewriteInlineImages.
@@ -362,11 +589,10 @@ export function flattenWordPressBuilders(
 
   const registry = options.registry ?? WORDPRESS_BUILDER_REGISTRY;
   const themes = detectThemes(content, registry);
-  if (themes.length === 0) {
-    return { html: content, detectedThemes: [] };
-  }
 
-  let html = content;
+  const widgetRegistry = options.widgetRegistry ?? WORDPRESS_WIDGET_REGISTRY;
+  // Widget stubs before scaffolding strips (e.g. blox_gmap, tatsu_video, portfolio).
+  let html = flattenWordPressWidgets(content, widgetRegistry);
   for (const theme of themes) {
     for (const rule of theme.wrapperRules ?? []) {
       html = convertWrapperRule(html, rule);

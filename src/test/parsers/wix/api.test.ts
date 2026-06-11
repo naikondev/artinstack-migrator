@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { mergeWixWireFixtures } from "./api.js";
-import { mapWireListPostsResponse } from "./map-wire.js";
-import wire from "../../../fixtures/wix/wire/blog-posts-response.json";
+import { mergeWixWireFixtures } from "../../../parsers/wix/api.js";
+import { mapWireListPostsResponse } from "../../../parsers/wix/map-wire.js";
+import wire from "../../../../fixtures/wix/wire/blog-posts-response.json";
 
 describe("Wix W1 wire mapping", () => {
   it("maps list posts response into canonical posts with Ricos HTML", () => {

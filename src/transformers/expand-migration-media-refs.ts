@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio";
 
-import { isMigrationMediaRef, parseMigrationMediaRef } from "../lib/migration-media-ref.js";
+import { isMigrationMediaRef, parseMigrationMediaRef } from "../lib/media-urls.js";
 
 export interface ExpandMigrationMediaRefsResult {
   html: string;

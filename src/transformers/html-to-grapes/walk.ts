@@ -71,6 +71,12 @@ const DEFAULT_TYPES: Record<string, string> = {
 };
 
 const LAYOUT_DATA_ATTR = "data-layout";
+const WP_WIDGET_ATTR = "data-wp-widget";
+const DEFAULT_WP_WIDGET_TYPE = "wp-widget";
+const EMBED_IFRAME_TYPE = "embed";
+
+const EMBED_IFRAME_SRC =
+  /google\.com\/maps\/embed|youtube\.com\/embed|youtube-nocookie\.com\/embed|player\.vimeo\.com\/video/i;
 
 const DEFAULT_LAYOUT_TYPE_MAP: Record<LayoutKind, string> = {
   section: "section",
@@ -86,6 +92,23 @@ function parseLayoutKind(attributes: Record<string, string> | undefined): Layout
 
 function resolveLayoutComponentType(kind: LayoutKind, options: HtmlToGrapesOptions): string {
   return options.layoutTypeMap?.[kind] ?? DEFAULT_LAYOUT_TYPE_MAP[kind];
+}
+
+function resolveWidgetComponentType(options: HtmlToGrapesOptions): string {
+  return options.widgetComponentType ?? DEFAULT_WP_WIDGET_TYPE;
+}
+
+function isWpWidgetMarker(attributes: Record<string, string> | undefined): boolean {
+  return Boolean(attributes?.[WP_WIDGET_ATTR]);
+}
+
+function isPreservedEmbedIframe(
+  tagName: string | undefined,
+  attributes: Record<string, string> | undefined,
+): boolean {
+  if (tagName !== "iframe") return false;
+  const src = attributes?.src ?? "";
+  return EMBED_IFRAME_SRC.test(src);
 }
 
 function layoutAttributesForComponent(
@@ -225,6 +248,28 @@ function walkNode(
       component.components = components;
     }
     return component;
+  }
+
+  // OSS-13 — atomic widget blocks (do not merge into preceding text / inline walks).
+  if (isWpWidgetMarker(meta.attributes)) {
+    return applyElementMeta(
+      {
+        type: resolveWidgetComponentType(options),
+        tagName,
+      },
+      meta,
+    );
+  }
+
+  if (isPreservedEmbedIframe(tagName, meta.attributes)) {
+    return applyElementMeta(
+      {
+        type: EMBED_IFRAME_TYPE,
+        tagName,
+        void: true,
+      },
+      meta,
+    );
   }
 
   if (VOID_TAGS.has(tagName)) {

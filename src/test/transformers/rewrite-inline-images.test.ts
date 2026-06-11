@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { formatMigrationMediaRef } from "../lib/migration-media-ref.js";
-import { rewriteInlineImages, stampMigrationMediaRefs } from "./rewrite-inline-images.js";
+import { formatMigrationMediaRef } from "../../lib/media-urls.js";
+import { rewriteInlineImages, stampMigrationMediaRefs } from "../../transformers/rewrite-inline-images.js";
 
 const sourceId = "url:https://origin.example/wp-content/uploads/About_w_2048.jpg";
 const uploaded = new Map([

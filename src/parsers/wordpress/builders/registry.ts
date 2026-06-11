@@ -180,9 +180,63 @@ export interface BuilderThemeConfig {
 /** @deprecated Alias — families not themes. */
 export type BuilderFamilyConfig = BuilderThemeConfig;
 
+// ---------------------------------------------------------------------------
+// Widget registry (OSS-12 / OSS-16) — cross-builder; not BuilderThemeConfig
+// ---------------------------------------------------------------------------
+
+/** Keeps empty widget stubs from collapsing during cheerio text sweeps. */
+export const WP_WIDGET_PLACEHOLDER = "\u200B";
+
+export interface WordPressContactFormWidgetRule {
+  /** Shortcode tag name (e.g. `contact-form-7`). */
+  tag: string;
+  /** Value for `data-wp-form-source`. */
+  source: string;
+  /** Attribute holding the form id (e.g. `id`). */
+  idParam: string;
+}
+
+/** Declarative widget tables consumed by `flattenWordPressWidgets()` in flatten.ts. */
+export interface WordPressWidgetRegistry {
+  mapShortcodePrefixes: readonly string[];
+  contactFormRules: readonly WordPressContactFormWidgetRule[];
+  videoShortcodePrefixes: readonly string[];
+  /** Core / plugin portfolio dynamic shortcode tag. */
+  portfolioShortcode: string;
+  /** WordPress core gallery shortcode tag (`ids=` split handled in engine). */
+  galleryShortcode: string;
+}
+
+export const WORDPRESS_WIDGET_REGISTRY: WordPressWidgetRegistry = {
+  mapShortcodePrefixes: [
+    "blox_gmap",
+    "tatsu_gmap",
+    "tatsu_map",
+    "et_pb_map",
+    "vc_gmaps",
+    "vc_map",
+  ],
+  contactFormRules: [
+    { tag: "contact-form-7", source: "contact-form-7", idParam: "id" },
+    { tag: "contact_form", source: "contact-form-7", idParam: "id" },
+    { tag: "gravityform", source: "gravityforms", idParam: "id" },
+    { tag: "ninja_form", source: "ninja-forms", idParam: "id" },
+    { tag: "wpforms", source: "wpforms", idParam: "id" },
+  ],
+  videoShortcodePrefixes: [
+    "youtube",
+    "vimeo",
+    "embed",
+    "tatsu_video",
+    "et_pb_video",
+    "vc_video",
+  ],
+  portfolioShortcode: "portfolio",
+  galleryShortcode: "gallery",
+};
+
 /** Shortcodes that cannot become static HTML — reported in conflicts, never stripped. */
 export const UNRESOLVABLE_SHORTCODE_PREFIXES = [
-  "portfolio",
   "recent_posts",
   "woocommerce_cart",
   "woocommerce_checkout",
@@ -208,7 +262,6 @@ export const WORDPRESS_BUILDER_REGISTRY: BuilderThemeConfig[] = [
     urlRules: [
       { shortcodePrefix: "tatsu_image", urlParams: ["image", "url", "src"], tag: "img" },
       { shortcodePrefix: "tatsu_single_image", urlParams: ["image", "url", "src"], tag: "img" },
-      { shortcodePrefix: "tatsu_video", urlParams: ["video", "src", "url"], tag: "video" },
     ],
     iconImageRules: [
       { shortcodePrefix: "tatsu_icon", imageParam: "icon_image", hrefParam: "href" },
@@ -318,12 +371,6 @@ export const WORDPRESS_BUILDER_REGISTRY: BuilderThemeConfig[] = [
     ],
     urlRules: [
       { shortcodePrefix: "blox_image", urlParams: ["image", "img", "src", "url"], tag: "img" },
-    ],
-    placeholderRules: [
-      {
-        shortcodePrefix: "blox_gmap",
-        html: '<p data-unresolved-shortcode="blox_gmap"><!-- Map embed removed during migration --></p>',
-      },
     ],
     scaffoldingPrefixes: ["blox_", "animate_icon"],
     legacyScaffoldingTokens: ["text", "icon", "linebreak", "grids", "testimonials"],

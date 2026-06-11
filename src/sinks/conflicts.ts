@@ -1,8 +1,7 @@
 import * as cheerio from "cheerio";
 
 import type { EntityBundle } from "../normalizer/bundle.js";
-import { discoverRawImgSrcs, normalizeAssetUrl } from "../lib/content-asset-urls.js";
-import { isMigrationMediaRef } from "../lib/migration-media-ref.js";
+import { discoverRawImgSrcs, isMigrationMediaRef, normalizeAssetUrl } from "../lib/media-urls.js";
 import { findUnsupportedBlockMarkers } from "../parsers/squarespace/parse-export.js";
 import { findWordPressShortcodeMarkers } from "../parsers/wordpress/builders/shortcode-conflicts.js";
 export interface DuplicateSlugConflict {

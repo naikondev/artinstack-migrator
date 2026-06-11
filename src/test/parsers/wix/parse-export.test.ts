@@ -3,9 +3,9 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { detectWixFeedFormat, enumerateWixEntities, isWixFeedXml } from "./parse-export.js";
+import { detectWixFeedFormat, enumerateWixEntities, isWixFeedXml } from "../../../parsers/wix/parse-export.js";
 
-const FIXTURES_ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../fixtures/wix");
+const FIXTURES_ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../../fixtures/wix");
 
 describe("detectWixFeedFormat", () => {
   it("detects RSS and Atom roots", () => {

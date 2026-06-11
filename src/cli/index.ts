@@ -20,7 +20,7 @@ import {
   writeFilesystemExport,
 } from "../sinks/index.js";
 import { collectEntities } from "../normalizer/bundle.js";
-import { createWpContentGatewayRewrite } from "../lib/origin-url-rewrite.js";
+import { createWpContentGatewayRewrite } from "../lib/media-urls.js";
 import { estimateStorage, staleUrlsFromEstimate } from "../sinks/storage-estimate.js";
 
 const PLATFORMS: MigrationPlatform[] = ["wordpress", "smugmug", "squarespace", "wix"];

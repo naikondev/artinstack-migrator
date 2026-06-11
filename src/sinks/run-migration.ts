@@ -9,8 +9,7 @@ import type {
   NormalizedPage,
   NormalizedPost,
 } from "../normalizer/types.js";
-import { normalizeAssetUrl } from "../lib/content-asset-urls.js";
-import { createMigrationMediaRefReplaceWith } from "../lib/migration-media-ref.js";
+import { createMigrationMediaRefReplaceWith, normalizeAssetUrl } from "../lib/media-urls.js";
 import {
   rewriteInlineImages,
   type RewriteInlineImagesOptions,

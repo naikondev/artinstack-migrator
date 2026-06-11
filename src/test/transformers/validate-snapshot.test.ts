@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { htmlToGrapes } from "./html-to-grapes/index.js";
-import { validateGrapesProjectSnapshot } from "./validate-snapshot.js";
+import { htmlToGrapes } from "../../transformers/html-to-grapes/index.js";
+import { validateGrapesProjectSnapshot } from "../../transformers/validate-snapshot.js";
 
 describe("validateGrapesProjectSnapshot", () => {
   it("accepts output from htmlToGrapes by default", () => {

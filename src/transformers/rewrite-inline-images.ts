@@ -1,14 +1,13 @@
 import * as cheerio from "cheerio";
 
-import { normalizeAssetUrl } from "../lib/content-asset-urls.js";
-import {
-  createMigrationMediaRefReplaceWith,
-  isMigrationMediaRef,
-} from "../lib/migration-media-ref.js";
 import {
   buildMigrationMediaUrlIndex,
+  createMigrationMediaRefReplaceWith,
+  isMigrationMediaRef,
+  normalizeAssetUrl,
   resolveMigrationMediaSourceId,
-} from "../lib/migration-media-url-index.js";
+  type OriginUrlRewriteConfig,
+} from "../lib/media-urls.js";
 
 export interface RewriteInlineImageRef {
   originalSrc: string;
@@ -182,6 +181,8 @@ export function rewriteInlineImages(
 export interface StampMigrationMediaRefsOptions {
   /** Pre-built url/pathname → sourceId map (from attachments + inline assets). */
   urlToSourceId: Map<string, string>;
+  /** Canonicalize lookup keys during stamp (OSS-15). */
+  originUrlRewrite?: OriginUrlRewriteConfig;
   replaceWith?: RewriteInlineImagesOptions["replaceWith"];
   requireUploaded?: boolean;
 }
@@ -198,7 +199,11 @@ export function stampMigrationMediaRefs(
     html,
     {
       resolveAsset: (src) => {
-        const sourceAssetId = resolveMigrationMediaSourceId(src, options.urlToSourceId);
+        const sourceAssetId = resolveMigrationMediaSourceId(
+          src,
+          options.urlToSourceId,
+          options.originUrlRewrite,
+        );
         if (!sourceAssetId) return undefined;
         return { originalSrc: src, sourceAssetId };
       },

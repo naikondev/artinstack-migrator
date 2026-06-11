@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { EntityBundle } from "../normalizer/bundle.js";
+import type { EntityBundle } from "../../normalizer/bundle.js";
 import type {
   NormalizedAsset,
   NormalizedCategory,
@@ -8,11 +8,11 @@ import type {
   NormalizedPortfolio,
   NormalizedPost,
   NormalizedTag,
-} from "../normalizer/types.js";
-import { rewriteInlineImages } from "../transformers/rewrite-inline-images.js";
-import { FilesystemMigrationSink, portfolioMediaMatchesBundle } from "./filesystem-sink.js";
-import { runMigrationFromBundle } from "./run-migration.js";
-import type { MigrationSink } from "./types.js";
+} from "../../normalizer/types.js";
+import { rewriteInlineImages } from "../../transformers/rewrite-inline-images.js";
+import { FilesystemMigrationSink, portfolioMediaMatchesBundle } from "../../sinks/filesystem-sink.js";
+import { runMigrationFromBundle } from "../../sinks/run-migration.js";
+import type { MigrationSink } from "../../sinks/types.js";
 
 const category: NormalizedCategory = {
   type: "category",

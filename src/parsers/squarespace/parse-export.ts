@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { basename } from "node:path";
 
-import { discoverContentAssetUrls } from "../../lib/content-asset-urls.js";
+import { discoverContentAssetUrls } from "../../lib/media-urls.js";
 import { linkToPath, sanitizeSlug } from "../../lib/utility.js";
 import type {
   NormalizedAsset,

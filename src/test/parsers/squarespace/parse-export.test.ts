@@ -3,22 +3,22 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { collectEntities } from "../../normalizer/bundle.js";
-import { analyzeConflicts } from "../../sinks/conflicts.js";
+import { collectEntities } from "../../../normalizer/bundle.js";
+import { analyzeConflicts } from "../../../sinks/conflicts.js";
 import {
   SquarespaceCollectionClient,
   buildJsonPrettyUrl,
   mapJsonPrettyWire,
   mergeSquarespaceExportPartials,
-} from "./collect.js";
-import { squarespaceAdapter } from "./index.js";
+} from "../../../parsers/squarespace/collect.js";
+import { squarespaceAdapter } from "../../../parsers/squarespace/index.js";
 import {
   enumerateSquarespaceEntities,
   summarizeSquarespaceExport,
-} from "./parse-export.js";
-import type { SquarespaceExport } from "./types.js";
+} from "../../../parsers/squarespace/parse-export.js";
+import type { SquarespaceExport } from "../../../parsers/squarespace/types.js";
 
-const FIXTURES_ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../fixtures/squarespace");
+const FIXTURES_ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../../fixtures/squarespace");
 
 const minimalExport: SquarespaceExport = {
   exportVersion: "1",

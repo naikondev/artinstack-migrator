@@ -2,24 +2,24 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { collectEntities } from "../../normalizer/bundle.js";
-import { buildPortfolioMediaLinks } from "../../normalizer/portfolio-media.js";
+import { collectEntities } from "../../../normalizer/bundle.js";
+import { buildPortfolioMediaLinks } from "../../../normalizer/portfolio-media.js";
 import {
   SmugMugApiClient,
   buildSmugMugAuthorizationHeader,
   oauthPercentEncode,
   signSmugMugOAuthRequest,
-} from "./api.js";
-import { smugmugAdapter } from "./index.js";
+} from "../../../parsers/smugmug/api.js";
+import { smugmugAdapter } from "../../../parsers/smugmug/index.js";
 import {
   enumerateSmugMugEntities,
   isSmugMugFlatExport,
   loadSmugMugExport,
   summarizeSmugMugExport,
-} from "./parse-node.js";
-import type { SmugMugMockExport } from "./types.js";
+} from "../../../parsers/smugmug/parse-node.js";
+import type { SmugMugMockExport } from "../../../parsers/smugmug/types.js";
 
-const FIXTURES_ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../fixtures/smugmug");
+const FIXTURES_ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../../fixtures/smugmug");
 
 const nestedExport: SmugMugMockExport = {
   exportVersion: "1",
