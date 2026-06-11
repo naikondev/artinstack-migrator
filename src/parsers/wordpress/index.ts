@@ -1,6 +1,11 @@
 import type { AdapterContext, MigrationAdapter, ValidationResult } from "../../normalizer/types.js";
 import type { OriginUrlRewriteConfig } from "../../lib/media-urls.js";
-import { enumerateWxrEntities, validateWxrFile, type WxrParseOptions } from "./parse-wxr.js";
+import {
+  DEFAULT_WORDPRESS_PORTFOLIO_CPT_SLUGS,
+  enumerateWxrEntities,
+  validateWxrFile,
+  type WxrParseOptions,
+} from "./parse-wxr.js";
 
 export {
   flattenWordPressBuilders,
@@ -24,6 +29,7 @@ export type {
   WordPressWidgetRegistry,
   WordPressContactFormWidgetRule,
 } from "./builders/registry.js";
+export { DEFAULT_WORDPRESS_PORTFOLIO_CPT_SLUGS } from "./parse-wxr.js";
 export type { WxrParseOptions } from "./parse-wxr.js";
 
 export interface WordPressParseInput {
@@ -31,6 +37,7 @@ export interface WordPressParseInput {
   originUrlRewrite?: OriginUrlRewriteConfig;
   flattenBuilders?: boolean;
   skipWooCommerceStubPages?: boolean;
+  portfolioCptSlugs?: readonly string[];
 }
 
 function resolveWxrOptions(input: unknown): WxrParseOptions {
@@ -44,10 +51,11 @@ function resolveWxrOptions(input: unknown): WxrParseOptions {
       originUrlRewrite: obj.originUrlRewrite,
       flattenBuilders: obj.flattenBuilders,
       skipWooCommerceStubPages: obj.skipWooCommerceStubPages,
+      portfolioCptSlugs: obj.portfolioCptSlugs,
     };
   }
   throw new Error(
-    "WordPress adapter requires input path (string or { path, originUrlRewrite?, flattenBuilders?, skipWooCommerceStubPages? })",
+    "WordPress adapter requires input path (string or { path, originUrlRewrite?, flattenBuilders?, skipWooCommerceStubPages?, portfolioCptSlugs? })",
   );
 }
 

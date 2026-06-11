@@ -4,6 +4,7 @@ import {
   canonicalizeInlineAssetUrl,
   createWpContentGatewayRewrite,
   discoverContentAssetUrls,
+  discoverContentAssets,
   formatMigrationMediaRef,
   isLikelyImageUrl,
   isMigrationMediaRef,
@@ -12,6 +13,37 @@ import {
   resolveFeaturedContentAssetUrl,
   rewriteOriginUrlsInText,
 } from "../lib/media-urls.js";
+
+describe("discoverContentAssets", () => {
+  it("returns urls and unresolved attachment ids in separate buckets", () => {
+    const html =
+      '<figure data-wp-inline-gallery>' +
+      '<img data-wp-attachment-id="142" alt="" />' +
+      '<img data-wp-attachment-id="143" alt="" />' +
+      "</figure>" +
+      '<img src="https://example.com/wp-content/uploads/inline.jpg" />';
+    expect(discoverContentAssets(html)).toEqual({
+      urls: ["https://example.com/wp-content/uploads/inline.jpg"],
+      unresolvedAttachmentIds: ["142", "143"],
+    });
+  });
+
+  it("extracts ids from gallery shortcodes before flatten", () => {
+    const content = '[oshine_gallery ids= "4931,4932"]';
+    expect(discoverContentAssets(content).unresolvedAttachmentIds).toEqual(["4931", "4932"]);
+    expect(discoverContentAssets(content).urls).toEqual([]);
+  });
+
+  it("counts stamped migration refs as discovered urls", () => {
+    const ref = formatMigrationMediaRef(
+      "url:https://www.example.com/wp-content/uploads/2023/04/photo.jpg",
+    );
+    const html = `<img src="${ref}" alt="" />`;
+    expect(discoverContentAssets(html).urls).toEqual([
+      "https://www.example.com/wp-content/uploads/2023/04/photo.jpg",
+    ]);
+  });
+});
 
 describe("discoverContentAssetUrls", () => {
   it("extracts standard img tags", () => {

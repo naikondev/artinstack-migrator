@@ -48,6 +48,14 @@ export async function runDryRun(options: DryRunOptions): Promise<DryRunResult> {
   if (staleAssetUrls.length > 0) {
     warnings.push(`${staleAssetUrls.length} asset URL(s) unreachable; used 4 MB fallback each`);
   }
+  const { assetDiscovery } = conflicts;
+  if (assetDiscovery.attachmentRefsUnresolved > 0) {
+    warnings.push(
+      `${assetDiscovery.attachmentRefsUnresolved} attachment ref(s) lack URLs in this export ` +
+        `(${assetDiscovery.attachmentRefsResolved}/${assetDiscovery.attachmentRefs} resolved; ` +
+        "include attachment rows, a media export, or REST resolution)",
+    );
+  }
   if (conflicts.duplicatePostSlugs.length > 0) {
     warnings.push(
       `${conflicts.duplicatePostSlugs.length} duplicate post slug group(s); host may auto-suffix`,

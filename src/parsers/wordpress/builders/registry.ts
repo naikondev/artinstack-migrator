@@ -205,6 +205,8 @@ export interface WordPressWidgetRegistry {
   portfolioShortcode: string;
   /** WordPress core gallery shortcode tag (`ids=` split handled in engine). */
   galleryShortcode: string;
+  /** Builder/plugin gallery shortcodes with explicit `ids=` attachment lists (OSS-12). */
+  idGalleryShortcodes: readonly string[];
 }
 
 export const WORDPRESS_WIDGET_REGISTRY: WordPressWidgetRegistry = {
@@ -233,6 +235,7 @@ export const WORDPRESS_WIDGET_REGISTRY: WordPressWidgetRegistry = {
   ],
   portfolioShortcode: "portfolio",
   galleryShortcode: "gallery",
+  idGalleryShortcodes: ["oshine_gallery", "vc_gallery", "nggallery"],
 };
 
 /** Shortcodes that cannot become static HTML — reported in conflicts, never stripped. */

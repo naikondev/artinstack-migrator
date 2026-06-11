@@ -231,6 +231,15 @@ describe("flattenWordPressBuilders", () => {
     expect(html).not.toMatch(/\[gallery/);
   });
 
+  it("expands [oshine_gallery ids] to inline attachment markers", () => {
+    const raw = '[oshine_gallery image_source= "selected" ids= "4931,4932,4928"]';
+    const { html } = flattenWordPressBuilders(raw);
+    expect(html).toContain('data-wp-inline-gallery');
+    expect(html).toContain('data-wp-attachment-id="4931"');
+    expect(html).toContain('data-wp-attachment-id="4928"');
+    expect(html).not.toMatch(/\[oshine_gallery/);
+  });
+
   it("emits portfolio widget stub for dynamic [gallery] without ids", () => {
     const raw = '[gallery category="photography"]';
     const { html } = flattenWordPressBuilders(raw);

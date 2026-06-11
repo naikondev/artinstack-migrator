@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { EntityBundle } from "../normalizer/bundle.js";
 import { bundleCounts } from "../normalizer/bundle.js";
 import type { MigrationPlatform } from "../normalizer/types.js";
-import type { ConflictReport } from "./conflicts.js";
+import type { AssetDiscoverySummary, ConflictReport } from "./conflicts.js";
 
 export type MigrationRunMode = "dry-run" | "export" | "sink" | "worker";
 
@@ -21,6 +21,7 @@ export interface MigrationReport {
     categories: number;
     tags: number;
     storageBytesEstimated?: number;
+    assetDiscovery?: AssetDiscoverySummary;
   };
   warnings: string[];
   errors: string[];
@@ -51,6 +52,7 @@ export function buildMigrationReport(input: {
     summary: {
       ...counts,
       storageBytesEstimated: input.storageBytesEstimated,
+      assetDiscovery: input.conflicts.assetDiscovery,
     },
     warnings: input.warnings ?? [],
     errors: input.errors ?? [],

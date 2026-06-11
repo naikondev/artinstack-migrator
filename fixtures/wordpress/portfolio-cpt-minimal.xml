@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/"
+  xmlns:wp="http://wordpress.org/export/1.2/">
+<channel>
+  <title>Portfolio CPT Fixture</title>
+  <link>https://example.com</link>
+  <wp:wxr_version>1.2</wp:wxr_version>
+
+  <item>
+    <title>Into the Dark</title>
+    <link>https://example.com/?post_type=portfolio&amp;p=99</link>
+    <content:encoded><![CDATA[[tatsu_section bg_color= "" key= "sec1"][tatsu_row layout= "1/1"][tatsu_column layout= "1/1"][tatsu_text]Hello project[/tatsu_text][/tatsu_column][/tatsu_row][/tatsu_section]]]></content:encoded>
+    <wp:post_id>99</wp:post_id>
+    <wp:post_name>into-the-dark</wp:post_name>
+    <wp:status>publish</wp:status>
+    <wp:post_type>portfolio</wp:post_type>
+    <category domain="portfolio_categories" nicename="photography"><![CDATA[Photography]]></category>
+  </item>
+</channel>
+</rss>

@@ -6,7 +6,7 @@ import { XMLParser } from "fast-xml-parser";
 import {
   buildContentMediaUrlIndex,
   canonicalizeInlineAssetUrl,
-  discoverContentAssetUrls,
+  discoverContentAssets,
   parseMigrationMediaRef,
   resolveFeaturedContentAssetUrl,
   rewriteOriginUrlsInText,
@@ -27,6 +27,9 @@ import type {
 } from "../../normalizer/types.js";
 
 const PLATFORM = "wordpress" as const;
+
+/** OSS-18 — theme/plugin CPT slugs emitted as `NormalizedPage` (default: Oshine `portfolio`). */
+export const DEFAULT_WORDPRESS_PORTFOLIO_CPT_SLUGS = ["portfolio"] as const;
 
 const WOOCOMMERCE_STUB_PAGE_SLUGS = new Set(["cart", "checkout", "my-account"]);
 const WOOCOMMERCE_STUB_SHORTCODE = /^\[woocommerce_(?:cart|checkout|my_account)\]\s*$/i;
@@ -52,6 +55,11 @@ export interface WxrParseOptions {
    * in emitted `contentHtml`. Default: true.
    */
   stampMigrationMediaRefs?: boolean;
+  /**
+   * WordPress CPT slugs to emit as `NormalizedPage` (OSS-18).
+   * Default: `portfolio`. Extend with `jetpack-portfolio`, `project`, etc.
+   */
+  portfolioCptSlugs?: readonly string[];
 }
 
 interface WxrItem {
@@ -121,14 +129,41 @@ function getContentEncoded(item: WxrItem): string {
   return textValue(item.encoded);
 }
 
-function sourceMeta(id: string, link?: string, exportedAt?: string): SourceMetadata {
+function sourceMeta(
+  id: string,
+  link?: string,
+  exportedAt?: string,
+  postType?: string,
+): SourceMetadata {
   return {
     platform: PLATFORM,
     id,
     url: link || undefined,
     path: linkToPath(link),
     exportedAt,
+    ...(postType ? { postType } : {}),
   };
+}
+
+function resolvePortfolioCptSlugs(options: WxrParseOptions): Set<string> {
+  const slugs = options.portfolioCptSlugs ?? DEFAULT_WORDPRESS_PORTFOLIO_CPT_SLUGS;
+  return new Set(slugs.map((slug) => slug.toLowerCase()));
+}
+
+function portfolioCptSourceId(postId: string): string {
+  return `portfolio:${postId}`;
+}
+
+function isPortfolioCptPostType(postType: string, portfolioCptSlugs: Set<string>): boolean {
+  return portfolioCptSlugs.has(postType.toLowerCase());
+}
+
+function countWxrPortfolioCptItems(
+  items: WxrItem[],
+  portfolioCptSlugs: Set<string> = new Set(DEFAULT_WORDPRESS_PORTFOLIO_CPT_SLUGS),
+): number {
+  return items.filter((item) => isPortfolioCptPostType(textValue(item.post_type), portfolioCptSlugs))
+    .length;
 }
 
 function getExcerpt(item: WxrItem): string {
@@ -251,11 +286,14 @@ function collectInlineAssets(
   html: string,
   attachmentIndex: Map<string, AttachmentIndexEntry>,
   seenUrls: Set<string>,
+  seenAttachmentIds: Set<string>,
   exportedAt?: string,
   originUrlRewrite?: OriginUrlRewriteConfig,
 ): NormalizedAsset[] {
   const assets: NormalizedAsset[] = [];
-  for (const discovered of discoverContentAssetUrls(html)) {
+  const discovery = discoverContentAssets(html);
+
+  for (const discovered of discovery.urls) {
     const canonical = canonicalizeInlineAssetUrl(discovered, originUrlRewrite);
     if (!canonical) continue;
     if (seenUrls.has(canonical.canonicalUrl)) continue;
@@ -279,11 +317,25 @@ function collectInlineAssets(
     });
   }
 
-  // Resolve attachment-index URLs referenced in content if not already seen
-  for (const [id, entry] of attachmentIndex) {
+  for (const attachmentId of discovery.unresolvedAttachmentIds) {
+    if (seenAttachmentIds.has(attachmentId)) continue;
+    seenAttachmentIds.add(attachmentId);
+
+    const entry = attachmentIndex.get(attachmentId);
+    if (!entry) continue;
+
     if (seenUrls.has(entry.sourceUrl)) continue;
-    // Only auto-include attachments referenced via wp-content in posts is handled by inline src
-    void id;
+    seenUrls.add(entry.sourceUrl);
+
+    assets.push({
+      type: "asset",
+      source: sourceMeta(attachmentId, entry.sourceUrl, exportedAt),
+      sourceId: attachmentId,
+      sourceUrl: entry.sourceUrl,
+      filename: entry.filename,
+      mimeType: entry.mimeType ?? guessMime(entry.filename),
+      caption: entry.title,
+    });
   }
 
   return assets;
@@ -356,9 +408,14 @@ export async function* enumerateWxrEntities(
     } satisfies NormalizedAsset;
   }
 
+  const portfolioCptSlugs = resolvePortfolioCptSlugs(options);
+
   for (const item of items) {
     const postType = textValue(item.post_type);
-    if (postType !== "post" && postType !== "page") continue;
+    const isPost = postType === "post";
+    const isPage = postType === "page";
+    const isPortfolioCpt = isPortfolioCptPostType(postType, portfolioCptSlugs);
+    if (!isPost && !isPage && !isPortfolioCpt) continue;
 
     const id = textValue(item.post_id);
     const link = maybeRewriteUrl(textValue(item.link), options.originUrlRewrite);
@@ -366,7 +423,7 @@ export async function* enumerateWxrEntities(
     let contentHtml = preprocessContent(getContentEncoded(item), options);
 
     if (
-      postType === "page" &&
+      isPage &&
       options.skipWooCommerceStubPages !== false &&
       isWooCommerceStubPage(slug, contentHtml)
     ) {
@@ -377,6 +434,7 @@ export async function* enumerateWxrEntities(
       contentHtml,
       attachmentIndex,
       seenAssetUrls,
+      emittedAttachmentIds,
       options.exportedAt,
       options.originUrlRewrite,
     );
@@ -414,7 +472,7 @@ export async function* enumerateWxrEntities(
       if (domain === "post_tag") tagSlugs.push(nicename);
     }
 
-    if (postType === "post") {
+    if (isPost) {
       const thumbnailId = getPostMeta(item, "_thumbnail_id");
       const featuredAssetSourceId = resolveFeaturedAssetSourceId(
         thumbnailId,
@@ -441,13 +499,16 @@ export async function* enumerateWxrEntities(
       yield post;
     } else {
       const isHomePage =
-        getPostMeta(item, "_wp_show_on_front") === "1" ||
-        getPostMeta(item, "page_on_front") === "1";
+        !isPortfolioCpt &&
+        (getPostMeta(item, "_wp_show_on_front") === "1" ||
+          getPostMeta(item, "page_on_front") === "1");
+
+      const pageSourceId = isPortfolioCpt ? portfolioCptSourceId(id) : id;
 
       const page: NormalizedPage = {
         type: "page",
-        source: sourceMeta(id, link, options.exportedAt),
-        sourceId: id,
+        source: sourceMeta(pageSourceId, link, options.exportedAt, isPortfolioCpt ? postType : undefined),
+        sourceId: pageSourceId,
         title: textValue(item.title) || slug,
         slug,
         contentHtml,
@@ -490,7 +551,7 @@ export async function validateWxrFile(filePath: string): Promise<{
     posts: items.filter((i) => textValue(i.post_type) === "post").length,
     pages: items.filter((i) => textValue(i.post_type) === "page").length,
     assets: items.filter((i) => textValue(i.post_type) === "attachment").length,
-    portfolios: 0,
+    portfolioCpt: countWxrPortfolioCptItems(items),
     categories: 0,
     tags: 0,
   };

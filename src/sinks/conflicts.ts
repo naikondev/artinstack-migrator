@@ -1,7 +1,12 @@
 import * as cheerio from "cheerio";
 
 import type { EntityBundle } from "../normalizer/bundle.js";
-import { discoverRawImgSrcs, isMigrationMediaRef, normalizeAssetUrl } from "../lib/media-urls.js";
+import {
+  discoverContentAssets,
+  discoverRawImgSrcs,
+  isMigrationMediaRef,
+  normalizeAssetUrl,
+} from "../lib/media-urls.js";
 import { findUnsupportedBlockMarkers } from "../parsers/squarespace/parse-export.js";
 import { findWordPressShortcodeMarkers } from "../parsers/wordpress/builders/shortcode-conflicts.js";
 export interface DuplicateSlugConflict {
@@ -46,6 +51,19 @@ export interface RedirectLoopConflict {
   blocked: boolean;
 }
 
+export interface AssetDiscoverySummary {
+  /** Unique resolvable image URLs found in post/page HTML. */
+  urlsDiscovered: number;
+  /** Unique WordPress attachment ids referenced in content (`data-wp-attachment-id`, gallery `ids=`). */
+  attachmentRefs: number;
+  /** Attachment ids that resolved to a `media.json` row in this job. */
+  attachmentRefsResolved: number;
+  /** Attachment ids still lacking a URL in this export context. */
+  attachmentRefsUnresolved: number;
+  /** Sorted unresolved ids (for scan UI / follow-up REST export). */
+  unresolvedAttachmentIds: string[];
+}
+
 export interface ConflictReport {
   duplicatePostSlugs: DuplicateSlugConflict[];
   duplicatePageSlugs: DuplicateSlugConflict[];
@@ -55,6 +73,41 @@ export interface ConflictReport {
   unresolvedInlineImages: UnresolvedInlineImageConflict[];
   unsupportedBlocks: UnsupportedBlockConflict[];
   redirectLoops: RedirectLoopConflict[];
+  assetDiscovery: AssetDiscoverySummary;
+}
+
+export function emptyAssetDiscoverySummary(): AssetDiscoverySummary {
+  return {
+    urlsDiscovered: 0,
+    attachmentRefs: 0,
+    attachmentRefsResolved: 0,
+    attachmentRefsUnresolved: 0,
+    unresolvedAttachmentIds: [],
+  };
+}
+
+export function summarizeAssetDiscovery(bundle: EntityBundle): AssetDiscoverySummary {
+  const urlSet = new Set<string>();
+  const attachmentIdSet = new Set<string>();
+
+  for (const entity of [...bundle.posts, ...bundle.pages]) {
+    const discovery = discoverContentAssets(entity.contentHtml ?? "");
+    for (const url of discovery.urls) urlSet.add(url);
+    for (const id of discovery.unresolvedAttachmentIds) attachmentIdSet.add(id);
+  }
+
+  const mediaSourceIds = new Set(bundle.media.map((asset) => asset.sourceId));
+  const unresolvedAttachmentIds = [...attachmentIdSet]
+    .filter((id) => !mediaSourceIds.has(id))
+    .sort((left, right) => Number(left) - Number(right));
+
+  return {
+    urlsDiscovered: urlSet.size,
+    attachmentRefs: attachmentIdSet.size,
+    attachmentRefsResolved: attachmentIdSet.size - unresolvedAttachmentIds.length,
+    attachmentRefsUnresolved: unresolvedAttachmentIds.length,
+    unresolvedAttachmentIds,
+  };
 }
 
 export function emptyConflictReport(): ConflictReport {
@@ -67,6 +120,7 @@ export function emptyConflictReport(): ConflictReport {
     unresolvedInlineImages: [],
     unsupportedBlocks: [],
     redirectLoops: [],
+    assetDiscovery: emptyAssetDiscoverySummary(),
   };
 }
 
@@ -231,6 +285,8 @@ export function analyzeConflicts(
     report.redirectLoops = options.redirectLoops;
   }
 
+  report.assetDiscovery = summarizeAssetDiscovery(bundle);
+
   return report;
 }
 
@@ -245,7 +301,8 @@ export function hasWarnings(report: ConflictReport): boolean {
     report.staleAssetUrls.length > 0 ||
     report.invalidHtml.length > 0 ||
     report.unresolvedInlineImages.length > 0 ||
-    report.unsupportedBlocks.length > 0
+    report.unsupportedBlocks.length > 0 ||
+    report.assetDiscovery.attachmentRefsUnresolved > 0
   );
 }
 

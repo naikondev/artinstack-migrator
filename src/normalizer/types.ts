@@ -10,6 +10,8 @@ export interface SourceMetadata {
   url?: string;
   path?: string;
   exportedAt?: string;
+  /** WordPress `post_type` when the DTO shape differs (e.g. portfolio CPT emitted as `page`). */
+  postType?: string;
 }
 
 /** Canonical post DTO — raw HTML; sanitize at host sink. */
@@ -126,6 +128,8 @@ export interface ValidationResult {
     pages?: number;
     assets?: number;
     portfolios?: number;
+    /** WordPress `post_type=portfolio` (and configured CPT slugs) in raw WXR. */
+    portfolioCpt?: number;
     categories?: number;
     tags?: number;
   };

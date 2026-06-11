@@ -22,6 +22,8 @@ export {
   hasBlockingConflicts,
   hasWarnings,
   emptyConflictReport,
+  summarizeAssetDiscovery,
+  type AssetDiscoverySummary,
   type ConflictReport,
 } from "./conflicts.js";
 export { buildMigrationReport, type MigrationReport, type MigrationRunMode } from "./migration-report.js";

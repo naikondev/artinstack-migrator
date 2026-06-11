@@ -503,21 +503,42 @@ function flattenContactFormShortcodes(content: string, widgetRegistry: WordPress
   return html;
 }
 
+function emitInlineGalleryFromIds(idList: string[]): string {
+  const images = idList
+    .map((id) => `<img data-wp-attachment-id="${escapeLayoutAttr(id)}" alt="" />`)
+    .join("");
+  return `<figure data-wp-inline-gallery>${images}</figure>`;
+}
+
+function parseGalleryAttachmentIds(params: string): string[] | undefined {
+  const ids = extractBareOrQuotedParam(params, "ids");
+  const idList = ids
+    ?.split(",")
+    .map((part) => part.trim())
+    .filter((part) => /^\d+$/.test(part));
+  return idList?.length ? idList : undefined;
+}
+
+function flattenIdGalleryShortcode(content: string, tag: string): string {
+  const escaped = escapeRegExp(tag);
+  const pattern = new RegExp(`\\[${escaped}\\b([^\\]]*)\\](?:\\s*\\[\\/${escaped}\\])?`, "gi");
+  return content.replace(pattern, (fullMatch, params: string) => {
+    const idList = parseGalleryAttachmentIds(params);
+    if (idList?.length) {
+      return emitInlineGalleryFromIds(idList);
+    }
+    return fullMatch;
+  });
+}
+
 function flattenGalleryShortcodes(content: string, widgetRegistry: WordPressWidgetRegistry): string {
   const tag = escapeRegExp(widgetRegistry.galleryShortcode);
   const pattern = new RegExp(`\\[${tag}\\b([^\\]]*)\\](?:\\s*\\[\\/${tag}\\])?`, "gi");
   return content.replace(pattern, (_, params: string) => {
-    const ids = extractBareOrQuotedParam(params, "ids");
-    const idList = ids
-      ?.split(",")
-      .map((part) => part.trim())
-      .filter((part) => /^\d+$/.test(part));
+    const idList = parseGalleryAttachmentIds(params);
 
     if (idList?.length) {
-      const images = idList
-        .map((id) => `<img data-wp-attachment-id="${escapeLayoutAttr(id)}" alt="" />`)
-        .join("");
-      return `<figure data-wp-inline-gallery>${images}</figure>`;
+      return emitInlineGalleryFromIds(idList);
     }
 
     const category = extractBareOrQuotedParam(params, "category") ?? extractBareOrQuotedParam(params, "type");
@@ -526,6 +547,17 @@ function flattenGalleryShortcodes(content: string, widgetRegistry: WordPressWidg
       ...(category ? { "data-wp-portfolio-category": category } : {}),
     });
   });
+}
+
+function flattenIdBasedGalleryShortcodes(
+  content: string,
+  widgetRegistry: WordPressWidgetRegistry,
+): string {
+  let html = content;
+  for (const tag of widgetRegistry.idGalleryShortcodes) {
+    html = flattenIdGalleryShortcode(html, tag);
+  }
+  return html;
 }
 
 function flattenPortfolioShortcodes(content: string, widgetRegistry: WordPressWidgetRegistry): string {
@@ -568,6 +600,7 @@ function flattenWordPressWidgets(
 ): string {
   let html = content;
   html = flattenGalleryShortcodes(html, widgetRegistry);
+  html = flattenIdBasedGalleryShortcodes(html, widgetRegistry);
   html = flattenPortfolioShortcodes(html, widgetRegistry);
   html = flattenMapShortcodes(html, widgetRegistry);
   html = flattenContactFormShortcodes(html, widgetRegistry);

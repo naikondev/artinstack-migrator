@@ -80,6 +80,22 @@ const INLINE_IMAGE_PARAM_PATTERN = new RegExp(
 
 const IMG_TAG_SRC_PATTERN = /<img\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/gi;
 
+const DATA_WP_ATTACHMENT_ID_PATTERN = /\bdata-wp-attachment-id\s*=\s*["'](\d+)["']/gi;
+
+/** Builder / core gallery shortcodes with explicit `ids=` lists (pre- or post-flatten). */
+const SHORTCODE_GALLERY_IDS_PATTERN =
+  /\[(?:gallery|oshine_gallery|vc_gallery|nggallery)\b[^\]]*\bids\s*=\s*["']([^"']+)["']/gi;
+
+export interface ContentAssetDiscovery {
+  /** Network-resolvable image paths (`<img>`, backgrounds, shortcode `image=` attrs, …). */
+  urls: string[];
+  /**
+   * WordPress attachment post ids referenced in content without an inline URL in this
+   * file context (`data-wp-attachment-id`, `[gallery ids=…]`, `[oshine_gallery ids=…]`, …).
+   */
+  unresolvedAttachmentIds: string[];
+}
+
 interface FeaturedAssetCandidate {
   url: string;
   index: number;
@@ -223,18 +239,50 @@ export function resolveFeaturedContentAssetUrl(content: string): string | undefi
   return discoverFeaturedAssetCandidateUrls(content)[0];
 }
 
+function parseAttachmentIdList(raw: string | undefined): string[] {
+  if (!raw?.trim()) return [];
+  return raw
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => /^\d+$/.test(part));
+}
+
+function extractAttachmentIdsFromContent(content: string): string[] {
+  const ids = new Set<string>();
+
+  for (const match of content.matchAll(DATA_WP_ATTACHMENT_ID_PATTERN)) {
+    const id = match[1]?.trim();
+    if (id) ids.add(id);
+  }
+
+  for (const match of content.matchAll(SHORTCODE_GALLERY_IDS_PATTERN)) {
+    for (const id of parseAttachmentIdList(match[1])) {
+      ids.add(id);
+    }
+  }
+
+  return [...ids];
+}
+
 /**
- * Generic content-discovery pass: collect image URLs from HTML `<img>` tags,
- * section hero markers (`data-bg-image`), inline CSS backgrounds, and common
- * shortcode/builder attributes (`src=`, `image=`, `bg_image=`, …) without
- * parsing builder-specific structure (Tatsu, Elementor, etc.).
+ * Generic content-discovery pass: collect resolvable image URLs and attachment ids
+ * that still need an index / REST / crawl resolution step.
  */
-export function discoverContentAssetUrls(content: string): string[] {
-  if (!content.trim()) return [];
+export function discoverContentAssets(content: string): ContentAssetDiscovery {
+  if (!content.trim()) {
+    return { urls: [], unresolvedAttachmentIds: [] };
+  }
 
   const urls = new Set<string>();
 
   for (const raw of extractImgTagSrcs(content)) {
+    if (isMigrationMediaRef(raw)) {
+      const sourceId = parseMigrationMediaRef(raw);
+      if (sourceId?.startsWith("url:")) {
+        ingestLikelyImageUrl(urls, sourceId.slice("url:".length));
+      }
+      continue;
+    }
     ingestLikelyImageUrl(urls, raw);
   }
 
@@ -254,7 +302,20 @@ export function discoverContentAssetUrls(content: string): string[] {
     ingestLikelyImageUrl(urls, raw);
   }
 
-  return [...urls];
+  return {
+    urls: [...urls],
+    unresolvedAttachmentIds: extractAttachmentIdsFromContent(content),
+  };
+}
+
+/**
+ * Generic content-discovery pass: collect image URLs from HTML `<img>` tags,
+ * section hero markers (`data-bg-image`), inline CSS backgrounds, and common
+ * shortcode/builder attributes (`src=`, `image=`, `bg_image=`, …) without
+ * parsing builder-specific structure (Tatsu, Elementor, etc.).
+ */
+export function discoverContentAssetUrls(content: string): string[] {
+  return discoverContentAssets(content).urls;
 }
 
 /** @deprecated Use discoverContentAssetUrls — kept for call-site clarity during transition. */
