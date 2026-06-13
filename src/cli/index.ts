@@ -16,6 +16,7 @@ import {
   hasBlockingConflicts,
   hasWarnings,
   runDryRun,
+  resolveAdapterImportSummary,
   runMigration,
   writeFilesystemExport,
 } from "../sinks/index.js";
@@ -255,6 +256,7 @@ async function main(): Promise<void> {
       });
 
       const bundle = sink.bundle;
+      const wxrImportSummary = await resolveAdapterImportSummary(adapter, input);
       const estimate = await estimateStorage({
         assets: bundle.media,
         offline,
@@ -263,6 +265,7 @@ async function main(): Promise<void> {
       const conflicts = analyzeConflicts(bundle, {
         staleAssetUrls: staleUrlsFromEstimate(estimate),
         redirectLoops: detectRedirectLoops(redirectMap),
+        wxrImportSummary,
       });
       const report = buildMigrationReport({
         platform,
@@ -289,6 +292,7 @@ async function main(): Promise<void> {
     }
 
     const bundle = await collectEntities(adapter.enumerateEntities({ input }));
+    const wxrImportSummary = await resolveAdapterImportSummary(adapter, input);
 
     const estimate = await estimateStorage({
       assets: bundle.media,
@@ -297,6 +301,7 @@ async function main(): Promise<void> {
     const redirectMap = buildRedirectMap(bundle);
     const conflicts = analyzeConflicts(bundle, {
       staleAssetUrls: staleUrlsFromEstimate(estimate),
+      wxrImportSummary,
     });
 
     const report = buildMigrationReport({

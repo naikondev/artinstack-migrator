@@ -1,8 +1,9 @@
-import type { AdapterContext, MigrationAdapter, ValidationResult } from "../../normalizer/types.js";
+import type { AdapterContext, MigrationAdapter, ValidationResult, WxrImportSummary } from "../../normalizer/types.js";
 import type { OriginUrlRewriteConfig } from "../../lib/media-urls.js";
 import {
   DEFAULT_WORDPRESS_PORTFOLIO_CPT_SLUGS,
   enumerateWxrEntities,
+  summarizeWxrImportFromFile,
   validateWxrFile,
   type WxrParseOptions,
 } from "./parse-wxr.js";
@@ -29,8 +30,13 @@ export type {
   WordPressWidgetRegistry,
   WordPressContactFormWidgetRule,
 } from "./builders/registry.js";
-export { DEFAULT_WORDPRESS_PORTFOLIO_CPT_SLUGS } from "./parse-wxr.js";
-export type { WxrParseOptions } from "./parse-wxr.js";
+export {
+  DEFAULT_WORDPRESS_PORTFOLIO_CPT_SLUGS,
+  summarizeWxrImport,
+  summarizeWxrImportFromFile,
+  validateWxrFile,
+} from "./parse-wxr.js";
+export type { WxrImportSummary, WxrParseOptions } from "./parse-wxr.js";
 
 export interface WordPressParseInput {
   path: string;
@@ -63,13 +69,22 @@ export const wordpressAdapter: MigrationAdapter = {
   platform: "wordpress",
 
   async validateInput(input: unknown): Promise<ValidationResult> {
-    const { filePath } = resolveWxrOptions(input);
-    const result = await validateWxrFile(filePath);
+    const options = resolveWxrOptions(input);
+    const result = await validateWxrFile(options.filePath, options);
     return {
       ok: result.ok,
       issues: result.issues,
-      summary: result.summary,
+      summary: {
+        ...result.summary,
+        unsupportedOnly: result.importSummary.unsupportedOnly,
+        skippedPostTypes: result.importSummary.skippedPostTypes,
+      },
     };
+  },
+
+  async getImportSummary(input: unknown): Promise<WxrImportSummary> {
+    const options = resolveWxrOptions(input);
+    return summarizeWxrImportFromFile(options.filePath, options);
   },
 
   enumerateEntities(ctx: AdapterContext) {

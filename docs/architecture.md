@@ -252,7 +252,7 @@ WordPress exports often reference the same upload under many URL shapes — API 
 
 **Approach:** OSS normalizes upload URLs to a stable normalizer `sourceId` and stamps an **editor-neutral ref**; the host resolves that id to a CDN URL once at persist boundaries.
 
-**Discovery vs resolution:** `discoverContentAssets()` returns two buckets — `urls[]` (network-resolvable paths from `<img>`, heroes, shortcode `image=` attrs) and `unresolvedAttachmentIds[]` (WordPress attachment post ids from `data-wp-attachment-id` markers and `[gallery ids=…]` / `[oshine_gallery ids=…]` shortcodes). Resolution is separate: WXR attachment index → supplemental media export → host REST → rendered-page crawl. `conflicts.assetDiscovery` and `migration-report.summary.assetDiscovery` surface `{ attachmentRefs, attachmentRefsResolved, attachmentRefsUnresolved }` so portfolio-only exports do not silently under-report media (e.g. 358 refs, 4 inline URLs, 0 resolved).
+**Discovery vs resolution:** Finding media in exported content is separate from resolving it to fetchable URLs. Some images appear as direct paths in HTML; others appear only as WordPress attachment ids until the export includes attachment rows, a supplemental media export is bundled, or the host resolves ids against the live site. Dry-run artifacts report discovered versus resolved counts. When an export contains no importable pages or posts (for example commerce-only or builder-global-only XML), summaries explain what was skipped so an empty preview is not mistaken for a parser failure.
 
 | Layer | Responsibility |
 |-------|----------------|

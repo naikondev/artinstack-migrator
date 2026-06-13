@@ -1,5 +1,5 @@
 import { collectEntities, type EntityBundle } from "../normalizer/bundle.js";
-import type { MigrationAdapter, MigrationPlatform } from "../normalizer/types.js";
+import type { MigrationAdapter, MigrationPlatform, WxrImportSummary } from "../normalizer/types.js";
 import {
   analyzeConflicts,
   buildRedirectMap,
@@ -26,8 +26,17 @@ export interface DryRunResult {
   exitCode: 0 | 1 | 2;
 }
 
+export async function resolveAdapterImportSummary(
+  adapter: MigrationAdapter,
+  input: unknown,
+): Promise<WxrImportSummary | undefined> {
+  if (!adapter.getImportSummary) return undefined;
+  return adapter.getImportSummary(input);
+}
+
 export async function runDryRun(options: DryRunOptions): Promise<DryRunResult> {
   const startedAt = new Date();
+  const wxrImportSummary = await resolveAdapterImportSummary(options.adapter, options.input);
   const bundle = await collectEntities(
     options.adapter.enumerateEntities({ input: options.input }),
   );
@@ -42,11 +51,20 @@ export async function runDryRun(options: DryRunOptions): Promise<DryRunResult> {
   const redirectLoops = detectRedirectLoops(redirectMap);
   const staleAssetUrls = staleUrlsFromEstimate(estimate);
 
-  const conflicts = analyzeConflicts(bundle, { staleAssetUrls, redirectLoops });
+  const conflicts = analyzeConflicts(bundle, {
+    staleAssetUrls,
+    redirectLoops,
+    wxrImportSummary,
+  });
 
   const warnings: string[] = [];
   if (staleAssetUrls.length > 0) {
     warnings.push(`${staleAssetUrls.length} asset URL(s) unreachable; used 4 MB fallback each`);
+  }
+  if (wxrImportSummary?.unsupportedOnly) {
+    warnings.push(
+      "Export contains no importable content; see conflicts.skippedPostTypes for omitted post_type counts",
+    );
   }
   const { assetDiscovery } = conflicts;
   if (assetDiscovery.attachmentRefsUnresolved > 0) {

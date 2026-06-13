@@ -1,6 +1,7 @@
 import * as cheerio from "cheerio";
 
 import type { EntityBundle } from "../normalizer/bundle.js";
+import type { WxrImportSummary } from "../normalizer/types.js";
 import {
   discoverContentAssets,
   discoverRawImgSrcs,
@@ -74,6 +75,11 @@ export interface ConflictReport {
   unsupportedBlocks: UnsupportedBlockConflict[];
   redirectLoops: RedirectLoopConflict[];
   assetDiscovery: AssetDiscoverySummary;
+  /** OSS-19 — unsupported WXR `post_type` counts (commerce, builder globals, …). */
+  skippedPostTypes: Record<string, number>;
+  importableItemCount: number;
+  unsupportedOnly: boolean;
+  skippedWooCommerceStubPages?: number;
 }
 
 export function emptyAssetDiscoverySummary(): AssetDiscoverySummary {
@@ -121,7 +127,24 @@ export function emptyConflictReport(): ConflictReport {
     unsupportedBlocks: [],
     redirectLoops: [],
     assetDiscovery: emptyAssetDiscoverySummary(),
+    skippedPostTypes: {},
+    importableItemCount: 0,
+    unsupportedOnly: false,
   };
+}
+
+export function applyWxrImportSummary(
+  report: ConflictReport,
+  summary: WxrImportSummary | undefined,
+): ConflictReport {
+  if (!summary) return report;
+  report.skippedPostTypes = summary.skippedPostTypes;
+  report.importableItemCount = summary.importableItemCount;
+  report.unsupportedOnly = summary.unsupportedOnly;
+  if (summary.skippedWooCommerceStubPages !== undefined) {
+    report.skippedWooCommerceStubPages = summary.skippedWooCommerceStubPages;
+  }
+  return report;
 }
 
 function findDuplicateSlugs(
@@ -226,6 +249,7 @@ export function analyzeConflicts(
   options?: {
     staleAssetUrls?: StaleAssetUrlConflict[];
     redirectLoops?: RedirectLoopConflict[];
+    wxrImportSummary?: WxrImportSummary;
   },
 ): ConflictReport {
   const report = emptyConflictReport();
@@ -286,6 +310,7 @@ export function analyzeConflicts(
   }
 
   report.assetDiscovery = summarizeAssetDiscovery(bundle);
+  applyWxrImportSummary(report, options?.wxrImportSummary);
 
   return report;
 }
@@ -302,7 +327,8 @@ export function hasWarnings(report: ConflictReport): boolean {
     report.invalidHtml.length > 0 ||
     report.unresolvedInlineImages.length > 0 ||
     report.unsupportedBlocks.length > 0 ||
-    report.assetDiscovery.attachmentRefsUnresolved > 0
+    report.assetDiscovery.attachmentRefsUnresolved > 0 ||
+    report.unsupportedOnly
   );
 }
 

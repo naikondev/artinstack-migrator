@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/"
+  xmlns:wp="http://wordpress.org/export/1.2/">
+<channel>
+  <title>Commerce Only Fixture</title>
+  <link>https://shop.example.com</link>
+  <wp:wxr_version>1.2</wp:wxr_version>
+
+  <item>
+    <title>Sample Product</title>
+    <link>https://shop.example.com/product/sample-product/</link>
+    <content:encoded><![CDATA[<p>A WooCommerce product.</p>]]></content:encoded>
+    <wp:post_id>501</wp:post_id>
+    <wp:post_name>sample-product</wp:post_name>
+    <wp:status>publish</wp:status>
+    <wp:post_type>product</wp:post_type>
+  </item>
+
+  <item>
+    <title>Sample Product Variation</title>
+    <link>https://shop.example.com/?post_type=product_variation&amp;p=502</link>
+    <content:encoded><![CDATA[]]></content:encoded>
+    <wp:post_id>502</wp:post_id>
+    <wp:post_name>sample-product-variation</wp:post_name>
+    <wp:status>publish</wp:status>
+    <wp:post_type>product_variation</wp:post_type>
+  </item>
+
+  <item>
+    <title>Order #1001</title>
+    <link>https://shop.example.com/?post_type=shop_order&amp;p=503</link>
+    <content:encoded><![CDATA[]]></content:encoded>
+    <wp:post_id>503</wp:post_id>
+    <wp:post_name>order-1001</wp:post_name>
+    <wp:status>wc-completed</wp:status>
+    <wp:post_type>shop_order</wp:post_type>
+  </item>
+
+  <item>
+    <title>Site Header</title>
+    <link>https://shop.example.com/?post_type=tatsu_header&amp;p=504</link>
+    <content:encoded><![CDATA[]]></content:encoded>
+    <wp:post_id>504</wp:post_id>
+    <wp:post_name>main-header</wp:post_name>
+    <wp:status>publish</wp:status>
+    <wp:post_type>tatsu_header</wp:post_type>
+  </item>
+</channel>
+</rss>

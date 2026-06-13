@@ -24,6 +24,7 @@ import type {
   NormalizedTag,
   PublishStatus,
   SourceMetadata,
+  WxrImportSummary,
 } from "../../normalizer/types.js";
 
 const PLATFORM = "wordpress" as const;
@@ -164,6 +165,80 @@ function countWxrPortfolioCptItems(
 ): number {
   return items.filter((item) => isPortfolioCptPostType(textValue(item.post_type), portfolioCptSlugs))
     .length;
+}
+
+/** OSS-19 — dry-run accounting for WXR rows omitted by `parse-wxr`. */
+export type { WxrImportSummary } from "../../normalizer/types.js";
+
+function isImportableWxrPostType(postType: string, portfolioCptSlugs: Set<string>): boolean {
+  const normalized = postType.toLowerCase();
+  return (
+    normalized === "post" ||
+    normalized === "page" ||
+    normalized === "attachment" ||
+    isPortfolioCptPostType(normalized, portfolioCptSlugs)
+  );
+}
+
+function contentForWooStubCheck(item: WxrItem, options: WxrParseOptions): string {
+  let html = getContentEncoded(item);
+  if (options.originUrlRewrite) {
+    html = rewriteOriginUrlsInText(html, options.originUrlRewrite);
+  }
+  if (options.flattenBuilders !== false) {
+    html = flattenWordPressBuilders(html).html;
+  }
+  return html;
+}
+
+/** Count importable vs skipped WXR items without emitting DTOs. */
+export function summarizeWxrImport(items: WxrItem[], options: WxrParseOptions): WxrImportSummary {
+  const portfolioCptSlugs = resolvePortfolioCptSlugs(options);
+  let importableItemCount = 0;
+  let skippedWooCommerceStubPages = 0;
+  const skippedPostTypes: Record<string, number> = {};
+
+  for (const item of items) {
+    const postType = textValue(item.post_type) || "unknown";
+    const normalizedType = postType.toLowerCase();
+
+    if (isImportableWxrPostType(normalizedType, portfolioCptSlugs)) {
+      if (
+        normalizedType === "page" &&
+        options.skipWooCommerceStubPages !== false &&
+        isWooCommerceStubPage(
+          sanitizeSlug(textValue(item.post_name) || textValue(item.title) || textValue(item.post_id)),
+          contentForWooStubCheck(item, options),
+        )
+      ) {
+        skippedWooCommerceStubPages++;
+        continue;
+      }
+      importableItemCount++;
+      continue;
+    }
+
+    skippedPostTypes[normalizedType] = (skippedPostTypes[normalizedType] ?? 0) + 1;
+  }
+
+  const skippedUnsupported = Object.values(skippedPostTypes).reduce((sum, count) => sum + count, 0);
+
+  return {
+    importableItemCount,
+    unsupportedOnly: importableItemCount === 0 && skippedUnsupported > 0,
+    skippedPostTypes,
+    ...(skippedWooCommerceStubPages > 0
+      ? { skippedWooCommerceStubPages }
+      : {}),
+  };
+}
+
+export async function summarizeWxrImportFromFile(
+  filePath: string,
+  options: WxrParseOptions = { filePath },
+): Promise<WxrImportSummary> {
+  const xml = await readFile(filePath, "utf8");
+  return summarizeWxrImport(parseItems(xml), options);
 }
 
 function getExcerpt(item: WxrItem): string {
@@ -520,10 +595,14 @@ export async function* enumerateWxrEntities(
   }
 }
 
-export async function validateWxrFile(filePath: string): Promise<{
+export async function validateWxrFile(
+  filePath: string,
+  options: WxrParseOptions = { filePath },
+): Promise<{
   ok: boolean;
   issues: { code: string; message: string }[];
   summary: Record<string, number>;
+  importSummary: WxrImportSummary;
 }> {
   const issues: { code: string; message: string }[] = [];
   let xml: string;
@@ -534,6 +613,11 @@ export async function validateWxrFile(filePath: string): Promise<{
       ok: false,
       issues: [{ code: "file_not_found", message: `Cannot read file: ${filePath}` }],
       summary: {},
+      importSummary: {
+        importableItemCount: 0,
+        unsupportedOnly: false,
+        skippedPostTypes: {},
+      },
     };
   }
 
@@ -547,6 +631,7 @@ export async function validateWxrFile(filePath: string): Promise<{
   }
 
   const items = parseItems(xml);
+  const importSummary = summarizeWxrImport(items, { ...options, filePath });
   const summary = {
     posts: items.filter((i) => textValue(i.post_type) === "post").length,
     pages: items.filter((i) => textValue(i.post_type) === "page").length,
@@ -554,11 +639,12 @@ export async function validateWxrFile(filePath: string): Promise<{
     portfolioCpt: countWxrPortfolioCptItems(items),
     categories: 0,
     tags: 0,
+    importableItemCount: importSummary.importableItemCount,
   };
 
   const { categories, tags } = collectTaxonomies(items);
   summary.categories = categories.size;
   summary.tags = tags.size;
 
-  return { ok: issues.length === 0, issues, summary };
+  return { ok: issues.length === 0, issues, summary, importSummary };
 }

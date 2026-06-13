@@ -4,6 +4,7 @@ import type { EntityBundle } from "../normalizer/bundle.js";
 import { bundleCounts } from "../normalizer/bundle.js";
 import type { MigrationPlatform } from "../normalizer/types.js";
 import type { AssetDiscoverySummary, ConflictReport } from "./conflicts.js";
+import type { WxrImportSummary } from "../normalizer/types.js";
 
 export type MigrationRunMode = "dry-run" | "export" | "sink" | "worker";
 
@@ -22,6 +23,9 @@ export interface MigrationReport {
     tags: number;
     storageBytesEstimated?: number;
     assetDiscovery?: AssetDiscoverySummary;
+    importableItemCount?: number;
+    unsupportedOnly?: boolean;
+    skippedPostTypes?: Record<string, number>;
   };
   warnings: string[];
   errors: string[];
@@ -53,6 +57,9 @@ export function buildMigrationReport(input: {
       ...counts,
       storageBytesEstimated: input.storageBytesEstimated,
       assetDiscovery: input.conflicts.assetDiscovery,
+      importableItemCount: input.conflicts.importableItemCount,
+      unsupportedOnly: input.conflicts.unsupportedOnly,
+      skippedPostTypes: input.conflicts.skippedPostTypes,
     },
     warnings: input.warnings ?? [],
     errors: input.errors ?? [],

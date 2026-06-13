@@ -14,7 +14,7 @@ export {
   createFilesystemMigrationSink,
   portfolioMediaMatchesBundle,
 } from "./filesystem-sink.js";
-export { runDryRun, type DryRunResult, type DryRunOptions } from "./dry-run.js";
+export { runDryRun, resolveAdapterImportSummary, type DryRunResult, type DryRunOptions } from "./dry-run.js";
 export {
   analyzeConflicts,
   buildRedirectMap,

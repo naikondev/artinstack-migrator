@@ -132,7 +132,18 @@ export interface ValidationResult {
     portfolioCpt?: number;
     categories?: number;
     tags?: number;
+    /** WXR rows the parser would emit (OSS-19). */
+    importableItemCount?: number;
+    unsupportedOnly?: boolean;
+    skippedPostTypes?: Record<string, number>;
   };
+}
+
+export interface WxrImportSummary {
+  importableItemCount: number;
+  unsupportedOnly: boolean;
+  skippedPostTypes: Record<string, number>;
+  skippedWooCommerceStubPages?: number;
 }
 
 export interface AdapterContext {
@@ -144,6 +155,8 @@ export interface MigrationAdapter {
   platform: MigrationPlatform;
   validateInput(input: unknown): ValidationResult | Promise<ValidationResult>;
   enumerateEntities(ctx: AdapterContext): AsyncIterable<NormalizedEntity>;
+  /** Platform-specific import accounting (e.g. WordPress skipped `post_type`s). */
+  getImportSummary?(input: unknown): Promise<WxrImportSummary | undefined>;
 }
 
 export interface MigrationCursor {
