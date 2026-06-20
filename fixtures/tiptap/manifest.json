@@ -34,6 +34,27 @@
       "golden": "golden/blockquote.snapshot.json",
       "description": "Blockquote with nested paragraph",
       "gates": ["blockquote"]
+    },
+    {
+      "id": "wp-widget-video-youtube",
+      "html": "html/wp-widget-video-youtube.html",
+      "golden": "golden/wp-widget-video-youtube.snapshot.json",
+      "description": "Video widget stub with YouTube embed URL",
+      "gates": ["video_embed"]
+    },
+    {
+      "id": "wp-widget-video-vimeo",
+      "html": "html/wp-widget-video-vimeo.html",
+      "golden": "golden/wp-widget-video-vimeo.snapshot.json",
+      "description": "Video widget stub on section with Vimeo embed URL",
+      "gates": ["video_embed"]
+    },
+    {
+      "id": "wp-widget-video-iframe",
+      "html": "html/wp-widget-video-iframe.html",
+      "golden": "golden/wp-widget-video-iframe.snapshot.json",
+      "description": "YouTube iframe preserved as embed block",
+      "gates": ["video_embed"]
     }
   ]
 }

@@ -1,0 +1,15 @@
+{
+  "type": "doc",
+  "content": [
+    {
+      "type": "embed",
+      "attrs": {
+        "src": "https://www.youtube-nocookie.com/embed/ABC123xyz",
+        "provider": "youtube",
+        "dataWpWidget": "video",
+        "dataEmbedUrl": "https://www.youtube-nocookie.com/embed/ABC123xyz",
+        "dataVideoProvider": "youtube"
+      }
+    }
+  ]
+}

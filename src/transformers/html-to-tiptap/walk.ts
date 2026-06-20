@@ -2,6 +2,12 @@ import type { Cheerio, CheerioAPI } from "cheerio";
 import type { AnyNode, Element } from "domhandler";
 
 import type { HtmlToTiptapOptions, TiptapDoc, TiptapMark, TiptapNode } from "./types.js";
+import {
+  isPreservedVideoIframe,
+  isVideoWidgetElement,
+  videoEmbedNodeFromIframe,
+  videoEmbedNodeFromWidget,
+} from "./video-embed.js";
 
 type CheerioSelection = Cheerio<AnyNode>;
 
@@ -97,6 +103,7 @@ function hasBlockChild($: CheerioAPI, $el: CheerioSelection): boolean {
       childTag === "pre" ||
       childTag === "hr" ||
       childTag === "img" ||
+      childTag === "iframe" ||
       childTag === "table" ||
       isLayoutMarker($child, { unwrapLayoutMarkers: true }) ||
       (UNWRAP_TAGS.has(childTag) && hasBlockChild($, $child))
@@ -246,6 +253,13 @@ function parseMixedBlockContent(
       return;
     }
 
+    if (tagName === "iframe" && isPreservedVideoIframe($child, tagName)) {
+      flushInline();
+      const embed = videoEmbedNodeFromIframe($child);
+      if (embed) blocks.push(embed);
+      return;
+    }
+
     if (INLINE_TAGS.has(tagName)) {
       inlineBuffer.push(...parseInlineContent($, $child));
       return;
@@ -270,6 +284,7 @@ function walkListItem($: CheerioAPI, $el: CheerioSelection, options: HtmlToTipta
     if (
       block.type === "paragraph" ||
       block.type === "image" ||
+      block.type === "embed" ||
       block.type === "blockquote" ||
       block.type === "bulletList" ||
       block.type === "orderedList"
@@ -303,6 +318,16 @@ function walkBlockNode(
 
   if (isLayoutMarker($el, options)) {
     return walkBlockNodes($, $el, options);
+  }
+
+  if (isVideoWidgetElement($el)) {
+    const embed = videoEmbedNodeFromWidget($el);
+    return embed ? [embed] : [];
+  }
+
+  if (isPreservedVideoIframe($el, tagName)) {
+    const embed = videoEmbedNodeFromIframe($el);
+    return embed ? [embed] : [];
   }
 
   if (UNWRAP_TAGS.has(tagName)) {

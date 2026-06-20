@@ -53,6 +53,40 @@ describe("htmlToTiptap", () => {
     });
   });
 
+  it("preserves video widget stubs as embed blocks", () => {
+    const html =
+      '<div data-wp-widget="video" data-video-provider="youtube" data-embed-url="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ">&#8203;</div>';
+    const result = htmlToTiptap(html);
+
+    expect(result.content[0]).toEqual({
+      type: "embed",
+      attrs: {
+        src: "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
+        provider: "youtube",
+        dataWpWidget: "video",
+        dataEmbedUrl: "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
+        dataVideoProvider: "youtube",
+      },
+    });
+  });
+
+  it("preserves YouTube iframes as embed blocks", () => {
+    const result = htmlToTiptap(
+      '<iframe src="https://www.youtube.com/embed/ABC123xyz" width="560" height="315"></iframe>',
+    );
+
+    expect(result.content[0]).toEqual({
+      type: "embed",
+      attrs: {
+        src: "https://www.youtube-nocookie.com/embed/ABC123xyz",
+        provider: "youtube",
+        dataWpWidget: "video",
+        dataEmbedUrl: "https://www.youtube-nocookie.com/embed/ABC123xyz",
+        dataVideoProvider: "youtube",
+      },
+    });
+  });
+
   it("unwraps data-layout scaffolding into prose blocks", () => {
     const html = readFileSync(join(TIPTAP_FIXTURES, "html/data-layout-unwrap.html"), "utf8");
     const result = htmlToTiptap(html);

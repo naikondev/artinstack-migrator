@@ -1,0 +1,15 @@
+{
+  "content": [
+    {
+      "type": "wp-widget",
+      "tagName": "section",
+      "attributes": {
+        "data-wp-widget": "contact-form",
+        "data-wp-form-source": "custom-html",
+        "data-wp-form-id": "serverless-contact-form"
+      }
+    }
+  ],
+  "styles": [],
+  "contentHtml": "<section data-wp-widget=\"contact-form\" data-wp-form-source=\"custom-html\" data-wp-form-id=\"serverless-contact-form\">​</section>"
+}

@@ -19,7 +19,7 @@ const FIXTURES_ROOT = join(dirname(fileURLToPath(import.meta.url)));
 const GATEWAY = "https://75b6txrbn2.execute-api.us-west-2.amazonaws.com/prod";
 const PUBLIC = "https://www.naikonpixels.com";
 
-const ALLOWED_UNRESOLVABLE_SHORTCODES = new Set(["recent_posts"]);
+const ALLOWED_UNRESOLVABLE_SHORTCODES = new Set<string>();
 const LEGACY_LAYOUT_SHORTCODE =
   /\[(section|row|one_col|one_third|one_half|one_fourth|two_third|three_fourth)\b/i;
 
@@ -143,18 +143,24 @@ describe("naikonpixels pages export", () => {
     expect(about?.contentHtml).toContain("International Dark-Sky Association");
   });
 
-  it("flattens portfolio page to widget stub and reports recent_posts shortcodes", () => {
+  it("flattens portfolio page to widget stub and home page recent_posts to blog-listing", () => {
     const portfolioPage = bundle.pages.find((p) => p.slug === "portfolio");
     expect(portfolioPage?.contentHtml).toContain('data-wp-widget="portfolio"');
     expect(portfolioPage?.contentHtml).toContain('data-wp-portfolio-category="photography"');
     expect(portfolioPage?.contentHtml).not.toMatch(/\[portfolio\b/);
+    expect(portfolioPage?.isPortfolioPage).toBe(true);
+
+    const homePage = bundle.pages.find((p) => p.slug === "naikonpixels");
+    expect(homePage?.contentHtml).toContain('data-wp-widget="blog-listing"');
+    expect(homePage?.contentHtml).not.toMatch(/\[recent_posts\b/);
+    expect(homePage?.isPortfolioPage).toBeUndefined();
 
     const conflicts = analyzeConflicts(bundle);
     const recentPosts = conflicts.unsupportedBlocks.filter((b) =>
       b.blockType.includes("recent_posts"),
     );
 
-    expect(recentPosts.length).toBeGreaterThan(0);
+    expect(recentPosts.length).toBe(0);
     expect(
       conflicts.unsupportedBlocks.some((b) => b.blockType.includes("woocommerce")),
     ).toBe(false);

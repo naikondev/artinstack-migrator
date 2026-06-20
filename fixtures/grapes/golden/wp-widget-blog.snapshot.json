@@ -1,0 +1,16 @@
+{
+  "content": [
+    {
+      "type": "wp-widget",
+      "tagName": "section",
+      "attributes": {
+        "data-wp-widget": "blog-listing",
+        "data-wp-blog-layout": "grid",
+        "data-wp-blog-limit": "10",
+        "data-wp-blog-columns": "three"
+      }
+    }
+  ],
+  "styles": [],
+  "contentHtml": "<section data-wp-widget=\"blog-listing\" data-wp-blog-layout=\"grid\" data-wp-blog-limit=\"10\" data-wp-blog-columns=\"three\">​</section>"
+}

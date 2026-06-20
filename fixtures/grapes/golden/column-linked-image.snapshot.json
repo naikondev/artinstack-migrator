@@ -1,0 +1,42 @@
+{
+  "content": [
+    {
+      "type": "section",
+      "tagName": "div",
+      "components": [
+        {
+          "type": "row",
+          "tagName": "div",
+          "attributes": {
+            "data-cols": "3"
+          },
+          "components": [
+            {
+              "type": "column",
+              "tagName": "div",
+              "components": [
+                {
+                  "type": "image",
+                  "tagName": "img",
+                  "void": true,
+                  "attributes": {
+                    "src": "https://example.com/wp-content/uploads/logo.png",
+                    "alt": "Affiliate",
+                    "href": "https://example.org/affiliate"
+                  }
+                },
+                {
+                  "type": "text",
+                  "tagName": "h6",
+                  "content": "Affiliate name"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "styles": [],
+  "contentHtml": "<div data-layout=\"section\">\n  <div data-layout=\"row\" data-cols=\"3\">\n    <div data-layout=\"column\">\n      <a href=\"https://example.org/affiliate\"><img src=\"https://example.com/wp-content/uploads/logo.png\" alt=\"Affiliate\"></a>\n      <h6>Affiliate name</h6>\n    </div>\n  </div>\n</div>"
+}

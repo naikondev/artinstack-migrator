@@ -1,6 +1,6 @@
 {
   "name": "@artinstack/migrator",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "Stateless content normalizer and migration framework — WordPress, SmugMug, Squarespace → platform-agnostic schema",
   "license": "MIT",
   "author": "ArtInStack",

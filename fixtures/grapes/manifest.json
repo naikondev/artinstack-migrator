@@ -97,6 +97,34 @@
       "golden": "golden/wp-widget-embed.snapshot.json",
       "description": "OSS-13 known embed iframes map to void embed components",
       "gates": ["wp_widget_embed"]
+    },
+    {
+      "id": "wp-widget-blog",
+      "html": "html/wp-widget-blog.html",
+      "golden": "golden/wp-widget-blog.snapshot.json",
+      "description": "blog-listing widget attrs preserved on section shell",
+      "gates": ["wp_widget"]
+    },
+    {
+      "id": "wp-widget-map-address",
+      "html": "html/wp-widget-map-address.html",
+      "golden": "golden/wp-widget-map-address.snapshot.json",
+      "description": "map stub with address-derived data-embed-url",
+      "gates": ["wp_widget"]
+    },
+    {
+      "id": "column-linked-image",
+      "html": "html/column-linked-image.html",
+      "golden": "golden/column-linked-image.snapshot.json",
+      "description": "block-level linked affiliation logos → image components in columns",
+      "gates": ["data_layout"]
+    },
+    {
+      "id": "wp-widget-contact-custom-html",
+      "html": "html/wp-widget-contact-custom-html.html",
+      "golden": "golden/wp-widget-contact-custom-html.snapshot.json",
+      "description": "custom HTML contact form stub attrs preserved on section shell",
+      "gates": ["wp_widget"]
     }
   ]
 }

@@ -257,6 +257,36 @@ function getPostMeta(item: WxrItem, key: string): string | undefined {
   return undefined;
 }
 
+/** Common WordPress slugs for the site portfolio listing page (not CPT singles). */
+const PORTFOLIO_LISTING_PAGE_SLUGS = new Set([
+  "portfolio",
+  "work",
+  "works",
+  "gallery",
+  "projects",
+  "our-work",
+]);
+
+function inferPortfolioListingPage(
+  item: WxrItem,
+  options: {
+    postType: string;
+    isPortfolioCpt: boolean;
+    slug: string;
+    contentHtml: string;
+  },
+): boolean {
+  if (options.isPortfolioCpt || options.postType !== "page") return false;
+
+  const template = (getPostMeta(item, "_wp_page_template") ?? "").trim().toLowerCase();
+  if (template.includes("portfolio") && template !== "default") return true;
+
+  const hasPortfolioListingWidget = /data-wp-widget=["']portfolio["']/i.test(options.contentHtml);
+  return (
+    hasPortfolioListingWidget && PORTFOLIO_LISTING_PAGE_SLUGS.has(options.slug.toLowerCase())
+  );
+}
+
 function parseItems(xml: string): WxrItem[] {
   const parser = new XMLParser({
     ignoreAttributes: false,
@@ -578,6 +608,15 @@ export async function* enumerateWxrEntities(
         (getPostMeta(item, "_wp_show_on_front") === "1" ||
           getPostMeta(item, "page_on_front") === "1");
 
+      const isPortfolioPage =
+        !isPortfolioCpt &&
+        inferPortfolioListingPage(item, {
+          postType,
+          isPortfolioCpt,
+          slug,
+          contentHtml,
+        });
+
       const pageSourceId = isPortfolioCpt ? portfolioCptSourceId(id) : id;
 
       const page: NormalizedPage = {
@@ -588,6 +627,7 @@ export async function* enumerateWxrEntities(
         slug,
         contentHtml,
         isHomePage: isHomePage || undefined,
+        isPortfolioPage: isPortfolioPage || undefined,
         status: mapPublishStatus(textValue(item.status)),
       };
       yield page;

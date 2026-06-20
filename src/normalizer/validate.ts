@@ -40,6 +40,7 @@ export const normalizedPageSchema = z.object({
   contentHtml: z.string(),
   contentCss: z.string().optional(),
   isHomePage: z.boolean().optional(),
+  isPortfolioPage: z.boolean().optional(),
   status: publishStatusSchema,
   seoTitle: z.string().optional(),
   seoDescription: z.string().optional(),

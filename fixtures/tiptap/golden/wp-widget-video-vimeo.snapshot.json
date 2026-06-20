@@ -1,0 +1,15 @@
+{
+  "type": "doc",
+  "content": [
+    {
+      "type": "embed",
+      "attrs": {
+        "src": "https://player.vimeo.com/video/76979871",
+        "provider": "vimeo",
+        "dataWpWidget": "video",
+        "dataEmbedUrl": "https://player.vimeo.com/video/76979871",
+        "dataVideoProvider": "vimeo"
+      }
+    }
+  ]
+}

@@ -44,6 +44,8 @@ export interface NormalizedPage {
   contentHtml: string;
   contentCss?: string;
   isHomePage?: boolean;
+  /** Site portfolio listing shell (distinct from portfolio CPT singles). */
+  isPortfolioPage?: boolean;
   status: PublishStatus;
   seoTitle?: string;
   seoDescription?: string;

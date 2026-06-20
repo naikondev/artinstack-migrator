@@ -7,6 +7,7 @@ import { discoverContentAssetUrls } from "../../../../lib/media-urls.js";
 import {
   applyStructuralLayoutMap,
   flattenWordPressBuilders,
+  looksLikeContactFormHtml,
   normalizeVideoEmbedUrl,
   parseFractionWidth,
   parseRowLayoutCols,
@@ -122,6 +123,9 @@ describe("flattenWordPressBuilders", () => {
     expect(html).toContain("<p>I am Prashant Naik.");
     expect(html).toContain("International Dark-Sky Association");
     expect(html).toContain('data-wp-widget="map"');
+    expect(html).toContain("IDA-Logo-Full.png");
+    expect(html).toContain("NYCIndieff.jpeg");
+    expect(html).toContain("Explore-Georgia.png");
     expect(html).not.toMatch(/\[tatsu_/);
     expect((html.match(/data-layout="row"/g) ?? []).length).toBeGreaterThanOrEqual(3);
     expect((html.match(/data-layout="column"/g) ?? []).length).toBeGreaterThanOrEqual(5);
@@ -174,11 +178,56 @@ describe("flattenWordPressBuilders", () => {
     expect(html).not.toMatch(/\[testimonial|\[testimonials/);
   });
 
+  it("preserves testimonial author_image when export HTML-encodes quotes", () => {
+    const raw =
+      "[testimonials][testimonial author_image= &quot;https://example.com/wp-content/uploads/face.jpg&quot; author= &quot;Jane&quot;]" +
+      "<p>Great photographer.</p>[/testimonial][/testimonials]";
+    const { html } = flattenWordPressBuilders(raw);
+    expect(html).toContain('<img src="https://example.com/wp-content/uploads/face.jpg"');
+    expect(html).toContain("<p>Great photographer.</p>");
+    expect(html).not.toMatch(/\[testimonial|\[testimonials/);
+  });
+
   it("replaces blox_gmap with a map widget stub", () => {
     const raw = '[blox_gmap type="gmap"]';
     const { html } = flattenWordPressBuilders(raw);
     expect(html).toContain('data-wp-widget="map"');
     expect(html).not.toMatch(/\[blox_gmap/);
+  });
+
+  it("blox_gmap address → map stub with data-embed-url", () => {
+    const raw = '[blox_gmap type="gmap" address= "Atlanta, GA"]';
+    const { html } = flattenWordPressBuilders(raw);
+    expect(html).toContain('data-wp-widget="map"');
+    expect(html).toContain('data-embed-url="https://maps.google.com/maps?q=Atlanta%2C%20GA&amp;output=embed"');
+    expect(html).toContain('data-wp-map-query="Atlanta, GA"');
+  });
+
+  it("tatsu_map lat/lng → map stub with data-embed-url", () => {
+    const raw = '[tatsu_map lat= "33.749" lng= "-84.388" zoom= "12"]';
+    const { html } = flattenWordPressBuilders(raw);
+    expect(html).toContain('data-embed-url="https://maps.google.com/maps?q=33.749%2C-84.388&amp;z=12&amp;output=embed"');
+    expect(html).toContain('data-wp-map-lat="33.749"');
+    expect(html).toContain('data-wp-map-lng="-84.388"');
+  });
+
+  it("flattens blox_gmap nested in tatsu_text_with_shortcodes", () => {
+    const raw =
+      '[tatsu_text_with_shortcodes][blox_gmap type="gmap" address= "Decatur, GA"][/tatsu_text_with_shortcodes]';
+    const { html } = flattenWordPressBuilders(raw);
+    expect(html).toContain('data-wp-widget="map"');
+    expect(html).toContain("Decatur");
+    expect(html).not.toMatch(/\[blox_gmap/);
+  });
+
+  it("affiliation tatsu_icon in columns → linked img HTML", () => {
+    const raw =
+      '[tatsu_section][tatsu_row layout= "1/3+1/3+1/3"][tatsu_column][tatsu_icon icon_image= "https://example.com/wp-content/uploads/IDA.png" href= "https://darksky.org/"][/tatsu_icon][/tatsu_column][/tatsu_row][/tatsu_section]';
+    const { html } = flattenWordPressBuilders(raw);
+    expect(html).toContain('data-cols="3"');
+    expect(html).toContain('<a href="https://darksky.org/">');
+    expect(html).toContain("IDA.png");
+    expect(html).not.toMatch(/\[tatsu_icon/);
   });
 
   it("converts Blox prefixed row/column/inner tokens to data-layout markers", () => {
@@ -207,6 +256,35 @@ describe("flattenWordPressBuilders", () => {
     expect(html).toContain('data-cols="2"');
     expect(html).toContain('data-layout="column" data-col-width="50%"');
     expect(html).not.toMatch(/\[vc_/);
+  });
+
+  it("flattens Tatsu/Oshine [blog] to blog-listing widget stub", () => {
+    const raw =
+      '[tatsu_section][tatsu_row][tatsu_column][blog col= "three" number_of_posts= "10" filter_by= "category" categories= "" tags= ""][/blog][/tatsu_column][/tatsu_row][/tatsu_section]';
+    const { html, detectedThemes } = flattenWordPressBuilders(raw);
+    expect(detectedThemes).toContain("tatsu");
+    expect(html).toContain('data-wp-widget="blog-listing"');
+    expect(html).toContain('data-wp-blog-layout="grid"');
+    expect(html).toContain('data-wp-blog-limit="10"');
+    expect(html).toContain('data-wp-blog-columns="three"');
+    expect(html).not.toMatch(/\[blog\b/);
+  });
+
+  it("maps builderLayout=list on [blog] to list layout attr", () => {
+    const raw = '[blog builderLayout= "list" number_of_posts= "6"][/blog]';
+    const { html } = flattenWordPressBuilders(raw);
+    expect(html).toContain('data-wp-widget="blog-listing"');
+    expect(html).toContain('data-wp-blog-layout="list"');
+    expect(html).toContain('data-wp-blog-limit="6"');
+  });
+
+  it("flattens Oshine [recent_posts] to blog-listing widget stub", () => {
+    const raw =
+      '[recent_posts number= "three" filter_by= "category" categories= "" tags= ""][/recent_posts]';
+    const { html } = flattenWordPressBuilders(raw);
+    expect(html).toContain('data-wp-widget="blog-listing"');
+    expect(html).toContain('data-wp-blog-limit="3"');
+    expect(html).not.toMatch(/\[recent_posts\b/);
   });
 
   it("strips blox_row scaffolding and flattens portfolio to widget stub", () => {
@@ -255,6 +333,40 @@ describe("flattenWordPressBuilders", () => {
     expect(html).toContain('data-wp-form-source="contact-form-7"');
     expect(html).toContain('data-wp-form-id="123"');
     expect(html).not.toMatch(/\[contact-form-7/);
+  });
+
+  it("tatsu_code custom HTML form → contact-form widget stub", () => {
+    const raw =
+      '[tatsu_section][tatsu_row][tatsu_column][tatsu_code key= "ZJRV6OZlH"]' +
+      '<form id="serverless-contact-form"><input class="form-name" name="form-name" type="text" placeholder="Your Name">' +
+      '<input class="form-email" name="form-email" type="text" placeholder="Email">' +
+      '<textarea class="form-message" name="form-message" placeholder="Message"></textarea>' +
+      '<div class="g-recaptcha" data-sitekey="abc"></div>' +
+      '<input class="form-submit" type="submit" value="Submit"></form>[/tatsu_code]' +
+      '[tatsu_code key= "0waXqoShu"]<script src="https://www.example.com/scripts/contact_form_lambda.js"></script>' +
+      '<script src="https://www.google.com/recaptcha/api.js"></script>[/tatsu_code]' +
+      "[/tatsu_column][/tatsu_row][/tatsu_section]";
+    const { html } = flattenWordPressBuilders(raw);
+    expect(html).toContain('data-wp-widget="contact-form"');
+    expect(html).toContain('data-wp-form-source="custom-html"');
+    expect(html).toContain('data-wp-form-id="serverless-contact-form"');
+    expect(html).not.toMatch(/<form\b/i);
+    expect(html).not.toMatch(/recaptcha|contact_form_lambda/i);
+    expect(html).not.toMatch(/\[tatsu_code/);
+  });
+
+  it("looksLikeContactFormHtml rejects login and newsletter-only forms", () => {
+    expect(
+      looksLikeContactFormHtml('<form id="loginform"><input name="log"><input name="pwd"></form>'),
+    ).toBe(false);
+    expect(
+      looksLikeContactFormHtml('<form id="newsletter"><input name="email" type="email"></form>'),
+    ).toBe(false);
+    expect(
+      looksLikeContactFormHtml(
+        '<form id="contact"><input name="email" type="email"><textarea name="message"></textarea></form>',
+      ),
+    ).toBe(true);
   });
 
   it("normalizes YouTube watch URLs to youtube-nocookie embed (OSS-16)", () => {
@@ -348,8 +460,10 @@ describe("findWordPressShortcodeMarkers", () => {
       '[portfolio col="two"][/portfolio][recent_posts number="three"][/recent_posts][woocommerce_cart]',
     );
     const markers = findWordPressShortcodeMarkers(html);
-    expect(markers.map((m) => m.shortcode)).toEqual(["recent_posts", "woocommerce_cart"]);
+    expect(markers.map((m) => m.shortcode)).toEqual(["woocommerce_cart"]);
     expect(markers.every((m) => m.unresolvable)).toBe(true);
     expect(html).toContain('data-wp-widget="portfolio"');
+    expect(html).toContain('data-wp-widget="blog-listing"');
+    expect(html).toContain('data-wp-blog-limit="3"');
   });
 });

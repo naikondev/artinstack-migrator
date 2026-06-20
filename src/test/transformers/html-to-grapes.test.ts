@@ -277,6 +277,13 @@ describe("htmlToGrapes", () => {
 
     const mapWidgets = findComponents(snapshot.content, (c) => c.type === "wp-widget" && c.attributes?.["data-wp-widget"] === "map");
     expect(mapWidgets.length).toBeGreaterThanOrEqual(1);
+
+    const affiliationImages = findComponents(
+      snapshot.content,
+      (c) => c.type === "image" && Boolean(c.attributes?.src?.includes("IDA-Logo")),
+    );
+    expect(affiliationImages.length).toBeGreaterThanOrEqual(1);
+    expect(affiliationImages[0]?.attributes?.href).toContain("darksky.org");
   });
 });
 

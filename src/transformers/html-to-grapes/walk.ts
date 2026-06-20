@@ -111,6 +111,52 @@ function isPreservedEmbedIframe(
   return EMBED_IFRAME_SRC.test(src);
 }
 
+/** Block-level `<a href="…"><img …></a>` (e.g. affiliation logos) → void image, not inline HTML text. */
+function isBlockLinkedImageAnchor($: CheerioAPI, $el: CheerioSelection): boolean {
+  if (tagNameOf($el) !== "a") return false;
+  const href = $el.attr("href")?.trim();
+  if (!href || href === "#") return false;
+
+  let tagChildCount = 0;
+  let onlyImg = false;
+  $el.contents().each((_, node) => {
+    if (node.type === "text") {
+      if (String("data" in node ? node.data : "").trim()) {
+        tagChildCount = -1;
+      }
+      return;
+    }
+    if (node.type !== "tag") return;
+    tagChildCount += 1;
+    onlyImg = tagNameOf($(node)) === "img";
+  });
+
+  return tagChildCount === 1 && onlyImg;
+}
+
+function walkLinkedImageAnchor(
+  $: CheerioAPI,
+  $el: CheerioSelection,
+  options: HtmlToGrapesOptions,
+): GrapesComponent {
+  const href = $el.attr("href")!.trim();
+  const $img = $el.children().first();
+  const meta = pickElementMeta($img);
+  const attributes = { ...(meta.attributes ?? {}), href };
+
+  return applyElementMeta(
+    {
+      type: resolveComponentType("img", meta.classes, options),
+      tagName: "img",
+      void: true,
+    },
+    {
+      attributes,
+      classes: meta.classes,
+    },
+  );
+}
+
 function layoutAttributesForComponent(
   attributes: Record<string, string> | undefined,
 ): Record<string, string> | undefined {
@@ -270,6 +316,10 @@ function walkNode(
       },
       meta,
     );
+  }
+
+  if (tagName === "a" && isBlockLinkedImageAnchor($, $el)) {
+    return walkLinkedImageAnchor($, $el, options);
   }
 
   if (VOID_TAGS.has(tagName)) {

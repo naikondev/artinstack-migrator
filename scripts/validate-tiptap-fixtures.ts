@@ -102,6 +102,16 @@ export async function validateTiptapFixture(
       errors.push("blockquote: expected blockquote root block");
     }
   }
+  if (gates.includes("video_embed")) {
+    if (!actual.content.some((node) => node.type === "embed")) {
+      errors.push("video_embed: expected embed block");
+    }
+    const embed = actual.content.find((node) => node.type === "embed");
+    const src = embed?.attrs?.src;
+    if (typeof src !== "string" || !src.startsWith("http")) {
+      errors.push("video_embed: expected embed attrs.src URL");
+    }
+  }
 
   return { id: entry.id, ok: errors.length === 0, errors };
 }

@@ -203,6 +203,8 @@ export interface WordPressWidgetRegistry {
   videoShortcodePrefixes: readonly string[];
   /** Core / plugin portfolio dynamic shortcode tag. */
   portfolioShortcode: string;
+  /** Builder blog roll modules (Tatsu/Oshine `[blog]`, etc.). */
+  blogShortcodeTags: readonly string[];
   /** WordPress core gallery shortcode tag (`ids=` split handled in engine). */
   galleryShortcode: string;
   /** Builder/plugin gallery shortcodes with explicit `ids=` attachment lists (OSS-12). */
@@ -234,13 +236,13 @@ export const WORDPRESS_WIDGET_REGISTRY: WordPressWidgetRegistry = {
     "vc_video",
   ],
   portfolioShortcode: "portfolio",
+  blogShortcodeTags: ["blog", "recent_posts"],
   galleryShortcode: "gallery",
   idGalleryShortcodes: ["oshine_gallery", "vc_gallery", "nggallery"],
 };
 
 /** Shortcodes that cannot become static HTML — reported in conflicts, never stripped. */
 export const UNRESOLVABLE_SHORTCODE_PREFIXES = [
-  "recent_posts",
   "woocommerce_cart",
   "woocommerce_checkout",
   "woocommerce_my_account",
@@ -261,6 +263,7 @@ export const WORDPRESS_BUILDER_REGISTRY: BuilderThemeConfig[] = [
       { shortcodePrefix: "tatsu_text" },
       { shortcodePrefix: "tatsu_inline_text" },
       { shortcodePrefix: "tatsu_text_with_shortcodes" },
+      { shortcodePrefix: "tatsu_icon_group" },
     ],
     urlRules: [
       { shortcodePrefix: "tatsu_image", urlParams: ["image", "url", "src"], tag: "img" },

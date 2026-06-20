@@ -43,6 +43,18 @@ export function extractQuotedParam(params: string, name: string): string | undef
   let index = match.index + match[0].length;
   while (index < params.length && /\s/.test(params[index]!)) index += 1;
 
+  if (params.slice(index, index + 6) === "&quot;") {
+    index += 6;
+    let value = "";
+    while (index < params.length) {
+      if (params.slice(index, index + 6) === "&quot;") break;
+      value += params[index]!;
+      index += 1;
+    }
+    const trimmed = value.trim();
+    return trimmed || undefined;
+  }
+
   const quote = params[index];
   if (quote !== '"' && quote !== "'") return undefined;
   index += 1;
@@ -296,6 +308,10 @@ function convertWrapperRule(content: string, rule: BuilderWrapperRule): string {
   });
 }
 
+function isPlaceholderImageUrl(url: string): boolean {
+  return /placehold\.it|placeholder\.com|via\.placeholder/i.test(url);
+}
+
 function convertIconImageRule(content: string, rule: BuilderIconImageRule): string {
   const prefix = escapeRegExp(rule.shortcodePrefix);
   const pattern = new RegExp(
@@ -304,8 +320,9 @@ function convertIconImageRule(content: string, rule: BuilderIconImageRule): stri
   );
 
   return content.replace(pattern, (_, params: string) => {
-    const iconImage = extractQuotedParam(params, rule.imageParam);
-    if (!iconImage?.startsWith("http") || iconImage.includes("placehold")) {
+    const iconImage =
+      extractQuotedParam(params, rule.imageParam) ?? extractQuotedParam(params, "image");
+    if (!iconImage?.startsWith("http") || isPlaceholderImageUrl(iconImage)) {
       return "";
     }
     const img = emitHtmlTag("img", iconImage);
@@ -374,7 +391,7 @@ function emitWidgetStub(
   return `<${tag} ${parts.join(" ")}>${WP_WIDGET_PLACEHOLDER}</${tag}>`;
 }
 
-/** OSS-16 — normalize YouTube/Vimeo share URLs to canonical embed URLs. */
+/** Normalize YouTube/Vimeo share URLs to canonical embed URLs. */
 export function normalizeVideoEmbedUrl(
   raw: string,
 ): { provider: "youtube" | "vimeo" | "external"; embedUrl: string } | undefined {
@@ -462,6 +479,59 @@ function emitVideoWidgetFromParams(params: string, inner: string): string {
   });
 }
 
+/** Build a Google Maps iframe embed URL from map shortcode params. */
+export function buildGoogleMapsEmbedUrlFromMapParams(params: string): {
+  embedUrl?: string;
+  lat?: string;
+  lng?: string;
+  query?: string;
+} {
+  const direct = extractShortcodeParam(params, [
+    "embed_url",
+    "url",
+    "src",
+    "map_url",
+    "iframe_url",
+    "embed",
+  ]);
+  if (direct && /google\.com\/maps|maps\.google\.com/i.test(direct)) {
+    return { embedUrl: direct.trim() };
+  }
+
+  const lat =
+    extractBareOrQuotedParam(params, "lat") ??
+    extractBareOrQuotedParam(params, "latitude") ??
+    extractBareOrQuotedParam(params, "map_lat");
+  const lng =
+    extractBareOrQuotedParam(params, "lng") ??
+    extractBareOrQuotedParam(params, "longitude") ??
+    extractBareOrQuotedParam(params, "map_lng");
+  const address =
+    extractBareOrQuotedParam(params, "address") ??
+    extractBareOrQuotedParam(params, "map_address") ??
+    extractBareOrQuotedParam(params, "location") ??
+    extractBareOrQuotedParam(params, "map_location") ??
+    extractBareOrQuotedParam(params, "q");
+
+  if (lat && lng) {
+    const zoom = extractBareOrQuotedParam(params, "zoom") ?? "14";
+    return {
+      embedUrl: `https://maps.google.com/maps?q=${encodeURIComponent(`${lat},${lng}`)}&z=${zoom}&output=embed`,
+      lat,
+      lng,
+    };
+  }
+
+  if (address) {
+    return {
+      embedUrl: `https://maps.google.com/maps?q=${encodeURIComponent(address)}&output=embed`,
+      query: address,
+    };
+  }
+
+  return {};
+}
+
 function flattenMapShortcodes(content: string, widgetRegistry: WordPressWidgetRegistry): string {
   let html = content;
   for (const prefix of widgetRegistry.mapShortcodePrefixes) {
@@ -470,11 +540,12 @@ function flattenMapShortcodes(content: string, widgetRegistry: WordPressWidgetRe
       "gi",
     );
     html = html.replace(pattern, (_, params: string) => {
-      const embedUrl = extractShortcodeParam(params, ["embed_url", "url", "src", "map_url"]);
-      const query = extractBareOrQuotedParam(params, "address") ?? extractBareOrQuotedParam(params, "q");
+      const resolved = buildGoogleMapsEmbedUrlFromMapParams(params);
       return emitWidgetStub("map", {
-        ...(embedUrl?.includes("google.com/maps") ? { "data-embed-url": embedUrl } : {}),
-        ...(query && !embedUrl ? { "data-wp-map-query": query } : {}),
+        ...(resolved.embedUrl ? { "data-embed-url": resolved.embedUrl } : {}),
+        ...(resolved.lat ? { "data-wp-map-lat": resolved.lat } : {}),
+        ...(resolved.lng ? { "data-wp-map-lng": resolved.lng } : {}),
+        ...(resolved.query ? { "data-wp-map-query": resolved.query } : {}),
       });
     });
   }
@@ -560,6 +631,74 @@ function flattenIdBasedGalleryShortcodes(
   return html;
 }
 
+const SHORTCODE_WORD_COUNTS: Record<string, string> = {
+  one: "1",
+  two: "2",
+  three: "3",
+  four: "4",
+  five: "5",
+  six: "6",
+  seven: "7",
+  eight: "8",
+  nine: "9",
+  ten: "10",
+};
+
+function normalizeShortcodeCount(raw: string | undefined): string | undefined {
+  if (!raw?.trim()) return undefined;
+  const trimmed = raw.trim().toLowerCase();
+  if (/^\d+$/.test(trimmed)) return trimmed;
+  return SHORTCODE_WORD_COUNTS[trimmed];
+}
+
+function inferBlogListingLayout(params: string): string {
+  const raw =
+    extractBareOrQuotedParam(params, "builderLayout") ??
+    extractBareOrQuotedParam(params, "layout") ??
+    extractBareOrQuotedParam(params, "style");
+  if (!raw) return "grid";
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === "list" || normalized === "grid" || normalized === "featured" || normalized === "sidebar") {
+    return normalized;
+  }
+  return "grid";
+}
+
+function flattenBlogListingShortcodes(
+  content: string,
+  widgetRegistry: WordPressWidgetRegistry,
+): string {
+  let html = content;
+  for (const tag of widgetRegistry.blogShortcodeTags) {
+    const escaped = escapeRegExp(tag);
+    const pattern = new RegExp(`\\[${escaped}\\b([^\\]]*)\\](?:\\s*\\[\\/${escaped}\\])?`, "gi");
+    html = html.replace(pattern, (_, params: string) => {
+      const limit =
+        normalizeShortcodeCount(extractBareOrQuotedParam(params, "number_of_posts")) ??
+        normalizeShortcodeCount(extractBareOrQuotedParam(params, "count")) ??
+        normalizeShortcodeCount(extractBareOrQuotedParam(params, "posts_per_page")) ??
+        normalizeShortcodeCount(extractBareOrQuotedParam(params, "number"));
+      const filterBy = extractBareOrQuotedParam(params, "filter_by")?.toLowerCase();
+      const categories = extractBareOrQuotedParam(params, "categories");
+      const tags = extractBareOrQuotedParam(params, "tags");
+      const col = extractBareOrQuotedParam(params, "col");
+
+      return emitWidgetStub(
+        "blog-listing",
+        {
+          "data-wp-blog-layout": inferBlogListingLayout(params),
+          ...(limit ? { "data-wp-blog-limit": limit } : {}),
+          ...(col ? { "data-wp-blog-columns": col } : {}),
+          ...(filterBy === "category" && categories ? { "data-wp-blog-category": categories } : {}),
+          ...(filterBy === "tag" && tags ? { "data-wp-blog-tags": tags } : {}),
+        },
+        "section",
+      );
+    });
+  }
+  return html;
+}
+
 function flattenPortfolioShortcodes(content: string, widgetRegistry: WordPressWidgetRegistry): string {
   const tag = escapeRegExp(widgetRegistry.portfolioShortcode);
   const pattern = new RegExp(`\\[${tag}\\b([^\\]]*)\\](?:\\s*\\[\\/${tag}\\])?`, "gi");
@@ -593,7 +732,62 @@ function flattenVideoShortcodes(content: string, widgetRegistry: WordPressWidget
   return html;
 }
 
-/** OSS-12 / OSS-16 — cross-builder widget + video stubs (before scaffolding strip). */
+/** Detect embedded HTML contact forms (e.g. Tatsu `[tatsu_code]` with `<form>`). */
+export function looksLikeContactFormHtml(formHtml: string): boolean {
+  if (!/<form\b/i.test(formHtml)) return false;
+
+  const lower = formHtml.toLowerCase();
+  if (/searchform|wp-login-form|loginform|lostpasswordform/i.test(lower)) return false;
+  if (/type\s*=\s*["']search["']/i.test(formHtml)) return false;
+  if (/newsletter|subscribe/i.test(lower) && !/<textarea\b/i.test(formHtml)) return false;
+
+  const hasEmailField =
+    /type\s*=\s*["']email["']/i.test(formHtml) ||
+    /name\s*=\s*["'][^"']*email/i.test(formHtml) ||
+    /class\s*=\s*["'][^"']*email/i.test(formHtml);
+  const hasMessageField =
+    /<textarea\b/i.test(formHtml) ||
+    /name\s*=\s*["'][^"']*(message|comment|body|enquiry|inquiry)/i.test(formHtml);
+  const hasContactHint =
+    /contact|serverless-contact|get-in-touch|request-quote|quote-request/i.test(lower);
+
+  if (hasEmailField && hasMessageField) return true;
+  if (hasContactHint && hasEmailField) return true;
+  if (hasContactHint && hasMessageField) return true;
+
+  return false;
+}
+
+function stripContactFormHelperScripts(html: string): string {
+  return html.replace(
+    /<script\b[^>]*\bsrc\s*=\s*["'][^"']*(?:recaptcha|contact_form|contact-form)[^"']*["'][^>]*>\s*<\/script>\s*/gi,
+    "",
+  );
+}
+
+function flattenCustomHtmlContactForms(content: string): string {
+  let html = content.replace(/<form\b[^>]*>[\s\S]*?<\/form>/gi, (formHtml) => {
+    if (!looksLikeContactFormHtml(formHtml)) return formHtml;
+
+    const formId =
+      formHtml.match(/\bid\s*=\s*["']([^"']+)["']/i)?.[1]?.trim() ||
+      formHtml.match(/\bname\s*=\s*["']([^"']+)["']/i)?.[1]?.trim();
+
+    return emitWidgetStub(
+      "contact-form",
+      {
+        "data-wp-form-source": "custom-html",
+        ...(formId ? { "data-wp-form-id": formId } : {}),
+      },
+      "section",
+    );
+  });
+
+  html = stripContactFormHelperScripts(html);
+  return html;
+}
+
+/** Cross-builder widget + video stubs (before scaffolding strip). */
 function flattenWordPressWidgets(
   content: string,
   widgetRegistry: WordPressWidgetRegistry = WORDPRESS_WIDGET_REGISTRY,
@@ -602,9 +796,11 @@ function flattenWordPressWidgets(
   html = flattenGalleryShortcodes(html, widgetRegistry);
   html = flattenIdBasedGalleryShortcodes(html, widgetRegistry);
   html = flattenPortfolioShortcodes(html, widgetRegistry);
+  html = flattenBlogListingShortcodes(html, widgetRegistry);
   html = flattenMapShortcodes(html, widgetRegistry);
   html = flattenContactFormShortcodes(html, widgetRegistry);
   html = flattenVideoShortcodes(html, widgetRegistry);
+  html = flattenCustomHtmlContactForms(html);
   return html;
 }
 
@@ -652,6 +848,9 @@ export function flattenWordPressBuilders(
       html = stripLegacyTokens(html, theme.legacyScaffoldingTokens);
     }
   }
+
+  // Catch widget shortcodes revealed after wrapper unwrap (e.g. blox_gmap inside tatsu_text_with_shortcodes).
+  html = flattenWordPressWidgets(html, widgetRegistry);
 
   html = html.replace(/\n{3,}/g, "\n\n").trim();
 
