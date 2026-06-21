@@ -145,6 +145,40 @@ describe("discoverContentAssetUrls", () => {
       '<img src="https://example.com/wp-content/uploads/x.jpg" />';
     expect(discoverContentAssetUrls(content)).toHaveLength(1);
   });
+
+  it("extracts data-video-url section hero video markers", () => {
+    const html =
+      '<div data-layout="section" data-wp-hero-type="video" ' +
+      'data-video-url="https://example.com/wp-content/uploads/Naikonpixels_Home_HTML5.mp4"></div>';
+    expect(discoverContentAssetUrls(html)).toEqual([
+      "https://example.com/wp-content/uploads/Naikonpixels_Home_HTML5.mp4",
+    ]);
+  });
+
+  it("extracts video and source tag src attributes", () => {
+    const html =
+      '<video src="https://example.com/wp-content/uploads/hero.mp4" controls></video>' +
+      '<video controls><source src="https://example.com/wp-content/uploads/alt.webm" type="video/webm"></video>';
+    expect(discoverContentAssetUrls(html)).toEqual([
+      "https://example.com/wp-content/uploads/hero.mp4",
+      "https://example.com/wp-content/uploads/alt.webm",
+    ]);
+  });
+
+  it("ignores non-vault video URLs such as YouTube embeds on video tags", () => {
+    const html = '<video src="https://www.youtube.com/watch?v=abc123"></video>';
+    expect(discoverContentAssetUrls(html)).toEqual([]);
+  });
+
+  it("counts stamped migration refs on data-video-url as discovered urls", () => {
+    const ref = formatMigrationMediaRef(
+      "url:https://www.example.com/wp-content/uploads/Naikonpixels_H264.mp4",
+    );
+    const html = `<div data-video-url="${ref}"></div>`;
+    expect(discoverContentAssets(html).urls).toEqual([
+      "https://www.example.com/wp-content/uploads/Naikonpixels_H264.mp4",
+    ]);
+  });
 });
 
 describe("resolveFeaturedContentAssetUrl", () => {

@@ -99,6 +99,30 @@ export function expandMigrationMediaRefs(
     if (expanded) node.attr("data-bg-image", expanded);
   });
 
+  $("[data-video-url]").each((_, element) => {
+    const node = $(element);
+    const videoUrl = node.attr("data-video-url")?.trim();
+    if (!videoUrl) return;
+    const expanded = tryExpandRef(videoUrl, resolvePublicUrl, unresolved);
+    if (expanded) node.attr("data-video-url", expanded);
+  });
+
+  $("video[src]").each((_, element) => {
+    const node = $(element);
+    const src = node.attr("src")?.trim();
+    if (!src) return;
+    const expanded = tryExpandRef(src, resolvePublicUrl, unresolved);
+    if (expanded) node.attr("src", expanded);
+  });
+
+  $("video source[src]").each((_, element) => {
+    const node = $(element);
+    const src = node.attr("src")?.trim();
+    if (!src) return;
+    const expanded = tryExpandRef(src, resolvePublicUrl, unresolved);
+    if (expanded) node.attr("src", expanded);
+  });
+
   $("[style]").each((_, element) => {
     const node = $(element);
     const style = node.attr("style");

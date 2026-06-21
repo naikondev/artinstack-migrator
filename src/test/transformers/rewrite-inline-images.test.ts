@@ -73,4 +73,19 @@ describe("stampMigrationMediaRefs", () => {
     expect(result.html).toContain("unknown.jpg");
     expect(result.unresolved).toContain("https://origin.example/unknown.jpg");
   });
+
+  it("stamps data-video-url and video src like data-bg-image", () => {
+    const videoUrl = "https://origin.example/wp-content/uploads/Naikonpixels_H264.mp4";
+    const videoSourceId = "url:https://origin.example/wp-content/uploads/Naikonpixels_H264.mp4";
+    const html =
+      `<div data-video-url="${videoUrl}"></div>` +
+      `<video src="${videoUrl}" controls></video>`;
+    const result = stampMigrationMediaRefs(html, {
+      urlToSourceId: new Map([[videoUrl, videoSourceId]]),
+    });
+
+    expect(result.html).toContain(`data-video-url="${formatMigrationMediaRef(videoSourceId)}"`);
+    expect(result.html).toContain(`src="${formatMigrationMediaRef(videoSourceId)}"`);
+    expect(result.unresolved).toEqual([]);
+  });
 });

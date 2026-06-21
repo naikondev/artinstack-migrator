@@ -45,8 +45,10 @@ export function createWpContentGatewayRewrite(gatewayBase: string, publicOrigin:
 // --- Content asset URL discovery & normalization ---
 
 const IMAGE_EXTENSIONS = "jpe?g|png|gif|webp|avif|svg";
+const VIDEO_EXTENSIONS = "mp4|webm|ogg|mov";
 /** Image file extension in a path or URL (allows trailing `?query` / `#hash`). */
 const IMAGE_EXTENSION_PATTERN = new RegExp(String.raw`\.(?:${IMAGE_EXTENSIONS})\b`, "i");
+const VIDEO_EXTENSION_PATTERN = new RegExp(String.raw`\.(?:${VIDEO_EXTENSIONS})\b`, "i");
 
 /** Captured value must contain an image extension — skips `url="…/about"`, `<iframe src="…youtube…">`, etc. */
 const QUOTED_IMAGE_PATH = String.raw`[^"']+\.(?:${IMAGE_EXTENSIONS})(?:\?[^"'#]*)?(?:#.*)?`;
@@ -63,6 +65,7 @@ const BARE_SRC_PARAM_PATTERN = new RegExp(
 );
 
 const DATA_BG_IMAGE_PATTERN = /\bdata-bg-image\s*=\s*["']([^"']+)["']/gi;
+const DATA_VIDEO_URL_PATTERN = /\bdata-video-url\s*=\s*["']([^"']+)["']/gi;
 
 /** Inline CSS `background` / `background-image: url(…)` (quoted or bare). */
 const BACKGROUND_IMAGE_URL_PATTERN =
@@ -87,7 +90,7 @@ const SHORTCODE_GALLERY_IDS_PATTERN =
   /\[(?:gallery|oshine_gallery|vc_gallery|nggallery)\b[^\]]*\bids\s*=\s*["']([^"']+)["']/gi;
 
 export interface ContentAssetDiscovery {
-  /** Network-resolvable image paths (`<img>`, backgrounds, shortcode `image=` attrs, …). */
+  /** Network-resolvable image and self-hosted video paths (`<img>`, `<video>`, `data-video-url`, …). */
   urls: string[];
   /**
    * WordPress attachment post ids referenced in content without an inline URL in this
@@ -109,11 +112,41 @@ function ingestLikelyImageUrl(urls: Set<string>, raw: string | undefined): void 
   }
 }
 
+function ingestContentAssetUrl(urls: Set<string>, raw: string | undefined): void {
+  const normalized = normalizeAssetUrl(raw ?? "");
+  if (normalized && isLikelyContentAssetUrl(normalized)) {
+    urls.add(normalized);
+  }
+}
+
+function ingestMigrationRefUrl(urls: Set<string>, raw: string | undefined): void {
+  if (!raw || !isMigrationMediaRef(raw)) return;
+  const sourceId = parseMigrationMediaRef(raw);
+  if (sourceId?.startsWith("url:")) {
+    ingestContentAssetUrl(urls, sourceId.slice("url:".length));
+  }
+}
+
 function extractImgTagSrcs(content: string): string[] {
   if (!content.trim()) return [];
   const $ = cheerio.load(content, { xml: false });
   const srcs: string[] = [];
   $("img[src]").each((_, el) => {
+    const src = $(el).attr("src")?.trim();
+    if (src) srcs.push(src);
+  });
+  return srcs;
+}
+
+function extractVideoMediaSrcs(content: string): string[] {
+  if (!content.trim()) return [];
+  const $ = cheerio.load(content, { xml: false });
+  const srcs: string[] = [];
+  $("video[src]").each((_, el) => {
+    const src = $(el).attr("src")?.trim();
+    if (src) srcs.push(src);
+  });
+  $("video source[src]").each((_, el) => {
     const src = $(el).attr("src")?.trim();
     if (src) srcs.push(src);
   });
@@ -126,9 +159,24 @@ function hasImageExtension(value: string): boolean {
   return IMAGE_EXTENSION_PATTERN.test(withoutQuery);
 }
 
+function hasVideoExtension(value: string): boolean {
+  const withoutHash = value.split("#", 1)[0] ?? value;
+  const withoutQuery = withoutHash.split("?", 1)[0] ?? withoutHash;
+  return VIDEO_EXTENSION_PATTERN.test(withoutQuery);
+}
+
 function extractDataBgImageUrls(content: string): string[] {
   const urls: string[] = [];
   for (const match of content.matchAll(DATA_BG_IMAGE_PATTERN)) {
+    const raw = match[1]?.trim();
+    if (raw) urls.push(raw);
+  }
+  return urls;
+}
+
+function extractDataVideoUrlValues(content: string): string[] {
+  const urls: string[] = [];
+  for (const match of content.matchAll(DATA_VIDEO_URL_PATTERN)) {
     const raw = match[1]?.trim();
     if (raw) urls.push(raw);
   }
@@ -175,6 +223,31 @@ export function isLikelyImageUrl(url: string): boolean {
   }
 
   return hasImageExtension(url);
+}
+
+/** Heuristic: URL likely points at a self-hosted video asset (mp4/webm/ogg/mov), not a page or embed. */
+export function isLikelyVideoUrl(url: string): boolean {
+  if (!url || url.startsWith("data:")) return false;
+
+  if (url.startsWith("/")) {
+    return hasVideoExtension(url);
+  }
+
+  if (!/^https?:\/\//i.test(url)) return false;
+
+  try {
+    const { pathname } = new URL(url);
+    if (hasVideoExtension(pathname)) return true;
+  } catch {
+    // fall through — malformed absolute URL
+  }
+
+  return hasVideoExtension(url);
+}
+
+/** Image or self-hosted video URL suitable for vault ingest (not oEmbed / page links). */
+export function isLikelyContentAssetUrl(url: string): boolean {
+  return isLikelyImageUrl(url) || isLikelyVideoUrl(url);
 }
 
 function pushFeaturedCandidate(
@@ -265,7 +338,7 @@ function extractAttachmentIdsFromContent(content: string): string[] {
 }
 
 /**
- * Generic content-discovery pass: collect resolvable image URLs and attachment ids
+ * Generic content-discovery pass: collect resolvable image/video URLs and attachment ids
  * that still need an index / REST / crawl resolution step.
  */
 export function discoverContentAssets(content: string): ContentAssetDiscovery {
@@ -277,29 +350,46 @@ export function discoverContentAssets(content: string): ContentAssetDiscovery {
 
   for (const raw of extractImgTagSrcs(content)) {
     if (isMigrationMediaRef(raw)) {
-      const sourceId = parseMigrationMediaRef(raw);
-      if (sourceId?.startsWith("url:")) {
-        ingestLikelyImageUrl(urls, sourceId.slice("url:".length));
-      }
+      ingestMigrationRefUrl(urls, raw);
       continue;
     }
-    ingestLikelyImageUrl(urls, raw);
+    ingestContentAssetUrl(urls, raw);
+  }
+
+  for (const raw of extractVideoMediaSrcs(content)) {
+    if (isMigrationMediaRef(raw)) {
+      ingestMigrationRefUrl(urls, raw);
+      continue;
+    }
+    ingestContentAssetUrl(urls, raw);
   }
 
   for (const match of content.matchAll(SHORTCODE_IMAGE_PARAM_PATTERN)) {
-    ingestLikelyImageUrl(urls, match[1]);
+    ingestContentAssetUrl(urls, match[1]);
   }
 
   for (const match of content.matchAll(BARE_SRC_PARAM_PATTERN)) {
-    ingestLikelyImageUrl(urls, match[1]);
+    ingestContentAssetUrl(urls, match[1]);
   }
 
   for (const raw of extractDataBgImageUrls(content)) {
-    ingestLikelyImageUrl(urls, raw);
+    if (isMigrationMediaRef(raw)) {
+      ingestMigrationRefUrl(urls, raw);
+      continue;
+    }
+    ingestContentAssetUrl(urls, raw);
+  }
+
+  for (const raw of extractDataVideoUrlValues(content)) {
+    if (isMigrationMediaRef(raw)) {
+      ingestMigrationRefUrl(urls, raw);
+      continue;
+    }
+    ingestContentAssetUrl(urls, raw);
   }
 
   for (const raw of extractCssBackgroundImageUrls(content)) {
-    ingestLikelyImageUrl(urls, raw);
+    ingestContentAssetUrl(urls, raw);
   }
 
   return {
@@ -309,10 +399,10 @@ export function discoverContentAssets(content: string): ContentAssetDiscovery {
 }
 
 /**
- * Generic content-discovery pass: collect image URLs from HTML `<img>` tags,
- * section hero markers (`data-bg-image`), inline CSS backgrounds, and common
- * shortcode/builder attributes (`src=`, `image=`, `bg_image=`, …) without
- * parsing builder-specific structure (Tatsu, Elementor, etc.).
+ * Generic content-discovery pass: collect image and self-hosted video URLs from HTML
+ * `<img>` / `<video>` / `<source>`, section hero markers (`data-bg-image`, `data-video-url`),
+ * inline CSS backgrounds, and common shortcode/builder attributes without parsing
+ * builder-specific structure (Tatsu, Elementor, etc.).
  */
 export function discoverContentAssetUrls(content: string): string[] {
   return discoverContentAssets(content).urls;

@@ -17,6 +17,21 @@ describe("expandMigrationMediaRefs", () => {
     expect(result.unresolved).toEqual([]);
   });
 
+  it("expands data-video-url and video src refs to CDN urls", () => {
+    const videoSourceId = "url:https://www.naikonpixels.com/wp-content/uploads/Naikonpixels_H264.mp4";
+    const videoRef = formatMigrationMediaRef(videoSourceId);
+    const html =
+      `<div data-video-url="${videoRef}"></div>` +
+      `<video src="${videoRef}" controls></video>`;
+    const result = expandMigrationMediaRefs(html, (id) =>
+      id === videoSourceId ? "https://cdn.example/media/Naikonpixels_H264.mp4" : undefined,
+    );
+
+    expect(result.html).toContain('data-video-url="https://cdn.example/media/Naikonpixels_H264.mp4"');
+    expect(result.html).toContain('src="https://cdn.example/media/Naikonpixels_H264.mp4"');
+    expect(result.unresolved).toEqual([]);
+  });
+
   it("leaves unknown refs and reports unresolved", () => {
     const html = `<img src="${ref}" />`;
     const result = expandMigrationMediaRefs(html, () => undefined);

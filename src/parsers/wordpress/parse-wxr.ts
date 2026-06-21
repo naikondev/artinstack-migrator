@@ -420,6 +420,10 @@ function guessMime(filename: string): string | undefined {
     gif: "image/gif",
     webp: "image/webp",
     pdf: "application/pdf",
+    mp4: "video/mp4",
+    webm: "video/webm",
+    ogg: "video/ogg",
+    mov: "video/quicktime",
   };
   return ext ? map[ext] : undefined;
 }

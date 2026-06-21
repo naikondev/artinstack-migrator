@@ -193,11 +193,25 @@ describe("naikonpixels pages export", () => {
   it("emits fullscreen video hero section attrs on home page", () => {
     const homePage = bundle.pages.find((p) => p.slug === "naikonpixels");
     expect(homePage?.contentHtml).toContain('data-wp-hero-type="video"');
-    expect(homePage?.contentHtml).toContain("Naikonpixels_Home_HTML5.mp4");
     expect(homePage?.contentHtml).toContain('data-layout-mode="fullscreen"');
     expect(homePage?.contentHtml).toContain('data-overlay-color="rgba(0,0,0,0.35)"');
     expect(homePage?.contentHtml).toContain("I Click the Camera");
     expect(homePage?.contentHtml).toContain("Portfolio");
+  });
+
+  it("discovers home hero video in bundle media and stamps data-video-url ref", () => {
+    const homePage = bundle.pages.find((p) => p.slug === "naikonpixels");
+    const videoAsset = bundle.media.find((a) =>
+      a.sourceUrl.includes("Naikonpixels_Home_HTML5.mp4"),
+    );
+    expect(videoAsset?.sourceId).toBeDefined();
+    expect(videoAsset?.mimeType).toBe("video/mp4");
+
+    const videoRef = homePage?.contentHtml?.match(/data-video-url="([^"]+)"/)?.[1];
+    expect(videoRef).toBeDefined();
+    expect(isMigrationMediaRef(videoRef!)).toBe(true);
+    expect(parseMigrationMediaRef(videoRef!)).toBe(videoAsset!.sourceId);
+    expect(homePage?.contentHtml).not.toContain(`${PUBLIC}/wp-content/uploads/Naikonpixels_Home_HTML5.mp4`);
   });
 
   it("skips WooCommerce stub pages by default", () => {

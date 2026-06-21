@@ -121,7 +121,7 @@ function rewriteSrcset(
     .join(", ");
 }
 
-/** Rewrite `<img src>` / `srcset`, `data-bg-image`, and inline CSS backgrounds using uploaded asset targets. */
+/** Rewrite `<img src>` / `srcset`, `data-bg-image`, `data-video-url`, `<video>` / `<source src>`, and inline CSS backgrounds. */
 export function rewriteInlineImages(
   html: string,
   options: RewriteInlineImagesOptions,
@@ -155,6 +155,30 @@ export function rewriteInlineImages(
     if (!bgImage || bgImage.startsWith("data:")) return;
     const replaced = tryRewriteUrl(bgImage, options, uploadedBySourceId, referencedSources, unresolved);
     if (replaced) node.attr("data-bg-image", replaced);
+  });
+
+  $("[data-video-url]").each((_, element) => {
+    const node = $(element);
+    const videoUrl = node.attr("data-video-url")?.trim();
+    if (!videoUrl || videoUrl.startsWith("data:")) return;
+    const replaced = tryRewriteUrl(videoUrl, options, uploadedBySourceId, referencedSources, unresolved);
+    if (replaced) node.attr("data-video-url", replaced);
+  });
+
+  $("video[src]").each((_, element) => {
+    const node = $(element);
+    const src = node.attr("src")?.trim();
+    if (!src || src.startsWith("data:")) return;
+    const replaced = tryRewriteUrl(src, options, uploadedBySourceId, referencedSources, unresolved);
+    if (replaced) node.attr("src", replaced);
+  });
+
+  $("video source[src]").each((_, element) => {
+    const node = $(element);
+    const src = node.attr("src")?.trim();
+    if (!src || src.startsWith("data:")) return;
+    const replaced = tryRewriteUrl(src, options, uploadedBySourceId, referencedSources, unresolved);
+    if (replaced) node.attr("src", replaced);
   });
 
   $("[style]").each((_, element) => {
