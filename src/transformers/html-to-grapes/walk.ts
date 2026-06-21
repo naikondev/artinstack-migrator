@@ -298,13 +298,24 @@ function walkNode(
 
   // OSS-13 — atomic widget blocks (do not merge into preceding text / inline walks).
   if (isWpWidgetMarker(meta.attributes)) {
-    return applyElementMeta(
+    const component = applyElementMeta(
       {
         type: resolveWidgetComponentType(options),
         tagName,
       },
       meta,
     );
+    // OSS-26 — testimonials stub carries per-item child attrs for host promotion.
+    if (meta.attributes?.[WP_WIDGET_ATTR]?.trim() === "testimonials") {
+      const children = walkChildren($, $el, options).filter((child) => {
+        if (child.type !== "textnode") return true;
+        return Boolean(child.content?.trim());
+      });
+      if (children.length > 0) {
+        component.components = children;
+      }
+    }
+    return component;
   }
 
   if (isPreservedEmbedIframe(tagName, meta.attributes)) {

@@ -158,9 +158,10 @@ pnpm dev          # watch build
 | WordPress builder flattening + origin URL rewrite (pre-DTO) | Yes | Optional same config on adapter input |
 | Stamp `artinstack-migration://asset/…` refs in content HTML | Yes | No |
 | Expand refs → CDN URLs at persist | Exported helper | Call site + DB lookup |
+| Page `layoutHints` (e.g. theme hero slider alias) | Yes — on `NormalizedPage` when meta references chrome outside body | Rebuild slider / hero at import |
 | CLI + filesystem JSON export | Yes | No |
 | `MigrationSink` interface | Yes | Implementation |
-| Dynamic shortcodes (`[portfolio]`, `[recent_posts]`), forms, sanitize | No | Yes |
+| Map `data-wp-widget` stubs → platform blocks; populate slider heroes from hints | No | Yes |
 | Jobs, worker, credentials, UI | No | Yes |
 
 ## License

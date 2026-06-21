@@ -147,14 +147,14 @@ Adapters emit **canonical entities**, not host-specific records:
 | Entity | Purpose |
 |--------|---------|
 | `NormalizedPost` | Blog posts and articles — `contentHtml` (portable HTML after adapter preprocessing) |
-| `NormalizedPage` | Static pages — `contentHtml`, optional `contentCss` |
+| `NormalizedPage` | Static pages — `contentHtml`, optional `contentCss`, optional `layoutHints` (signals for theme chrome not present in body HTML, e.g. hero slider alias) |
 | `NormalizedAsset` | Remote file to stream into storage (`sourceUrl`, filename, mime) |
 | `NormalizedPortfolio` | Gallery or album grouping |
 | `NormalizedCategory` / `NormalizedTag` | Taxonomy |
 
 **HTML boundary:** WordPress adapters flatten common page-builder shortcodes to portable HTML **before** DTO emission. Parsers do not sanitize. Security sanitization happens in the **host sink** immediately before content API writes—not in this package.
 
-Common fields: `source`, `sourceId`, `slug`, `title`, `status`, SEO fields. WordPress posts may include `sourceFeaturedMediaId` (unresolved attachment id) and `featuredAssetSourceId` (attachment id or first inline asset fallback).
+Common fields: `source`, `sourceId`, `slug`, `title`, `status`, SEO fields. WordPress posts may include `sourceFeaturedMediaId` (unresolved attachment id) and `featuredAssetSourceId` (attachment id or first inline asset fallback). WordPress pages may include `layoutHints` when post meta references layout outside `contentHtml` (see WordPress § hero sliders).
 
 ### MigrationSink
 
@@ -297,6 +297,9 @@ Imports and call-site usage: [README § Migration media refs](../README.md#migra
 | `_thumbnail_id` meta | Attachment index + first-inline-image fallback (see § WordPress attachments) |
 | Inline `<img src>`, `data-bg-image`, CSS `url()` | `NormalizedAsset`; `contentHtml` stamped with migration media refs |
 | Pages (`page`) | `NormalizedPage` — static HTML snapshot |
+| `post_type=portfolio` (configurable CPT slugs) | `NormalizedPage` with `source.postType` — project singles, not `NormalizedPortfolio` |
+| Theme hero slider meta (RevSlider / MasterSlider) | `layoutHints.heroSlider` on `NormalizedPage` — plugin id + slider alias only (slides not in standard WXR) |
+| In-body `[rev_slider]` / `[masterslider]` | `data-wp-widget="slider"` stub in `contentHtml` — alias only |
 
 #### Page builders (theme registry)
 
@@ -309,7 +312,9 @@ Many WordPress exports mix **shortcodes** (Tatsu, Oshine/Blox, Divi, Elementor, 
 
 Registered theme families ship in OSS (e.g. Tatsu, Oshine, Divi, Elementor). New families add a registry row—not per-page logic.
 
-**Not flattened in OSS** (reported in `conflicts.unsupportedBlocks`, mapped at host): dynamic shortcodes such as `[portfolio]`, `[recent_posts]`, WooCommerce stubs. WooCommerce system pages (`cart`, `checkout`, `my-account`) are skipped by default.
+**Dynamic widgets** (maps, contact forms, blog rolls, portfolio grids, testimonials, in-body sliders, …) flatten to `data-wp-widget` HTML stubs in `contentHtml`. The **host** maps stubs to platform blocks. **Theme hero sliders** referenced only in post meta are **not** inlined into `contentHtml`; they appear on `NormalizedPage.layoutHints.heroSlider` (alias only — hosts rebuild or hydrate slide data from source WP when needed).
+
+WooCommerce system pages (`cart`, `checkout`, `my-account`) are skipped by default. Unresolvable commerce shortcodes are reported in `conflicts.unsupportedBlocks`.
 
 This is **separate from** migration media ref stamping (`rewriteInlineImages` / `stampMigrationMediaRefs`), which runs after flatten and origin rewrite and covers `<img>`, `srcset`, `data-bg-image`, and inline CSS backgrounds.
 

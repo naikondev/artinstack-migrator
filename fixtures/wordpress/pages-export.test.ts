@@ -148,6 +148,10 @@ describe("naikonpixels pages export", () => {
     expect(portfolioPage?.contentHtml).toContain('data-wp-widget="portfolio"');
     expect(portfolioPage?.contentHtml).toContain('data-wp-portfolio-category="photography"');
     expect(portfolioPage?.contentHtml).not.toMatch(/\[portfolio\b/);
+    expect(portfolioPage?.contentHtml).toContain('data-wp-widget="testimonials"');
+    expect(portfolioPage?.contentHtml).toContain("data-wp-testimonial-author=");
+    expect(portfolioPage?.contentHtml).toContain("data-wp-testimonial-quote=");
+    expect(portfolioPage?.contentHtml).not.toMatch(/\[testimonial|\[testimonials/);
     expect(portfolioPage?.isPortfolioPage).toBe(true);
 
     const homePage = bundle.pages.find((p) => p.slug === "naikonpixels");
@@ -164,6 +168,26 @@ describe("naikonpixels pages export", () => {
     expect(
       conflicts.unsupportedBlocks.some((b) => b.blockType.includes("woocommerce")),
     ).toBe(false);
+  });
+
+  it("emits hero slider layout hints from post meta (OSS-27)", () => {
+    const blogPage = bundle.pages.find((p) => p.slug === "blog");
+    const portfolioPage = bundle.pages.find((p) => p.slug === "portfolio");
+
+    expect(blogPage?.layoutHints?.heroSlider).toEqual({
+      plugin: "revslider",
+      alias: "blogroll",
+      slidertitle: "Blogroll",
+      source: "meta-shortcode",
+    });
+    expect(portfolioPage?.layoutHints?.heroSlider).toEqual({
+      plugin: "revslider",
+      alias: "Portfolio_slider",
+      slidertitle: "Portfolio_slider",
+      source: "meta-shortcode",
+    });
+    expect(blogPage?.contentHtml).not.toContain('data-wp-widget="slider"');
+    expect(portfolioPage?.contentHtml).not.toContain('data-wp-widget="slider"');
   });
 
   it("skips WooCommerce stub pages by default", () => {

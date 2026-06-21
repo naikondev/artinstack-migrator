@@ -125,6 +125,13 @@
       "golden": "golden/wp-widget-contact-custom-html.snapshot.json",
       "description": "custom HTML contact form stub attrs preserved on section shell",
       "gates": ["wp_widget"]
+    },
+    {
+      "id": "wp-widget-testimonials",
+      "html": "html/wp-widget-testimonials.html",
+      "golden": "golden/wp-widget-testimonials.snapshot.json",
+      "description": "OSS-26 testimonials widget stub preserves per-item child attrs",
+      "gates": ["wp_widget"]
     }
   ]
 }

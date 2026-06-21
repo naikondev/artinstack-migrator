@@ -14,7 +14,7 @@ import {
 } from "../../lib/media-urls.js";
 import { stampMigrationMediaRefs } from "../../transformers/rewrite-inline-images.js";
 import { linkToPath, sanitizeSlug } from "../../lib/utility.js";
-import { flattenWordPressBuilders } from "./builders/flatten.js";
+import { flattenWordPressBuilders, parseSliderMetaValue, parseSliderShortcodeMarkup } from "./builders/flatten.js";
 import type {
   NormalizedAsset,
   NormalizedCategory,
@@ -22,6 +22,8 @@ import type {
   NormalizedPage,
   NormalizedPost,
   NormalizedTag,
+  PageHeroSliderHint,
+  PageLayoutHints,
   PublishStatus,
   SourceMetadata,
   WxrImportSummary,
@@ -285,6 +287,85 @@ function inferPortfolioListingPage(
   return (
     hasPortfolioListingWidget && PORTFOLIO_LISTING_PAGE_SLUGS.has(options.slug.toLowerCase())
   );
+}
+
+function toHeroSliderHint(
+  parsed: { plugin: PageHeroSliderHint["plugin"]; alias: string; slidertitle?: string },
+  source: PageHeroSliderHint["source"],
+): PageHeroSliderHint {
+  return {
+    plugin: parsed.plugin,
+    alias: parsed.alias,
+    slidertitle: parsed.slidertitle,
+    source,
+  };
+}
+
+function findSliderInTatsuTree(node: unknown): PageHeroSliderHint | undefined {
+  if (!node) return undefined;
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      const found = findSliderInTatsuTree(child);
+      if (found) return found;
+    }
+    return undefined;
+  }
+  if (typeof node !== "object") return undefined;
+
+  const obj = node as Record<string, unknown>;
+  const name = typeof obj.name === "string" ? obj.name : "";
+  if (name === "tatsu_rev_slider") {
+    const atts = obj.atts as Record<string, unknown> | undefined;
+    const alias =
+      typeof atts?.rev_slider_alias === "string" ? atts.rev_slider_alias.trim() : "";
+    if (alias) {
+      return toHeroSliderHint({ plugin: "revslider", alias }, "tatsu-json");
+    }
+  }
+  if (name === "masterslider" || name === "tatsu_masterslider") {
+    const atts = obj.atts as Record<string, unknown> | undefined;
+    const alias = typeof atts?.alias === "string" ? atts.alias.trim() : "";
+    if (alias) {
+      return toHeroSliderHint({ plugin: "masterslider", alias }, "tatsu-json");
+    }
+  }
+
+  if (obj.inner) return findSliderInTatsuTree(obj.inner);
+  return undefined;
+}
+
+/** RevSlider / MasterSlider hero slot from post meta — not flattened into contentHtml (OSS-27). */
+function inferHeroSliderLayoutHint(item: WxrItem): PageLayoutHints | undefined {
+  const shortcodeMeta = getPostMeta(item, "be_themes_hero_section_slider_shortcode");
+  if (shortcodeMeta) {
+    const parsed = parseSliderShortcodeMarkup(shortcodeMeta);
+    if (parsed) {
+      return { heroSlider: toHeroSliderHint(parsed, "meta-shortcode") };
+    }
+  }
+
+  const sliderMeta = getPostMeta(item, "_slider");
+  if (sliderMeta) {
+    const parsed = parseSliderMetaValue(sliderMeta);
+    if (parsed) {
+      return { heroSlider: toHeroSliderHint(parsed, "meta-slider-field") };
+    }
+  }
+
+  const heroSection = (getPostMeta(item, "be_themes_hero_section") ?? "").trim().toLowerCase();
+  if (heroSection === "slider") {
+    const tatsuContent = getPostMeta(item, "_tatsu_page_content");
+    if (tatsuContent) {
+      try {
+        const heroSlider = findSliderInTatsuTree(JSON.parse(tatsuContent));
+        if (heroSlider) return { heroSlider };
+      } catch {
+        // Non-JSON Tatsu meta — skip
+      }
+    }
+  }
+
+  return undefined;
 }
 
 function parseItems(xml: string): WxrItem[] {
@@ -617,6 +698,8 @@ export async function* enumerateWxrEntities(
           contentHtml,
         });
 
+      const layoutHints = inferHeroSliderLayoutHint(item);
+
       const pageSourceId = isPortfolioCpt ? portfolioCptSourceId(id) : id;
 
       const page: NormalizedPage = {
@@ -628,6 +711,7 @@ export async function* enumerateWxrEntities(
         contentHtml,
         isHomePage: isHomePage || undefined,
         isPortfolioPage: isPortfolioPage || undefined,
+        layoutHints: layoutHints ?? undefined,
         status: mapPublishStatus(textValue(item.status)),
       };
       yield page;

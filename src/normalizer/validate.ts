@@ -31,6 +31,17 @@ export const normalizedPostSchema = z.object({
   seoDescription: z.string().optional(),
 });
 
+const pageHeroSliderHintSchema = z.object({
+  plugin: z.enum(["revslider", "masterslider"]),
+  alias: z.string().min(1),
+  slidertitle: z.string().optional(),
+  source: z.enum(["meta-shortcode", "meta-slider-field", "tatsu-json"]).optional(),
+});
+
+const pageLayoutHintsSchema = z.object({
+  heroSlider: pageHeroSliderHintSchema.optional(),
+});
+
 export const normalizedPageSchema = z.object({
   type: z.literal("page"),
   source: sourceMetadataSchema,
@@ -41,6 +52,7 @@ export const normalizedPageSchema = z.object({
   contentCss: z.string().optional(),
   isHomePage: z.boolean().optional(),
   isPortfolioPage: z.boolean().optional(),
+  layoutHints: pageLayoutHintsSchema.optional(),
   status: publishStatusSchema,
   seoTitle: z.string().optional(),
   seoDescription: z.string().optional(),

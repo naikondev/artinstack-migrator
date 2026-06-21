@@ -205,6 +205,12 @@ export interface WordPressWidgetRegistry {
   portfolioShortcode: string;
   /** Builder blog roll modules (Tatsu/Oshine `[blog]`, etc.). */
   blogShortcodeTags: readonly string[];
+  /** Testimonials carousel/list wrapper shortcodes (Oshine `[testimonials]`, etc.). */
+  testimonialsWrapperTags: readonly string[];
+  /** Inner testimonial item shortcode tag. */
+  testimonialItemTag: string;
+  /** In-body RevSlider / MasterSlider shortcodes → slider widget stub (alias only). */
+  sliderShortcodeTags: readonly string[];
   /** WordPress core gallery shortcode tag (`ids=` split handled in engine). */
   galleryShortcode: string;
   /** Builder/plugin gallery shortcodes with explicit `ids=` attachment lists (OSS-12). */
@@ -237,6 +243,9 @@ export const WORDPRESS_WIDGET_REGISTRY: WordPressWidgetRegistry = {
   ],
   portfolioShortcode: "portfolio",
   blogShortcodeTags: ["blog", "recent_posts"],
+  testimonialsWrapperTags: ["testimonials"],
+  testimonialItemTag: "testimonial",
+  sliderShortcodeTags: ["rev_slider", "masterslider"],
   galleryShortcode: "gallery",
   idGalleryShortcodes: ["oshine_gallery", "vc_gallery", "nggallery"],
 };
@@ -372,7 +381,6 @@ export const WORDPRESS_BUILDER_REGISTRY: BuilderThemeConfig[] = [
     ],
     wrapperRules: [
       { shortcodePrefix: "grid_content" },
-      { shortcodePrefix: "testimonial", urlParams: ["author_image"] },
       { shortcodePrefix: "blox_text" },
     ],
     urlRules: [

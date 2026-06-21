@@ -11,6 +11,8 @@ import {
   normalizeVideoEmbedUrl,
   parseFractionWidth,
   parseRowLayoutCols,
+  parseSliderMetaValue,
+  parseSliderShortcodeMarkup,
 } from "../../../../parsers/wordpress/builders/flatten.js";
 import { findWordPressShortcodeMarkers } from "../../../../parsers/wordpress/builders/shortcode-conflicts.js";
 import {
@@ -168,24 +170,42 @@ describe("flattenWordPressBuilders", () => {
     expect(html).not.toMatch(/\[grids|\[grid_content/);
   });
 
-  it("preserves testimonial inner HTML and converts author_image", () => {
+  it("flattens Oshine [testimonials] to testimonials widget stub with per-item attrs", () => {
     const raw =
-      '[testimonials][testimonial author_image= "https://example.com/wp-content/uploads/face.jpg" author= "Jane"]' +
+      '[testimonials][testimonial author_image= "https://example.com/wp-content/uploads/face.jpg" author= "Jane Doe" author_role= "CEO"]' +
       "<p>Great photographer.</p>[/testimonial][/testimonials]";
     const { html } = flattenWordPressBuilders(raw);
-    expect(html).toContain('<img src="https://example.com/wp-content/uploads/face.jpg"');
-    expect(html).toContain("<p>Great photographer.</p>");
+    expect(html).toContain('data-wp-widget="testimonials"');
+    expect(html).toContain('data-wp-testimonial-author="Jane Doe"');
+    expect(html).toContain('data-wp-testimonial-role="CEO"');
+    expect(html).toContain('data-wp-testimonial-image="https://example.com/wp-content/uploads/face.jpg"');
+    expect(html).toContain('data-wp-testimonial-quote="Great photographer."');
+    expect(html).toContain('data-wp-testimonial-show-stars="false"');
     expect(html).not.toMatch(/\[testimonial|\[testimonials/);
+    expect(html).not.toContain("<p>Great photographer.</p>");
   });
 
   it("preserves testimonial author_image when export HTML-encodes quotes", () => {
     const raw =
-      "[testimonials][testimonial author_image= &quot;https://example.com/wp-content/uploads/face.jpg&quot; author= &quot;Jane&quot;]" +
+      "[testimonials][testimonial author_image= &quot;https://example.com/wp-content/uploads/face.jpg&quot; author= &quot;Jane&quot; author_role= &quot;CEO&quot;]" +
       "<p>Great photographer.</p>[/testimonial][/testimonials]";
     const { html } = flattenWordPressBuilders(raw);
-    expect(html).toContain('<img src="https://example.com/wp-content/uploads/face.jpg"');
-    expect(html).toContain("<p>Great photographer.</p>");
+    expect(html).toContain('data-wp-testimonial-author="Jane"');
+    expect(html).toContain('data-wp-testimonial-image="https://example.com/wp-content/uploads/face.jpg"');
+    expect(html).toContain('data-wp-testimonial-quote="Great photographer."');
     expect(html).not.toMatch(/\[testimonial|\[testimonials/);
+  });
+
+  it("flattens multiple testimonial items and infers column count", () => {
+    const raw =
+      "[testimonials][testimonial author= \"One\"] <p>First quote.</p> [/testimonial]" +
+      '[testimonial author= "Two"] <p>Second quote.</p> [/testimonial][/testimonials]';
+    const { html } = flattenWordPressBuilders(raw);
+    expect(html).toContain('data-wp-testimonial-columns="2"');
+    expect(html).toContain('data-wp-testimonial-author="One"');
+    expect(html).toContain('data-wp-testimonial-author="Two"');
+    expect(html).toContain('data-wp-testimonial-quote="First quote."');
+    expect(html).toContain('data-wp-testimonial-quote="Second quote."');
   });
 
   it("replaces blox_gmap with a map widget stub", () => {
@@ -285,6 +305,40 @@ describe("flattenWordPressBuilders", () => {
     expect(html).toContain('data-wp-widget="blog-listing"');
     expect(html).toContain('data-wp-blog-limit="3"');
     expect(html).not.toMatch(/\[recent_posts\b/);
+  });
+
+  it("flattens [rev_slider] and [masterslider] to slider widget stubs (alias only)", () => {
+    const rev =
+      '[rev_slider alias="Portfolio_slider" slidertitle="Portfolio_slider"][/rev_slider]';
+    const { html: revHtml } = flattenWordPressBuilders(rev);
+    expect(revHtml).toContain('data-wp-widget="slider"');
+    expect(revHtml).toContain('data-wp-slider-plugin="revslider"');
+    expect(revHtml).toContain('data-wp-slider-alias="Portfolio_slider"');
+    expect(revHtml).not.toMatch(/\[rev_slider\b/);
+
+    const master = "[masterslider alias=\"video-slider\"]";
+    const { html: masterHtml } = flattenWordPressBuilders(master);
+    expect(masterHtml).toContain('data-wp-widget="slider"');
+    expect(masterHtml).toContain('data-wp-slider-plugin="masterslider"');
+    expect(masterHtml).toContain('data-wp-slider-alias="video-slider"');
+    expect(masterHtml).not.toMatch(/\[masterslider\b/);
+  });
+
+  it("parses slider shortcode markup and _slider meta for hero hints", () => {
+    expect(
+      parseSliderShortcodeMarkup(
+        '[rev_slider alias="blogroll" slidertitle="Blogroll"][/rev_slider]',
+      ),
+    ).toEqual({
+      plugin: "revslider",
+      alias: "blogroll",
+      slidertitle: "Blogroll",
+    });
+    expect(parseSliderMetaValue("revslider_Portfolio_slider")).toEqual({
+      plugin: "revslider",
+      alias: "Portfolio_slider",
+    });
+    expect(parseSliderMetaValue("none")).toBeUndefined();
   });
 
   it("strips blox_row scaffolding and flattens portfolio to widget stub", () => {

@@ -379,6 +379,60 @@ function extractBareOrQuotedParam(params: string, name: string): string | undefi
   return match?.[1]?.trim() || undefined;
 }
 
+export type SliderPluginId = "revslider" | "masterslider";
+
+export interface ParsedSliderReference {
+  plugin: SliderPluginId;
+  alias: string;
+  slidertitle?: string;
+}
+
+/** Parse `[rev_slider …]` / `[masterslider …]` markup (OSS-27 meta + in-body stubs). */
+export function parseSliderShortcodeMarkup(markup: string): ParsedSliderReference | undefined {
+  const trimmed = markup.trim();
+  if (!trimmed) return undefined;
+
+  const revMatch = trimmed.match(/\[rev_slider\b([^\]]*)\]/i);
+  if (revMatch) {
+    const params = revMatch[1] ?? "";
+    const alias = extractBareOrQuotedParam(params, "alias");
+    if (alias) {
+      return {
+        plugin: "revslider",
+        alias,
+        slidertitle: extractBareOrQuotedParam(params, "slidertitle"),
+      };
+    }
+  }
+
+  const masterMatch = trimmed.match(/\[masterslider\b([^\]]*)\]/i);
+  if (masterMatch) {
+    const params = masterMatch[1] ?? "";
+    const alias = extractBareOrQuotedParam(params, "alias");
+    if (alias) return { plugin: "masterslider", alias };
+  }
+
+  return undefined;
+}
+
+/** Parse Oshine `_slider` meta (`revslider_alias`, `masterslider_alias`, or `none`). */
+export function parseSliderMetaValue(value: string): ParsedSliderReference | undefined {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.toLowerCase() === "none") return undefined;
+
+  const lower = trimmed.toLowerCase();
+  if (lower.startsWith("revslider_")) {
+    const alias = trimmed.slice("revslider_".length).trim();
+    if (alias) return { plugin: "revslider", alias };
+  }
+  if (lower.startsWith("masterslider_")) {
+    const alias = trimmed.slice("masterslider_".length).trim();
+    if (alias) return { plugin: "masterslider", alias };
+  }
+
+  return undefined;
+}
+
 function emitWidgetStub(
   widget: string,
   attrs: Record<string, string | undefined>,
@@ -664,6 +718,190 @@ function inferBlogListingLayout(params: string): string {
   return "grid";
 }
 
+function decodeBasicHtmlEntities(text: string): string {
+  return text
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
+}
+
+function stripHtmlTags(html: string): string {
+  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function extractTestimonialQuoteFromInner(inner: string): string | undefined {
+  const trimmed = inner.trim();
+  if (!trimmed) return undefined;
+
+  const paragraphMatch = trimmed.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
+  if (paragraphMatch?.[1]) {
+    const quote = decodeBasicHtmlEntities(stripHtmlTags(paragraphMatch[1])).trim();
+    return quote || undefined;
+  }
+
+  const blockquoteMatch = trimmed.match(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/i);
+  if (blockquoteMatch?.[1]) {
+    const quote = decodeBasicHtmlEntities(stripHtmlTags(blockquoteMatch[1])).trim();
+    return quote || undefined;
+  }
+
+  const plain = decodeBasicHtmlEntities(stripHtmlTags(trimmed)).trim();
+  return plain || undefined;
+}
+
+function parseTestimonialItemAttrs(
+  params: string,
+  inner: string,
+): Record<string, string | undefined> | null {
+  const author =
+    extractBareOrQuotedParam(params, "author") ??
+    extractBareOrQuotedParam(params, "name");
+  const role =
+    extractBareOrQuotedParam(params, "author_role") ??
+    extractBareOrQuotedParam(params, "role") ??
+    extractBareOrQuotedParam(params, "title");
+  const image =
+    extractBareOrQuotedParam(params, "author_image") ??
+    extractBareOrQuotedParam(params, "image") ??
+    extractBareOrQuotedParam(params, "avatar");
+  const quote =
+    extractBareOrQuotedParam(params, "quote") ??
+    extractBareOrQuotedParam(params, "content") ??
+    extractTestimonialQuoteFromInner(inner);
+  const rating =
+    extractBareOrQuotedParam(params, "rating") ??
+    extractBareOrQuotedParam(params, "stars");
+
+  if (!author && !quote) return null;
+
+  return {
+    "data-wp-testimonial-author": author,
+    "data-wp-testimonial-role": role,
+    "data-wp-testimonial-image": image,
+    "data-wp-testimonial-quote": quote,
+    ...(rating ? { "data-wp-testimonial-rating": rating } : {}),
+  };
+}
+
+function emitTestimonialItemStub(attrs: Record<string, string | undefined>): string {
+  const parts: string[] = [];
+  for (const [key, value] of Object.entries(attrs)) {
+    if (value) parts.push(`${key}="${escapeLayoutAttr(value)}"`);
+  }
+  return `<div ${parts.join(" ")}>${WP_WIDGET_PLACEHOLDER}</div>`;
+}
+
+function emitTestimonialsWidgetStub(
+  sectionAttrs: Record<string, string | undefined>,
+  items: Array<Record<string, string | undefined>>,
+): string {
+  const sectionParts = ['data-wp-widget="testimonials"'];
+  for (const [key, value] of Object.entries(sectionAttrs)) {
+    if (value) sectionParts.push(`${key}="${escapeLayoutAttr(value)}"`);
+  }
+  const children = items.map((item) => emitTestimonialItemStub(item)).join("");
+  return `<section ${sectionParts.join(" ")}>${children}</section>`;
+}
+
+function inferTestimonialColumns(
+  wrapperParams: string,
+  itemCount: number,
+): string {
+  const explicit =
+    normalizeShortcodeCount(extractBareOrQuotedParam(wrapperParams, "columns")) ??
+    normalizeShortcodeCount(extractBareOrQuotedParam(wrapperParams, "col"));
+  if (explicit) return explicit;
+  if (itemCount <= 1) return "1";
+  if (itemCount === 2) return "2";
+  if (itemCount >= 4) return "4";
+  return "3";
+}
+
+function collectTestimonialItemsFromInner(
+  inner: string,
+  itemTag: string,
+): Array<Record<string, string | undefined>> {
+  const escaped = escapeRegExp(itemTag);
+  const pattern = new RegExp(
+    `\\[${escaped}\\b([^\\]]*)\\]([\\s\\S]*?)\\[\\/${escaped}\\b[^\\]]*\\]`,
+    "gi",
+  );
+  const items: Array<Record<string, string | undefined>> = [];
+  inner.replace(pattern, (_, params: string, itemInner: string) => {
+    const item = parseTestimonialItemAttrs(params, itemInner);
+    if (item) items.push(item);
+    return "";
+  });
+  return items;
+}
+
+function flattenTestimonialsShortcodes(
+  content: string,
+  widgetRegistry: WordPressWidgetRegistry,
+): string {
+  const itemTag = widgetRegistry.testimonialItemTag;
+  let html = content;
+
+  for (const wrapperTag of widgetRegistry.testimonialsWrapperTags) {
+    const escaped = escapeRegExp(wrapperTag);
+    const pattern = new RegExp(
+      `\\[${escaped}\\b([^\\]]*)\\]([\\s\\S]*?)\\[\\/${escaped}\\b[^\\]]*\\]`,
+      "gi",
+    );
+    html = html.replace(pattern, (fullMatch, wrapperParams: string, inner: string) => {
+      const items = collectTestimonialItemsFromInner(inner, itemTag);
+      if (items.length === 0) return fullMatch;
+
+      return emitTestimonialsWidgetStub(
+        {
+          "data-wp-testimonial-columns": inferTestimonialColumns(wrapperParams, items.length),
+          "data-wp-testimonial-show-stars": items.some((item) => item["data-wp-testimonial-rating"])
+            ? "true"
+            : "false",
+        },
+        items,
+      );
+    });
+  }
+
+  const itemPattern = new RegExp(
+    `\\[${escapeRegExp(itemTag)}\\b([^\\]]*)\\]([\\s\\S]*?)\\[\\/${escapeRegExp(itemTag)}\\b[^\\]]*\\]`,
+    "gi",
+  );
+  return html.replace(itemPattern, (fullMatch, params: string, inner: string) => {
+    const item = parseTestimonialItemAttrs(params, inner);
+    if (!item) return fullMatch;
+    return emitTestimonialsWidgetStub(
+      {
+        "data-wp-testimonial-columns": "1",
+        "data-wp-testimonial-show-stars": item["data-wp-testimonial-rating"] ? "true" : "false",
+      },
+      [item],
+    );
+  });
+}
+
+function flattenSliderShortcodes(content: string, widgetRegistry: WordPressWidgetRegistry): string {
+  let html = content;
+  for (const tag of widgetRegistry.sliderShortcodeTags) {
+    const escaped = escapeRegExp(tag);
+    const plugin: SliderPluginId = tag.toLowerCase() === "masterslider" ? "masterslider" : "revslider";
+    const pattern = new RegExp(`\\[${escaped}\\b([^\\]]*)\\](?:\\s*\\[\\/${escaped}\\b[^\\]]*\\])?`, "gi");
+    html = html.replace(pattern, (_, params: string) => {
+      const alias = extractBareOrQuotedParam(params, "alias");
+      const slidertitle = extractBareOrQuotedParam(params, "slidertitle");
+      return emitWidgetStub("slider", {
+        "data-wp-slider-plugin": plugin,
+        ...(alias ? { "data-wp-slider-alias": alias } : {}),
+        ...(slidertitle ? { "data-wp-slider-title": slidertitle } : {}),
+      });
+    });
+  }
+  return html;
+}
+
 function flattenBlogListingShortcodes(
   content: string,
   widgetRegistry: WordPressWidgetRegistry,
@@ -796,7 +1034,9 @@ function flattenWordPressWidgets(
   html = flattenGalleryShortcodes(html, widgetRegistry);
   html = flattenIdBasedGalleryShortcodes(html, widgetRegistry);
   html = flattenPortfolioShortcodes(html, widgetRegistry);
+  html = flattenSliderShortcodes(html, widgetRegistry);
   html = flattenBlogListingShortcodes(html, widgetRegistry);
+  html = flattenTestimonialsShortcodes(html, widgetRegistry);
   html = flattenMapShortcodes(html, widgetRegistry);
   html = flattenContactFormShortcodes(html, widgetRegistry);
   html = flattenVideoShortcodes(html, widgetRegistry);

@@ -1,0 +1,48 @@
+{
+  "content": [
+    {
+      "type": "wp-widget",
+      "tagName": "section",
+      "attributes": {
+        "data-wp-widget": "testimonials",
+        "data-wp-testimonial-columns": "2",
+        "data-wp-testimonial-show-stars": "false"
+      },
+      "components": [
+        {
+          "type": "default",
+          "tagName": "div",
+          "attributes": {
+            "data-wp-testimonial-author": "Jane Doe",
+            "data-wp-testimonial-role": "CEO",
+            "data-wp-testimonial-image": "https://example.com/face.jpg",
+            "data-wp-testimonial-quote": "Great photographer."
+          },
+          "components": [
+            {
+              "type": "textnode",
+              "content": "​"
+            }
+          ]
+        },
+        {
+          "type": "default",
+          "tagName": "div",
+          "attributes": {
+            "data-wp-testimonial-author": "John Smith",
+            "data-wp-testimonial-role": "Client",
+            "data-wp-testimonial-quote": "Would recommend."
+          },
+          "components": [
+            {
+              "type": "textnode",
+              "content": "​"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "styles": [],
+  "contentHtml": "<section data-wp-widget=\"testimonials\" data-wp-testimonial-columns=\"2\" data-wp-testimonial-show-stars=\"false\"><div data-wp-testimonial-author=\"Jane Doe\" data-wp-testimonial-role=\"CEO\" data-wp-testimonial-image=\"https://example.com/face.jpg\" data-wp-testimonial-quote=\"Great photographer.\">​</div><div data-wp-testimonial-author=\"John Smith\" data-wp-testimonial-role=\"Client\" data-wp-testimonial-quote=\"Would recommend.\">​</div></section>"
+}

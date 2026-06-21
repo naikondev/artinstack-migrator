@@ -34,6 +34,19 @@ export interface NormalizedPost {
   seoDescription?: string;
 }
 
+/** RevSlider / MasterSlider reference from theme hero meta (OSS-27) — alias only, no slide payloads in WXR. */
+export interface PageHeroSliderHint {
+  plugin: "revslider" | "masterslider";
+  alias: string;
+  slidertitle?: string;
+  source?: "meta-shortcode" | "meta-slider-field" | "tatsu-json";
+}
+
+/** Non-body layout signals for host promotion (theme chrome, hero slots, …). */
+export interface PageLayoutHints {
+  heroSlider?: PageHeroSliderHint;
+}
+
 /** Canonical page DTO — raw HTML snapshot. */
 export interface NormalizedPage {
   type: "page";
@@ -46,6 +59,7 @@ export interface NormalizedPage {
   isHomePage?: boolean;
   /** Site portfolio listing shell (distinct from portfolio CPT singles). */
   isPortfolioPage?: boolean;
+  layoutHints?: PageLayoutHints;
   status: PublishStatus;
   seoTitle?: string;
   seoDescription?: string;
