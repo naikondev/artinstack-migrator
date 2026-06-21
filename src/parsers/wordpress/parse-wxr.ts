@@ -527,13 +527,15 @@ function collectInlineAssets(
   return assets;
 }
 
-function preprocessContent(rawHtml: string, options: WxrParseOptions): string {
+function preprocessContent(rawHtml: string, item: WxrItem, options: WxrParseOptions): string {
   let html = rawHtml;
   if (options.originUrlRewrite) {
     html = rewriteOriginUrlsInText(html, options.originUrlRewrite);
   }
   if (options.flattenBuilders !== false) {
-    html = flattenWordPressBuilders(html).html;
+    html = flattenWordPressBuilders(html, {
+      tatsuPageContent: getPostMeta(item, "_tatsu_page_content"),
+    }).html;
   }
   return html;
 }
@@ -606,7 +608,7 @@ export async function* enumerateWxrEntities(
     const id = textValue(item.post_id);
     const link = maybeRewriteUrl(textValue(item.link), options.originUrlRewrite);
     const slug = sanitizeSlug(textValue(item.post_name) || textValue(item.title) || id);
-    let contentHtml = preprocessContent(getContentEncoded(item), options);
+    let contentHtml = preprocessContent(getContentEncoded(item), item, options);
 
     if (
       isPage &&

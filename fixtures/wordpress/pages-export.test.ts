@@ -190,6 +190,16 @@ describe("naikonpixels pages export", () => {
     expect(portfolioPage?.contentHtml).not.toContain('data-wp-widget="slider"');
   });
 
+  it("emits fullscreen video hero section attrs on home page", () => {
+    const homePage = bundle.pages.find((p) => p.slug === "naikonpixels");
+    expect(homePage?.contentHtml).toContain('data-wp-hero-type="video"');
+    expect(homePage?.contentHtml).toContain("Naikonpixels_Home_HTML5.mp4");
+    expect(homePage?.contentHtml).toContain('data-layout-mode="fullscreen"');
+    expect(homePage?.contentHtml).toContain('data-overlay-color="rgba(0,0,0,0.35)"');
+    expect(homePage?.contentHtml).toContain("I Click the Camera");
+    expect(homePage?.contentHtml).toContain("Portfolio");
+  });
+
   it("skips WooCommerce stub pages by default", () => {
     expect(bundle.pages.some((p) => p.slug === "cart")).toBe(false);
     expect(bundle.pages.some((p) => p.slug === "checkout")).toBe(false);

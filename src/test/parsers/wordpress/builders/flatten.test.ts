@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { discoverContentAssetUrls } from "../../../../lib/media-urls.js";
 import {
   applyStructuralLayoutMap,
+  buildTatsuPageContext,
   flattenWordPressBuilders,
   looksLikeContactFormHtml,
   normalizeVideoEmbedUrl,
@@ -305,6 +306,48 @@ describe("flattenWordPressBuilders", () => {
     expect(html).toContain('data-wp-widget="blog-listing"');
     expect(html).toContain('data-wp-blog-limit="3"');
     expect(html).not.toMatch(/\[recent_posts\b/);
+  });
+
+  it("emits Tatsu fullscreen video hero attrs from shortcode params", () => {
+    const raw =
+      '[tatsu_section bg_video_mp4_src= "https://example.com/hero.mp4" overlay_color= "rgba(0,0,0,0.35)" section_height_type= "full_screen" bg_image= "https://example.com/poster.jpg"]' +
+      '[tatsu_row layout= "1/1"][tatsu_column][tatsu_text]<p>Headline</p>[/tatsu_text][/tatsu_column][/tatsu_row][/tatsu_section]';
+    const { html } = flattenWordPressBuilders(raw);
+    expect(html).toContain('data-wp-hero-type="video"');
+    expect(html).toContain('data-video-url="https://example.com/hero.mp4"');
+    expect(html).toContain('data-layout-mode="fullscreen"');
+    expect(html).toContain('data-overlay-color="rgba(0,0,0,0.35)"');
+    expect(html).toContain('data-bg-image="https://example.com/poster.jpg"');
+    expect(html).toContain("Headline");
+  });
+
+  it("merges blank section video attrs from _tatsu_page_content JSON", () => {
+    const raw =
+      '[tatsu_section key= "hero-key" bg_video_mp4_src= "" section_height_type= ""]' +
+      '[tatsu_row layout= "1/1"][tatsu_column][tatsu_text]<p>Overlay copy</p>[/tatsu_text][/tatsu_column][/tatsu_row][/tatsu_section]';
+    const tatsuPageContent = JSON.stringify([
+      {
+        name: "tatsu_section",
+        id: "hero-key",
+        atts: {
+          key: "hero-key",
+          bg_video_mp4_src: "https://example.com/from-json.mp4",
+          bg_image: "https://example.com/poster.jpg",
+          overlay_color: "rgba(0,0,0,0.35)",
+          section_height_type: "full_screen",
+        },
+      },
+    ]);
+    const { html } = flattenWordPressBuilders(raw, { tatsuPageContent });
+    expect(html).toContain('data-wp-hero-type="video"');
+    expect(html).toContain('data-video-url="https://example.com/from-json.mp4"');
+    expect(html).toContain('data-layout-mode="fullscreen"');
+    expect(html).toContain('data-overlay-color="rgba(0,0,0,0.35)"');
+    expect(html).toContain('data-bg-image="https://example.com/poster.jpg"');
+    expect(html).toContain("Overlay copy");
+    expect(buildTatsuPageContext(tatsuPageContent)?.modulesByKey.get("hero-key")?.bg_video_mp4_src).toBe(
+      "https://example.com/from-json.mp4",
+    );
   });
 
   it("flattens [rev_slider] and [masterslider] to slider widget stubs (alias only)", () => {

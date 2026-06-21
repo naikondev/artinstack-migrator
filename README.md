@@ -41,6 +41,36 @@ pnpm link --global   # optional: artinstack-migrate on PATH
 
 Requires **Node.js 20+**.
 
+## Supported input formats
+
+The `@artinstack/migrator` is a pure **content schema and layout migrator**, not a full-site systems restoration tool.
+
+### Unsupported formats
+
+These files contain runtime theme binaries, core PHP files, and raw database dumps. They **cannot** be fed directly into the migrator:
+
+- **All-in-One WP Migration** (`.wpress`)
+- **Duplicator / UpdraftPlus** backups (`.zip`, `.tar.gz`)
+
+### Supported formats (by platform)
+
+| Platform | Accepted input |
+|----------|----------------|
+| **WordPress** | **WXR (XML)** — Tools → Export in wp-admin |
+| **Wix** | Blog RSS/Atom, REST export, static HTML snapshots |
+| **Squarespace** | json-pretty export |
+| **SmugMug** | API crawl or export JSON |
+
+### Recommended workflow (`.wpress` → WXR)
+
+If your client or source site only provided an All-in-One WP Migration (`.wpress`) file:
+
+1. **Restore** — Spin up a temporary local WordPress instance (e.g. LocalWP) and restore the `.wpress` file.
+2. **Export** — Inside the restored WP dashboard, go to **Tools → Export**, select **All content** (or specific pages/posts), and download the **WXR (XML)** file.
+3. **Migrate** — Feed the resulting WXR file into `artinstack-migrate wordpress …`.
+
+See [architecture.md § Supported input formats](./docs/architecture.md#supported-input-formats) for the full `.wpress` assessment.
+
 ## CLI
 
 ```bash

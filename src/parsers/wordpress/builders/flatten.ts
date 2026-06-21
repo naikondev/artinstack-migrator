@@ -23,6 +23,12 @@ import {
 export interface FlattenWordPressBuildersOptions {
   registry?: BuilderThemeConfig[];
   widgetRegistry?: WordPressWidgetRegistry;
+  /** Serialized `_tatsu_page_content` JSON — fills blank section/column attrs (OSS-28). */
+  tatsuPageContent?: string;
+}
+
+export interface TatsuPageContext {
+  modulesByKey: Map<string, Record<string, unknown>>;
 }
 
 export interface FlattenWordPressBuildersResult {
@@ -106,12 +112,139 @@ export function parseRowLayoutCols(layout: string | undefined): number | undefin
   return parts.length > 1 ? parts.length : undefined;
 }
 
-function openSectionDiv(params: string, bgParamName?: string): string {
-  const attrs = ['data-layout="section"'];
-  const bgImage = extractQuotedParam(params, bgParamName ?? "bg_image");
-  if (bgImage?.startsWith("http")) {
+let activeTatsuContext: TatsuPageContext | undefined;
+
+function isBlankShortcodeAttr(value: string | undefined): boolean {
+  return !value?.trim();
+}
+
+function resolveTatsuJsonScalar(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed || undefined;
+  }
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  if (value && typeof value === "object" && "d" in value) {
+    return resolveTatsuJsonScalar((value as Record<string, unknown>).d);
+  }
+  return undefined;
+}
+
+function normalizeHttpMediaUrl(url: string | undefined): string | undefined {
+  if (!url?.trim()) return undefined;
+  const trimmed = url.trim();
+  if (trimmed.startsWith("http")) return trimmed;
+  if (trimmed.startsWith("//")) return `https:${trimmed}`;
+  return undefined;
+}
+
+interface MergedTatsuLayoutAttrs {
+  bgImage?: string;
+  bgVideoMp4?: string;
+  bgVideoWebm?: string;
+  overlayColor?: string;
+  fullscreen?: boolean;
+  builderLayout?: string;
+}
+
+function mergeTatsuLayoutAttrs(
+  params: string,
+  moduleKey: string | undefined,
+  context: TatsuPageContext | undefined,
+): MergedTatsuLayoutAttrs {
+  const jsonAtts = moduleKey ? context?.modulesByKey.get(moduleKey) : undefined;
+
+  const pick = (name: string, jsonName = name): string | undefined => {
+    const fromShortcode = extractBareOrQuotedParam(params, name);
+    if (!isBlankShortcodeAttr(fromShortcode)) return fromShortcode!.trim();
+    return jsonAtts ? resolveTatsuJsonScalar(jsonAtts[jsonName]) : undefined;
+  };
+
+  const bgVideoMp4 = pick("bg_video_mp4_src");
+  const bgVideoWebm = pick("bg_video_webm_src");
+  const bgImage = pick("bg_image");
+  const overlayColor = pick("overlay_color");
+
+  const sectionHeight = pick("section_height_type");
+  const fullScreen = pick("full_screen");
+  const customHeight = pick("custom_height");
+  const fullscreen =
+    sectionHeight?.toLowerCase() === "full_screen" ||
+    fullScreen === "1" ||
+    (customHeight?.includes("100vh") ?? false);
+
+  const builderLayout = jsonAtts ? resolveTatsuJsonScalar(jsonAtts.builderLayout) : undefined;
+
+  return { bgImage, bgVideoMp4, bgVideoWebm, overlayColor, fullscreen, builderLayout };
+}
+
+function appendSectionHeroAttrs(attrs: string[], merged: MergedTatsuLayoutAttrs, params: string, bgParamName?: string): void {
+  const paramName = bgParamName ?? "bg_image";
+  const bgImage =
+    normalizeHttpMediaUrl(merged.bgImage) ??
+    normalizeHttpMediaUrl(extractBareOrQuotedParam(params, paramName)) ??
+    normalizeHttpMediaUrl(extractQuotedParam(params, paramName));
+  if (bgImage) {
     attrs.push(`data-bg-image="${escapeLayoutAttr(bgImage)}"`);
   }
+
+  const videoUrl =
+    normalizeHttpMediaUrl(merged.bgVideoMp4) ?? normalizeHttpMediaUrl(merged.bgVideoWebm);
+  if (videoUrl) {
+    attrs.push('data-wp-hero-type="video"');
+    attrs.push(`data-video-url="${escapeLayoutAttr(videoUrl)}"`);
+  }
+
+  if (merged.fullscreen) {
+    attrs.push('data-layout-mode="fullscreen"');
+  }
+
+  if (merged.overlayColor) {
+    attrs.push(`data-overlay-color="${escapeLayoutAttr(merged.overlayColor)}"`);
+  }
+}
+
+/** Index Tatsu modules by `key` / `id` for shortcode ↔ JSON merge (OSS-28). */
+export function buildTatsuPageContext(jsonText: string): TatsuPageContext | undefined {
+  try {
+    const parsed = JSON.parse(jsonText) as unknown;
+    const modulesByKey = new Map<string, Record<string, unknown>>();
+    walkTatsuModules(parsed, modulesByKey);
+    return modulesByKey.size > 0 ? { modulesByKey } : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function walkTatsuModules(node: unknown, index: Map<string, Record<string, unknown>>): void {
+  if (!node) return;
+  if (Array.isArray(node)) {
+    for (const child of node) walkTatsuModules(child, index);
+    return;
+  }
+  if (typeof node !== "object") return;
+
+  const obj = node as Record<string, unknown>;
+  const atts = obj.atts;
+  const keyFromAtts =
+    atts && typeof atts === "object"
+      ? resolveTatsuJsonScalar((atts as Record<string, unknown>).key)
+      : undefined;
+  const keyFromId = typeof obj.id === "string" ? obj.id.trim() : undefined;
+  const key = keyFromAtts || keyFromId;
+
+  if (key && atts && typeof atts === "object") {
+    index.set(key, atts as Record<string, unknown>);
+  }
+
+  if (obj.inner) walkTatsuModules(obj.inner, index);
+}
+
+function openSectionDiv(params: string, bgParamName?: string): string {
+  const attrs = ['data-layout="section"'];
+  const moduleKey = extractBareOrQuotedParam(params, "key");
+  const merged = mergeTatsuLayoutAttrs(params, moduleKey, activeTatsuContext);
+  appendSectionHeroAttrs(attrs, merged, params, bgParamName);
   return `<div ${attrs.join(" ")}>`;
 }
 
@@ -710,11 +843,22 @@ function inferBlogListingLayout(params: string): string {
     extractBareOrQuotedParam(params, "builderLayout") ??
     extractBareOrQuotedParam(params, "layout") ??
     extractBareOrQuotedParam(params, "style");
-  if (!raw) return "grid";
-  const normalized = raw.trim().toLowerCase();
-  if (normalized === "list" || normalized === "grid" || normalized === "featured" || normalized === "sidebar") {
-    return normalized;
+  if (raw) {
+    const normalized = raw.trim().toLowerCase();
+    if (normalized === "list" || normalized === "grid" || normalized === "featured" || normalized === "sidebar") {
+      return normalized;
+    }
   }
+
+  const moduleKey = extractBareOrQuotedParam(params, "key");
+  if (moduleKey && activeTatsuContext) {
+    const merged = mergeTatsuLayoutAttrs(params, moduleKey, activeTatsuContext);
+    const fromJson = merged.builderLayout?.trim().toLowerCase();
+    if (fromJson === "list" || fromJson === "grid" || fromJson === "featured" || fromJson === "sidebar") {
+      return fromJson;
+    }
+  }
+
   return "grid";
 }
 
@@ -1056,46 +1200,54 @@ export function flattenWordPressBuilders(
     return { html: content, detectedThemes: [] };
   }
 
-  const registry = options.registry ?? WORDPRESS_BUILDER_REGISTRY;
-  const themes = detectThemes(content, registry);
+  activeTatsuContext = options.tatsuPageContent
+    ? buildTatsuPageContext(options.tatsuPageContent)
+    : undefined;
 
-  const widgetRegistry = options.widgetRegistry ?? WORDPRESS_WIDGET_REGISTRY;
-  // Widget stubs before scaffolding strips (e.g. blox_gmap, tatsu_video, portfolio).
-  let html = flattenWordPressWidgets(content, widgetRegistry);
-  for (const theme of themes) {
-    for (const rule of theme.wrapperRules ?? []) {
-      html = convertWrapperRule(html, rule);
+  try {
+    const registry = options.registry ?? WORDPRESS_BUILDER_REGISTRY;
+    const themes = detectThemes(content, registry);
+
+    const widgetRegistry = options.widgetRegistry ?? WORDPRESS_WIDGET_REGISTRY;
+    // Widget stubs before scaffolding strips (e.g. blox_gmap, tatsu_video, portfolio).
+    let html = flattenWordPressWidgets(content, widgetRegistry);
+    for (const theme of themes) {
+      for (const rule of theme.wrapperRules ?? []) {
+        html = convertWrapperRule(html, rule);
+      }
+      for (const rule of theme.textRules ?? []) {
+        html = convertTextRule(html, rule);
+      }
+      for (const rule of theme.urlRules ?? []) {
+        html = convertUrlRule(html, rule);
+      }
+      for (const rule of theme.placeholderRules ?? []) {
+        html = convertPlaceholderRule(html, rule);
+      }
+      for (const rule of theme.iconImageRules ?? []) {
+        html = convertIconImageRule(html, rule);
+      }
+      for (const layoutMap of collectLayoutMaps(theme)) {
+        html = applyStructuralLayoutMap(html, layoutMap);
+      }
+      for (const prefix of theme.scaffoldingPrefixes ?? []) {
+        html = stripScaffoldingPrefix(html, prefix);
+      }
+      if (theme.legacyScaffoldingTokens?.length) {
+        html = stripLegacyTokens(html, theme.legacyScaffoldingTokens);
+      }
     }
-    for (const rule of theme.textRules ?? []) {
-      html = convertTextRule(html, rule);
-    }
-    for (const rule of theme.urlRules ?? []) {
-      html = convertUrlRule(html, rule);
-    }
-    for (const rule of theme.placeholderRules ?? []) {
-      html = convertPlaceholderRule(html, rule);
-    }
-    for (const rule of theme.iconImageRules ?? []) {
-      html = convertIconImageRule(html, rule);
-    }
-    for (const layoutMap of collectLayoutMaps(theme)) {
-      html = applyStructuralLayoutMap(html, layoutMap);
-    }
-    for (const prefix of theme.scaffoldingPrefixes ?? []) {
-      html = stripScaffoldingPrefix(html, prefix);
-    }
-    if (theme.legacyScaffoldingTokens?.length) {
-      html = stripLegacyTokens(html, theme.legacyScaffoldingTokens);
-    }
+
+    // Catch widget shortcodes revealed after wrapper unwrap (e.g. blox_gmap inside tatsu_text_with_shortcodes).
+    html = flattenWordPressWidgets(html, widgetRegistry);
+
+    html = html.replace(/\n{3,}/g, "\n\n").trim();
+
+    return {
+      html,
+      detectedThemes: themes.map((theme) => theme.id),
+    };
+  } finally {
+    activeTatsuContext = undefined;
   }
-
-  // Catch widget shortcodes revealed after wrapper unwrap (e.g. blox_gmap inside tatsu_text_with_shortcodes).
-  html = flattenWordPressWidgets(html, widgetRegistry);
-
-  html = html.replace(/\n{3,}/g, "\n\n").trim();
-
-  return {
-    html,
-    detectedThemes: themes.map((theme) => theme.id),
-  };
 }

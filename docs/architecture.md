@@ -287,6 +287,8 @@ Imports and call-site usage: [README § Migration media refs](../README.md#migra
 
 ### WordPress (WXR)
 
+**Input:** WXR (XML) only — not `.wpress` or other full-site backups. See [§ Supported input formats](#supported-input-formats).
+
 | Extract | Normalized output |
 |---------|-------------------|
 | `item` post type `post` | `NormalizedPost` |
@@ -516,16 +518,72 @@ Optional: export redirect map CSV when `source.path` differs from destination pa
 
 ---
 
-## Supported sources
+## Supported input formats
 
-| Source | Focus |
-|--------|--------|
-| WordPress WXR | Editorial content, page-builder flattening, attachments, taxonomy |
-| SmugMug API | Albums, large vaults, EXIF |
-| Squarespace | Pages, blog, block flattening |
-| Ghost (planned) | Blog export, Admin API |
-| Blogger (planned) | Takeout Atom export |
-| Wix | Blog RSS/Atom export, REST API (W1), static HTML snapshots (W2) |
+`@artinstack/migrator` is a **content schema and layout migrator**. It normalizes editorial content (pages, posts, media references, taxonomy) from **platform-specific export files**. It is **not** a full-site restoration tool — it does not reinstall WordPress core, PHP plugins, theme binaries, or replay raw database dumps.
+
+### WordPress — WXR only
+
+| Accepted | Not accepted |
+|----------|--------------|
+| **WXR (XML)** from Tools → Export, or export plugins that emit standard WordPress eXtended RSS | All-in-One WP Migration **`.wpress`**, Duplicator / UpdraftPlus **`.zip` / `.tar.gz`**, raw **`database.sql`**, full **`wp-content/`** trees |
+
+**Why backups are rejected:** `.wpress` and similar archives use custom streaming formats or generic compression. They contain `database.sql` (with `SERVMASK_PREFIX_` table prefixes), the entire `uploads/` tree, and plugin/theme PHP/CSS/JS on disk. The migrator WordPress adapter reads **WXR `<item>` rows** only — the same `post_content` / `content:encoded` and post meta that a native WXR export would emit after restore.
+
+**Recommended path when only `.wpress` is available:**
+
+1. Restore the backup to a temporary WordPress instance (LocalWP, Docker, staging).
+2. Export **Tools → Export → All content** (or selective pages/posts) to WXR.
+3. Run `artinstack-migrate wordpress export.xml …` on the WXR file.
+
+Optional `--rewrite-gateway` / `--rewrite-public` flags normalize legacy CDN/gateway URLs in WXR content before DTO emission (common on jamstack-backed WordPress sites).
+
+### Other platforms
+
+| Source | Input | Focus |
+|--------|-------|--------|
+| WordPress | WXR (XML) | Editorial content, builder flattening, attachments, taxonomy |
+| SmugMug | API / export JSON | Albums, large vaults, EXIF |
+| Squarespace | json-pretty export | Pages, blog, block flattening |
+| Wix | RSS/Atom, REST JSON, static HTML snapshots | Blog + page snapshots |
+| Ghost (planned) | Blog export, Admin API | — |
+| Blogger (planned) | Takeout Atom export | — |
+
+### What full-site backups contain but WXR omits (host / out of scope)
+
+These appear inside `.wpress` / SQL but are **outside this package's page-body scope** in v1:
+
+| Data | In `.wpress` | In WXR | Owner |
+|------|--------------|--------|-------|
+| Page/post body + builder meta (`_tatsu_page_content`, …) | ✅ `wp_posts` | ✅ | Migrator — builder flatten |
+| RevSlider / MasterSlider **slide payloads** | ✅ plugin SQL tables | ❌ alias/meta only | Host — rebuild or WP REST |
+| Header/footer chrome (`tatsu_active_header`, …) | ✅ `wp_options` | ❌ | Host Site layout |
+| Classic widgets (`sidebars_widgets`, `widget_*`) | ✅ `wp_options` | ❌ | Host |
+| Global theme CSS (`tatsu-shortcodes.css`, `oshine-modules.css`, …) | ✅ on disk | ❌ | Not extracted in v1; host layout styles |
+
+**Dogfood reference (2026-06):** naikonpixels All-in-One export (~3.4 GB, 34k files) — `database.sql` post content uses the same shortcode tokens as WXR (`[tatsu_…]`, `[rev_slider]`, …). No additional layout enrichment vs native WXR for page migration.
+
+### All-in-One `.wpress` assessment (2026-06)
+
+Informational notes from naikonpixels dogfood (All-in-One export ~3.4 GB, 34k files).
+
+#### `.wpress` / SQL — not a migrator input
+
+The sample archive proves `.wpress` yields **zero data enrichment for page layout components** compared to a native WXR export. `database.sql` `post_content` maps to identical shortcode tokens (`[tatsu_…]`, `[rev_slider]`, …). Extra SQL (RevSlider slide payloads, widget options, theme files on disk) is host-tier or outside page-body scope.
+
+**Decision:** Do not build a `.wpress` adapter for v1. Engineering cost — streaming custom archives, 4377-byte block readers, `SERVMASK_PREFIX_` rewrite, attachment path mapping — provides no ROI when restore → WXR is a two-step, documented path.
+
+#### Gutenberg block serialization
+
+The sample site contains minimal block-editor serialization (~92 `wp:paragraph`-class markers in SQL). Tatsu shortcodes dominate structural layouts on pages.
+
+**Decision:** No action for this site. Monitor hybrid dogfood; if `<!-- wp:… -->` wrappers cause structural degradation, consider a generic normalizer then — not a v1 requirement for this package.
+
+#### Builder / theme CSS
+
+Inspecting the archive confirms Oshine/Tatsu does **not** store per-page static CSS in post content or postmeta (`tatsu_custom_css` empty on sampled pages). Layout styling is driven by **global plugin/theme stylesheets** on disk (`tatsu-shortcodes.css`, `oshine-modules.css`, `themes/oshin/css/main.css`) — not inlined in exportable page HTML.
+
+**Decision:** v1 host layout uses normalized content styles; empty per-page `content_css` and snapshot fallback remain acceptable. Design parity later requires the host to bundle global theme CSS explicitly — not automatic from choosing All-in-One over WXR.
 
 Transformers: **HtmlToGrapes** (`htmlToGrapes()` → `GrapesProjectSnapshot`, golden fixtures in `fixtures/grapes/`), **HtmlToTiptap** (`htmlToTiptap()` → ProseMirror `doc` for blog `content_json`, golden fixtures in `fixtures/tiptap/`), **css-to-styles**, **rewrite-inline-images**, **expand-migration-media-refs**. Redirect report generation is a host routing concern.
 
@@ -541,6 +599,7 @@ Transformers: **HtmlToGrapes** (`htmlToGrapes()` → `GrapesProjectSnapshot`, go
 | GrapesJS `Parser` on server without a browser | Inaccurate; use virtual DOM or HTML snapshots |
 | Puppeteer for every page in bulk | Memory and cost |
 | Assuming `slug: "home"` is site root | Home is often a separate flag on host |
+| Passing `.wpress` / Duplicator / UpdraftPlus archives to the CLI | Full-site backups ≠ WXR; restore → Tools → Export first |
 | Downloading tens of GB to `/tmp` | OOM; stream |
 | Skipping dry-run on large exports | Conflicts discovered only after failed import |
 | PUT without prior `HEAD` / known `Content-Length` | Presigned upload failures and buffering |
