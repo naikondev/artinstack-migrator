@@ -5,11 +5,11 @@
       "tagName": "div",
       "attributes": {
         "data-wp-widget": "map",
-        "data-embed-url": "https://maps.google.com/maps?q=Atlanta%2C%20GA&output=embed",
-        "data-wp-map-query": "Atlanta, GA"
+        "data-wp-map-query": "Atlanta, GA",
+        "data-zoom": "14"
       }
     }
   ],
   "styles": [],
-  "contentHtml": "<div data-wp-widget=\"map\" data-embed-url=\"https://maps.google.com/maps?q=Atlanta%2C%20GA&amp;output=embed\" data-wp-map-query=\"Atlanta, GA\">​</div>"
+  "contentHtml": "<div data-wp-widget=\"map\" data-wp-map-query=\"Atlanta, GA\" data-zoom=\"14\">​</div>"
 }

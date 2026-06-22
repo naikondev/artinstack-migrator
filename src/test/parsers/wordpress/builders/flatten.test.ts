@@ -216,20 +216,33 @@ describe("flattenWordPressBuilders", () => {
     expect(html).not.toMatch(/\[blox_gmap/);
   });
 
-  it("blox_gmap address → map stub with data-embed-url", () => {
+  it("blox_gmap address → map stub with query attrs (no legacy embed URL)", () => {
     const raw = '[blox_gmap type="gmap" address= "Atlanta, GA"]';
     const { html } = flattenWordPressBuilders(raw);
     expect(html).toContain('data-wp-widget="map"');
-    expect(html).toContain('data-embed-url="https://maps.google.com/maps?q=Atlanta%2C%20GA&amp;output=embed"');
+    expect(html).not.toContain("data-embed-url");
     expect(html).toContain('data-wp-map-query="Atlanta, GA"');
+    expect(html).toContain('data-zoom="14"');
   });
 
-  it("tatsu_map lat/lng → map stub with data-embed-url", () => {
+  it("tatsu_map lat/lng → map stub with coordinate attrs", () => {
     const raw = '[tatsu_map lat= "33.749" lng= "-84.388" zoom= "12"]';
     const { html } = flattenWordPressBuilders(raw);
-    expect(html).toContain('data-embed-url="https://maps.google.com/maps?q=33.749%2C-84.388&amp;z=12&amp;output=embed"');
-    expect(html).toContain('data-wp-map-lat="33.749"');
-    expect(html).toContain('data-wp-map-lng="-84.388"');
+    expect(html).not.toContain("data-embed-url");
+    expect(html).toContain('data-latitude="33.749"');
+    expect(html).toContain('data-longitude="-84.388"');
+    expect(html).toContain('data-zoom="12"');
+  });
+
+  it("tatsu_gmaps latitude/longitude → map stub with coordinate attrs", () => {
+    const raw = '[tatsu_gmaps latitude="13.043442" longitude="80.273681" zoom="14"]';
+    const { html } = flattenWordPressBuilders(raw);
+    expect(html).toContain('data-wp-widget="map"');
+    expect(html).not.toContain("data-embed-url");
+    expect(html).toContain('data-latitude="13.043442"');
+    expect(html).toContain('data-longitude="80.273681"');
+    expect(html).toContain('data-zoom="14"');
+    expect(html).not.toMatch(/\[tatsu_gmaps/);
   });
 
   it("flattens blox_gmap nested in tatsu_text_with_shortcodes", () => {
@@ -311,7 +324,9 @@ describe("flattenWordPressBuilders", () => {
   it("emits Tatsu fullscreen video hero attrs from shortcode params", () => {
     const raw =
       '[tatsu_section bg_video_mp4_src= "https://example.com/hero.mp4" overlay_color= "rgba(0,0,0,0.35)" section_height_type= "full_screen" bg_image= "https://example.com/poster.jpg"]' +
-      '[tatsu_row layout= "1/1"][tatsu_column][tatsu_text]<p>Headline</p>[/tatsu_text][/tatsu_column][/tatsu_row][/tatsu_section]';
+      '[tatsu_row layout= "1/1"][tatsu_column][tatsu_text]<p>Headline</p>[/tatsu_text]' +
+      '[tatsu_button button_text= "Portfolio" url= "https://example.com/portfolio/index.html" key= "btn-key"][/tatsu_button]' +
+      "[/tatsu_column][/tatsu_row][/tatsu_section]";
     const { html } = flattenWordPressBuilders(raw);
     expect(html).toContain('data-wp-hero-type="video"');
     expect(html).toContain('data-video-url="https://example.com/hero.mp4"');
@@ -319,6 +334,32 @@ describe("flattenWordPressBuilders", () => {
     expect(html).toContain('data-overlay-color="rgba(0,0,0,0.35)"');
     expect(html).toContain('data-bg-image="https://example.com/poster.jpg"');
     expect(html).toContain("Headline");
+    expect(html).toContain('class="tatsu-button"');
+    expect(html).toContain('href="https://example.com/portfolio/index.html"');
+    expect(html).toContain(">Portfolio</a>");
+    expect(html).not.toMatch(/\[tatsu_button\b/);
+  });
+
+  it("merges blank tatsu_button attrs from _tatsu_page_content JSON (OSS-28c)", () => {
+    const raw =
+      '[tatsu_section key= "hero-key" bg_video_mp4_src= "https://example.com/hero.mp4" section_height_type= "full_screen"]' +
+      '[tatsu_row layout= "1/1"][tatsu_column][tatsu_text]<p>Headline</p>[/tatsu_text]' +
+      '[tatsu_button button_text= "" url= "" key= "btn-key"][/tatsu_button][/tatsu_column][/tatsu_row][/tatsu_section]';
+    const tatsuPageContent = JSON.stringify([
+      {
+        name: "tatsu_button",
+        id: "btn-key",
+        atts: {
+          key: "btn-key",
+          button_text: "Portfolio",
+          url: "https://example.com/portfolio/index.html",
+        },
+      },
+    ]);
+    const { html } = flattenWordPressBuilders(raw, { tatsuPageContent });
+    expect(html).toContain('href="https://example.com/portfolio/index.html"');
+    expect(html).toContain('class="tatsu-button"');
+    expect(html).toContain(">Portfolio</a>");
   });
 
   it("merges blank section video attrs from _tatsu_page_content JSON", () => {

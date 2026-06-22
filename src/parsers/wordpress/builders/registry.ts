@@ -27,6 +27,15 @@ export interface BuilderIconImageRule {
   hrefParam?: string;
 }
 
+/** Bucket 1 — button shortcodes (`button_text` + `url`) → `<a>`. */
+export interface BuilderLinkRule {
+  shortcodePrefix: string;
+  textParam: string;
+  urlParam: string;
+  /** CSS class on emitted anchor (e.g. `tatsu-button` for host hero CTA detection). */
+  className?: string;
+}
+
 /** Bucket 1 — dynamic embeds replaced with a static migration placeholder. */
 export interface BuilderPlaceholderRule {
   shortcodePrefix: string;
@@ -172,6 +181,7 @@ export interface BuilderThemeConfig {
   textRules?: BuilderTextRule[];
   wrapperRules?: BuilderWrapperRule[];
   iconImageRules?: BuilderIconImageRule[];
+  linkRules?: BuilderLinkRule[];
   placeholderRules?: BuilderPlaceholderRule[];
   scaffoldingPrefixes?: string[];
   legacyScaffoldingTokens?: string[];
@@ -221,6 +231,7 @@ export const WORDPRESS_WIDGET_REGISTRY: WordPressWidgetRegistry = {
   mapShortcodePrefixes: [
     "blox_gmap",
     "tatsu_gmap",
+    "tatsu_gmaps",
     "tatsu_map",
     "et_pb_map",
     "vc_gmaps",
@@ -280,6 +291,14 @@ export const WORDPRESS_BUILDER_REGISTRY: BuilderThemeConfig[] = [
     ],
     iconImageRules: [
       { shortcodePrefix: "tatsu_icon", imageParam: "icon_image", hrefParam: "href" },
+    ],
+    linkRules: [
+      {
+        shortcodePrefix: "tatsu_button",
+        textParam: "button_text",
+        urlParam: "url",
+        className: "tatsu-button",
+      },
     ],
     scaffoldingPrefixes: ["tatsu_"],
   },

@@ -109,7 +109,14 @@
       "id": "wp-widget-map-address",
       "html": "html/wp-widget-map-address.html",
       "golden": "golden/wp-widget-map-address.snapshot.json",
-      "description": "map stub with address-derived data-embed-url",
+      "description": "map stub with address-derived query attrs (host builds embed URL)",
+      "gates": ["wp_widget"]
+    },
+    {
+      "id": "wp-widget-map-latlng",
+      "html": "html/wp-widget-map-latlng.html",
+      "golden": "golden/wp-widget-map-latlng.snapshot.json",
+      "description": "OSS-20 map stub with latitude/longitude/zoom attrs (no prebuilt embed URL)",
       "gates": ["wp_widget"]
     },
     {

@@ -1,6 +1,7 @@
 import { normalizeAssetUrl } from "../../../lib/media-urls.js";
 import type {
   BuilderIconImageRule,
+  BuilderLinkRule,
   BuilderPlaceholderRule,
   BuilderTextRule,
   BuilderThemeConfig,
@@ -445,6 +446,46 @@ function isPlaceholderImageUrl(url: string): boolean {
   return /placehold\.it|placeholder\.com|via\.placeholder/i.test(url);
 }
 
+function resolveLinkRuleParams(
+  params: string,
+  rule: BuilderLinkRule,
+): { text?: string; url?: string } {
+  let text =
+    extractQuotedParam(params, rule.textParam) ??
+    extractBareOrQuotedParam(params, rule.textParam);
+  let url =
+    extractQuotedParam(params, rule.urlParam) ??
+    extractBareOrQuotedParam(params, rule.urlParam);
+
+  const moduleKey = extractBareOrQuotedParam(params, "key");
+  if (moduleKey && activeTatsuContext?.modulesByKey.has(moduleKey)) {
+    const jsonAtts = activeTatsuContext.modulesByKey.get(moduleKey)!;
+    if (!text) text = resolveTatsuJsonScalar(jsonAtts[rule.textParam]);
+    if (!url) url = resolveTatsuJsonScalar(jsonAtts[rule.urlParam]);
+  }
+
+  return { text, url };
+}
+
+function convertLinkRule(content: string, rule: BuilderLinkRule): string {
+  const prefix = escapeRegExp(rule.shortcodePrefix);
+  const pattern = new RegExp(
+    `\\[${prefix}\\b([^\\]]*)\\]\\s*(?:\\[\\/${prefix}\\b[^\\]]*\\])?`,
+    "gi",
+  );
+
+  return content.replace(pattern, (_, params: string) => {
+    const { text, url } = resolveLinkRuleParams(params, rule);
+    if (!text?.trim() && !url?.trim()) return "";
+    const label = text?.trim() || "Link";
+    const href = url?.trim() || "#";
+    const classAttr = rule.className
+      ? ` class="${escapeLayoutAttr(rule.className)}"`
+      : "";
+    return `<a href="${escapeLayoutAttr(href)}"${classAttr}>${escapeHtmlText(label)}</a>`;
+  });
+}
+
 function convertIconImageRule(content: string, rule: BuilderIconImageRule): string {
   const prefix = escapeRegExp(rule.shortcodePrefix);
   const pattern = new RegExp(
@@ -666,11 +707,30 @@ function emitVideoWidgetFromParams(params: string, inner: string): string {
   });
 }
 
-/** Build a Google Maps iframe embed URL from map shortcode params. */
+/** Host sanitize allowlist: iframe src must start with `https://www.google.com/maps/embed`. */
+export function normalizeSanitizedGoogleMapsEmbedUrl(url: string): string | undefined {
+  const trimmed = url.trim();
+  if (!trimmed) return undefined;
+  try {
+    const parsed = new URL(trimmed);
+    if (!/^(www\.)?google\.com$/i.test(parsed.hostname)) return undefined;
+    if (!parsed.pathname.includes("/maps/embed")) return undefined;
+    parsed.protocol = "https:";
+    if (!parsed.hostname.startsWith("www.")) {
+      parsed.hostname = `www.${parsed.hostname}`;
+    }
+    return parsed.toString();
+  } catch {
+    return undefined;
+  }
+}
+
+/** Build map widget stub fields from shortcode params (OSS-20). */
 export function buildGoogleMapsEmbedUrlFromMapParams(params: string): {
   embedUrl?: string;
   lat?: string;
   lng?: string;
+  zoom?: string;
   query?: string;
 } {
   const direct = extractShortcodeParam(params, [
@@ -681,8 +741,9 @@ export function buildGoogleMapsEmbedUrlFromMapParams(params: string): {
     "iframe_url",
     "embed",
   ]);
-  if (direct && /google\.com\/maps|maps\.google\.com/i.test(direct)) {
-    return { embedUrl: direct.trim() };
+  if (direct) {
+    const embedUrl = normalizeSanitizedGoogleMapsEmbedUrl(direct);
+    if (embedUrl) return { embedUrl };
   }
 
   const lat =
@@ -693,6 +754,7 @@ export function buildGoogleMapsEmbedUrlFromMapParams(params: string): {
     extractBareOrQuotedParam(params, "lng") ??
     extractBareOrQuotedParam(params, "longitude") ??
     extractBareOrQuotedParam(params, "map_lng");
+  const zoom = extractBareOrQuotedParam(params, "zoom") ?? "14";
   const address =
     extractBareOrQuotedParam(params, "address") ??
     extractBareOrQuotedParam(params, "map_address") ??
@@ -701,19 +763,11 @@ export function buildGoogleMapsEmbedUrlFromMapParams(params: string): {
     extractBareOrQuotedParam(params, "q");
 
   if (lat && lng) {
-    const zoom = extractBareOrQuotedParam(params, "zoom") ?? "14";
-    return {
-      embedUrl: `https://maps.google.com/maps?q=${encodeURIComponent(`${lat},${lng}`)}&z=${zoom}&output=embed`,
-      lat,
-      lng,
-    };
+    return { lat, lng, zoom };
   }
 
   if (address) {
-    return {
-      embedUrl: `https://maps.google.com/maps?q=${encodeURIComponent(address)}&output=embed`,
-      query: address,
-    };
+    return { query: address, zoom };
   }
 
   return {};
@@ -730,8 +784,9 @@ function flattenMapShortcodes(content: string, widgetRegistry: WordPressWidgetRe
       const resolved = buildGoogleMapsEmbedUrlFromMapParams(params);
       return emitWidgetStub("map", {
         ...(resolved.embedUrl ? { "data-embed-url": resolved.embedUrl } : {}),
-        ...(resolved.lat ? { "data-wp-map-lat": resolved.lat } : {}),
-        ...(resolved.lng ? { "data-wp-map-lng": resolved.lng } : {}),
+        ...(resolved.lat ? { "data-latitude": resolved.lat } : {}),
+        ...(resolved.lng ? { "data-longitude": resolved.lng } : {}),
+        ...(resolved.zoom ? { "data-zoom": resolved.zoom } : {}),
         ...(resolved.query ? { "data-wp-map-query": resolved.query } : {}),
       });
     });
@@ -1226,6 +1281,9 @@ export function flattenWordPressBuilders(
       }
       for (const rule of theme.iconImageRules ?? []) {
         html = convertIconImageRule(html, rule);
+      }
+      for (const rule of theme.linkRules ?? []) {
+        html = convertLinkRule(html, rule);
       }
       for (const layoutMap of collectLayoutMaps(theme)) {
         html = applyStructuralLayoutMap(html, layoutMap);
