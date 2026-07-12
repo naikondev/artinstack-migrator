@@ -231,6 +231,36 @@ describe("htmlToGrapes", () => {
     ]);
   });
 
+  it("OSS-29: preserves features-grid widget child feature-card attrs", () => {
+    const html = readFileSync(join(GRAPES_FIXTURES, "html/wp-widget-features-grid-content.html"), "utf8");
+    const result = htmlToGrapes(html);
+
+    expect(result.content[0]).toMatchObject({
+      type: "wp-widget",
+      tagName: "section",
+      attributes: {
+        "data-wp-widget": "features-grid",
+        "data-wp-feature-columns": "3",
+      },
+    });
+    expect(result.content[0]?.components).toHaveLength(2);
+    expect(result.content[0]?.components?.[0]?.attributes?.["data-wp-feature-title"]).toBe(
+      "Silver in Fine Art Moving Images",
+    );
+    expect(result.content[0]?.components?.[0]?.attributes?.["data-wp-feature-image"]).toContain(
+      "mifa_seal_2019.png",
+    );
+  });
+
+  it("OSS-29: treats loose data-wp-feature-card stubs as atomic blocks", () => {
+    const html = readFileSync(join(GRAPES_FIXTURES, "html/wp-widget-features-title-icon.html"), "utf8");
+    const result = htmlToGrapes(html);
+
+    expect(result.content).toHaveLength(1);
+    expect(result.content[0]?.attributes?.["data-wp-feature-icon"]).toBe("icon-camera2");
+    expect(result.content[0]?.attributes?.["data-wp-feature-title"]).toBe("CAMERAS");
+  });
+
   it("OSS-13: maps known embed iframes to void embed components", () => {
     const html = readFileSync(join(GRAPES_FIXTURES, "html/wp-widget-embed.html"), "utf8");
     const result = htmlToGrapes(html);

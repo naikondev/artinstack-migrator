@@ -1036,6 +1036,228 @@ function collectTestimonialItemsFromInner(
   return items;
 }
 
+function isWhitespaceOnlyHtml(html: string): boolean {
+  return !decodeBasicHtmlEntities(stripHtmlTags(html)).trim();
+}
+
+function extractLeadingTitleH6(inner: string): { title?: string; remainder: string } {
+  const match = inner.match(/^\s*<h6[^>]*>([\s\S]*?)<\/h6>/i);
+  if (!match) return { remainder: inner.trim() };
+
+  const h6Content = match[1] ?? "";
+  if (/<img\b/i.test(h6Content)) return { remainder: inner.trim() };
+
+  const title = decodeBasicHtmlEntities(stripHtmlTags(h6Content)).trim();
+  const remainder = inner.slice(match[0]!.length).trim();
+  if (!title || isWhitespaceOnlyHtml(h6Content)) {
+    return { remainder: inner.trim() };
+  }
+  return { title, remainder };
+}
+
+function isTrackingPixelImage(imgTag: string, src: string): boolean {
+  if (/amazon-adsystem\.com/i.test(src)) return true;
+  const widthMatch = imgTag.match(/\bwidth\s*=\s*["']?(\d+)["']?/i);
+  const heightMatch = imgTag.match(/\bheight\s*=\s*["']?(\d+)["']?/i);
+  return widthMatch?.[1] === "1" && heightMatch?.[1] === "1";
+}
+
+function extractLinkedBadgeImage(inner: string): { image?: string; link?: string } {
+  const linkedImg = inner.match(
+    /<a\b[^>]*\bhref\s*=\s*["']([^"']+)["'][^>]*>[\s\S]*?<img\b([^>]*)>/i,
+  );
+  if (linkedImg) {
+    const link = linkedImg[1]?.trim();
+    const imgAttrs = linkedImg[2] ?? "";
+    const srcMatch = imgAttrs.match(/\bsrc\s*=\s*["']([^"']+)["']/i);
+    const src = srcMatch?.[1]?.trim();
+    if (src && !isTrackingPixelImage(imgAttrs, src)) {
+      return { image: src, link: link || undefined };
+    }
+  }
+
+  const imgMatch = inner.match(/<img\b([^>]*)>/i);
+  if (imgMatch) {
+    const imgAttrs = imgMatch[1] ?? "";
+    const srcMatch = imgAttrs.match(/\bsrc\s*=\s*["']([^"']+)["']/i);
+    const src = srcMatch?.[1]?.trim();
+    if (src && !isTrackingPixelImage(imgAttrs, src)) {
+      return { image: src };
+    }
+  }
+
+  return {};
+}
+
+function extractGridContentTitle(inner: string): string | undefined {
+  const pattern = /<h6[^>]*>([\s\S]*?)<\/h6>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(inner)) !== null) {
+    const h6Inner = match[1] ?? "";
+    if (/<img\b/i.test(h6Inner)) continue;
+    const title = decodeBasicHtmlEntities(stripHtmlTags(h6Inner)).trim();
+    if (title) return title;
+  }
+  return undefined;
+}
+
+function extractGridContentBody(inner: string): string | undefined {
+  const pattern = /<p[^>]*>([\s\S]*?)<\/p>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(inner)) !== null) {
+    const body = match[1]?.trim() ?? "";
+    if (body && !isWhitespaceOnlyHtml(body)) return body;
+  }
+  return undefined;
+}
+
+function parseTitleIconFeatureCardAttrs(
+  params: string,
+  inner: string,
+): Record<string, string | undefined> | null {
+  const icon = extractBareOrQuotedParam(params, "icon");
+  const iconBg = extractBareOrQuotedParam(params, "icon_bg");
+  const iconColor = extractBareOrQuotedParam(params, "icon_color");
+  const { title, remainder } = extractLeadingTitleH6(inner);
+  const body = remainder.trim() || undefined;
+
+  if (!title && !body) return null;
+
+  return {
+    "data-wp-feature-icon": icon,
+    "data-wp-feature-icon-bg": iconBg,
+    "data-wp-feature-icon-color": iconColor,
+    "data-wp-feature-title": title,
+    "data-wp-feature-body": body,
+  };
+}
+
+function parseGridContentFeatureCardAttrs(
+  _params: string,
+  inner: string,
+): Record<string, string | undefined> | null {
+  const { image, link } = extractLinkedBadgeImage(inner);
+  const title = extractGridContentTitle(inner);
+  const body = extractGridContentBody(inner);
+
+  if (!title && !body && !image) return null;
+
+  return {
+    "data-wp-feature-image": image,
+    "data-wp-feature-link": link,
+    "data-wp-feature-title": title,
+    "data-wp-feature-body": body,
+  };
+}
+
+function parseFeatureCardItemAttrs(
+  tag: string,
+  params: string,
+  inner: string,
+): Record<string, string | undefined> | null {
+  if (tag.toLowerCase() === "tatsu_title_icon") {
+    return parseTitleIconFeatureCardAttrs(params, inner);
+  }
+  if (tag.toLowerCase() === "grid_content") {
+    return parseGridContentFeatureCardAttrs(params, inner);
+  }
+  return null;
+}
+
+function emitFeatureCardStub(attrs: Record<string, string | undefined>): string {
+  const parts = ["data-wp-feature-card"];
+  for (const [key, value] of Object.entries(attrs)) {
+    if (value) parts.push(`${key}="${escapeLayoutAttr(value)}"`);
+  }
+  return `<div ${parts.join(" ")}>${WP_WIDGET_PLACEHOLDER}</div>`;
+}
+
+function emitFeaturesGridWidgetStub(
+  sectionAttrs: Record<string, string | undefined>,
+  items: Array<Record<string, string | undefined>>,
+): string {
+  const sectionParts = ['data-wp-widget="features-grid"'];
+  for (const [key, value] of Object.entries(sectionAttrs)) {
+    if (value) sectionParts.push(`${key}="${escapeLayoutAttr(value)}"`);
+  }
+  const children = items.map((item) => emitFeatureCardStub(item)).join("");
+  return `<section ${sectionParts.join(" ")}>${children}</section>`;
+}
+
+function inferFeatureColumns(wrapperParams: string, itemCount: number): string {
+  const explicit =
+    normalizeShortcodeCount(extractBareOrQuotedParam(wrapperParams, "column")) ??
+    normalizeShortcodeCount(extractBareOrQuotedParam(wrapperParams, "columns")) ??
+    normalizeShortcodeCount(extractBareOrQuotedParam(wrapperParams, "col"));
+  if (explicit) return explicit;
+  if (itemCount <= 1) return "1";
+  if (itemCount === 2) return "2";
+  if (itemCount >= 4) return "4";
+  return "3";
+}
+
+function collectFeatureCardItemsFromInner(
+  inner: string,
+  itemTags: readonly string[],
+): Array<Record<string, string | undefined>> {
+  const items: Array<Record<string, string | undefined>> = [];
+  for (const itemTag of itemTags) {
+    const escaped = escapeRegExp(itemTag);
+    const pattern = new RegExp(
+      `\\[${escaped}\\b([^\\]]*)\\]([\\s\\S]*?)\\[\\/${escaped}\\b[^\\]]*\\]`,
+      "gi",
+    );
+    inner.replace(pattern, (_, params: string, itemInner: string) => {
+      const item = parseFeatureCardItemAttrs(itemTag, params, itemInner);
+      if (item) items.push(item);
+      return "";
+    });
+  }
+  return items;
+}
+
+function flattenFeatureCardShortcodes(
+  content: string,
+  widgetRegistry: WordPressWidgetRegistry,
+): string {
+  const itemTags = widgetRegistry.featureCardShortcodeTags;
+  let html = content;
+
+  for (const wrapperTag of widgetRegistry.featuresGridWrapperTags) {
+    const escaped = escapeRegExp(wrapperTag);
+    const pattern = new RegExp(
+      `\\[${escaped}\\b([^\\]]*)\\]([\\s\\S]*?)\\[\\/${escaped}\\b[^\\]]*\\]`,
+      "gi",
+    );
+    html = html.replace(pattern, (fullMatch, wrapperParams: string, inner: string) => {
+      const items = collectFeatureCardItemsFromInner(inner, itemTags);
+      if (items.length === 0) return fullMatch;
+
+      return emitFeaturesGridWidgetStub(
+        {
+          "data-wp-feature-columns": inferFeatureColumns(wrapperParams, items.length),
+        },
+        items,
+      );
+    });
+  }
+
+  for (const tag of itemTags) {
+    const escaped = escapeRegExp(tag);
+    const pattern = new RegExp(
+      `\\[${escaped}\\b([^\\]]*)\\]([\\s\\S]*?)\\[\\/${escaped}\\b[^\\]]*\\]`,
+      "gi",
+    );
+    html = html.replace(pattern, (fullMatch, params: string, inner: string) => {
+      const item = parseFeatureCardItemAttrs(tag, params, inner);
+      if (!item) return fullMatch;
+      return emitFeatureCardStub(item);
+    });
+  }
+
+  return html;
+}
+
 function flattenTestimonialsShortcodes(
   content: string,
   widgetRegistry: WordPressWidgetRegistry,
@@ -1236,6 +1458,7 @@ function flattenWordPressWidgets(
   html = flattenSliderShortcodes(html, widgetRegistry);
   html = flattenBlogListingShortcodes(html, widgetRegistry);
   html = flattenTestimonialsShortcodes(html, widgetRegistry);
+  html = flattenFeatureCardShortcodes(html, widgetRegistry);
   html = flattenMapShortcodes(html, widgetRegistry);
   html = flattenContactFormShortcodes(html, widgetRegistry);
   html = flattenVideoShortcodes(html, widgetRegistry);

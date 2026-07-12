@@ -72,7 +72,9 @@ const DEFAULT_TYPES: Record<string, string> = {
 
 const LAYOUT_DATA_ATTR = "data-layout";
 const WP_WIDGET_ATTR = "data-wp-widget";
+const WP_FEATURE_CARD_ATTR = "data-wp-feature-card";
 const DEFAULT_WP_WIDGET_TYPE = "wp-widget";
+const WP_WIDGETS_WITH_CHILD_ATTRS = new Set(["testimonials", "features-grid"]);
 const EMBED_IFRAME_TYPE = "embed";
 
 const EMBED_IFRAME_SRC =
@@ -100,6 +102,10 @@ function resolveWidgetComponentType(options: HtmlToGrapesOptions): string {
 
 function isWpWidgetMarker(attributes: Record<string, string> | undefined): boolean {
   return Boolean(attributes?.[WP_WIDGET_ATTR]);
+}
+
+function isWpFeatureCardMarker(attributes: Record<string, string> | undefined): boolean {
+  return attributes?.[WP_FEATURE_CARD_ATTR] !== undefined;
 }
 
 function isPreservedEmbedIframe(
@@ -305,8 +311,9 @@ function walkNode(
       },
       meta,
     );
-    // OSS-26 — testimonials stub carries per-item child attrs for host promotion.
-    if (meta.attributes?.[WP_WIDGET_ATTR]?.trim() === "testimonials") {
+    // OSS-26 / OSS-29 — widget stubs with per-item child attrs for host promotion.
+    const widgetType = meta.attributes?.[WP_WIDGET_ATTR]?.trim();
+    if (widgetType && WP_WIDGETS_WITH_CHILD_ATTRS.has(widgetType)) {
       const children = walkChildren($, $el, options).filter((child) => {
         if (child.type !== "textnode") return true;
         return Boolean(child.content?.trim());
@@ -316,6 +323,17 @@ function walkNode(
       }
     }
     return component;
+  }
+
+  // OSS-29 — loose feature-card stubs stay atomic (do not merge into preceding text).
+  if (isWpFeatureCardMarker(meta.attributes)) {
+    return applyElementMeta(
+      {
+        type: "default",
+        tagName,
+      },
+      meta,
+    );
   }
 
   if (isPreservedEmbedIframe(tagName, meta.attributes)) {

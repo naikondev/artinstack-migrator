@@ -314,7 +314,7 @@ Many WordPress exports mix **shortcodes** (Tatsu, Oshine/Blox, Divi, Elementor, 
 
 Registered theme families ship in OSS (e.g. Tatsu, Oshine, Divi, Elementor). New families add a registry row—not per-page logic.
 
-**Dynamic widgets** (maps, contact forms, blog rolls, portfolio grids, testimonials, in-body sliders, …) flatten to `data-wp-widget` HTML stubs in `contentHtml`. The **host** maps stubs to platform blocks. **Theme hero sliders** referenced only in post meta are **not** inlined into `contentHtml`; they appear on `NormalizedPage.layoutHints.heroSlider` (alias only — hosts rebuild or hydrate slide data from source WP when needed).
+**Dynamic widgets** (maps, contact forms, blog rolls, portfolio grids, testimonials, features grids, in-body sliders, …) flatten to `data-wp-widget` HTML stubs in `contentHtml`. The **host** maps stubs to platform blocks. **Theme hero sliders** referenced only in post meta are **not** inlined into `contentHtml`; they appear on `NormalizedPage.layoutHints.heroSlider` (alias only — hosts rebuild or hydrate slide data from source WP when needed).
 
 WooCommerce system pages (`cart`, `checkout`, `my-account`) are skipped by default. Unresolvable commerce shortcodes are reported in `conflicts.unsupportedBlocks`.
 

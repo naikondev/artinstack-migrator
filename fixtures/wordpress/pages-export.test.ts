@@ -280,10 +280,23 @@ describe("naikonpixels pages export", () => {
     expect(contact?.contentHtml).not.toMatch(/\[animate_icon/);
   });
 
-  it("preserves awards grid inner HTML after flattening", () => {
+  it("preserves awards feature-card stubs after flattening", () => {
     const awards = bundle.pages.find((p) => p.slug === "awardsandhonors");
     expect(awards?.contentHtml).toContain("<h4>Awards and Recognition</h4>");
-    expect(awards?.contentHtml).toContain("International Photography Awards 2022");
+    expect(awards?.contentHtml).toContain('data-wp-widget="features-grid"');
+    expect(awards?.contentHtml).toContain("data-wp-feature-card");
+    expect(awards?.contentHtml).toContain('data-wp-feature-title="Silver in Fine Art Moving Images"');
+    expect(awards?.contentHtml).toContain("Moscow International Foto Awards 2018");
     expect(awards?.contentHtml).not.toMatch(/\[grid_content|\[grids/);
+  });
+
+  it("flattens gear-list tatsu_title_icon cards to loose feature-card stubs", () => {
+    const gearList = bundle.pages.find((p) => p.slug === "gear-list");
+    expect(gearList?.contentHtml).toContain("data-wp-feature-card");
+    expect(gearList?.contentHtml).toContain('data-wp-feature-icon="icon-camera2"');
+    expect(gearList?.contentHtml).toContain('data-wp-feature-title="CAMERAS"');
+    expect(gearList?.contentHtml).toContain("Nikon D810");
+    expect(gearList?.contentHtml).not.toMatch(/\[tatsu_title_icon/);
+    expect(gearList?.contentHtml).not.toContain('data-wp-widget="features-grid"');
   });
 });

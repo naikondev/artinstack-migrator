@@ -161,14 +161,59 @@ describe("flattenWordPressBuilders", () => {
     expect(html).toContain("<h5>Existing heading</h5>");
   });
 
-  it("converts special_heading5 caption_content and strips grids scaffolding", () => {
+  it("converts special_heading5 caption_content and flattens grids to features-grid stub", () => {
     const raw =
       '[special_heading5 title_content= "" caption_content= "Awards and Recognition"][/special_heading5]' +
       '[grids column= "3"][grid_content]<h6>Gold</h6><p>IPA 2022</p>[/grid_content][/grids]';
     const { html } = flattenWordPressBuilders(raw);
     expect(html).toContain("<h4>Awards and Recognition</h4>");
-    expect(html).toContain("<h6>Gold</h6>");
+    expect(html).toContain('data-wp-widget="features-grid"');
+    expect(html).toContain('data-wp-feature-columns="3"');
+    expect(html).toContain('data-wp-feature-title="Gold"');
+    expect(html).toContain('data-wp-feature-body="IPA 2022"');
     expect(html).not.toMatch(/\[grids|\[grid_content/);
+    expect(html).not.toContain("<h6>Gold</h6>");
+  });
+
+  it("flattens [tatsu_title_icon] to feature-card stub with icon attrs and HTML body", () => {
+    const raw =
+      '[tatsu_title_icon icon= "icon-camera2" icon_bg= "rgba(228,228,228,1)" icon_color= "rgba(85,85,85,1)"]' +
+      "<h6>CAMERAS</h6><p><a href=\"https://example.com/camera\">Nikon D810</a></p>[/tatsu_title_icon]";
+    const { html } = flattenWordPressBuilders(raw);
+    expect(html).toContain("data-wp-feature-card");
+    expect(html).toContain('data-wp-feature-icon="icon-camera2"');
+    expect(html).toContain('data-wp-feature-icon-bg="rgba(228,228,228,1)"');
+    expect(html).toContain('data-wp-feature-icon-color="rgba(85,85,85,1)"');
+    expect(html).toContain('data-wp-feature-title="CAMERAS"');
+    expect(html).toContain('data-wp-feature-body="');
+    expect(html).toContain("Nikon D810");
+    expect(html).not.toMatch(/\[tatsu_title_icon/);
+    expect(html).not.toContain("<h6>CAMERAS</h6>");
+  });
+
+  it("flattens [grid_content] badge grid to feature-card stub with image, link, title, body", () => {
+    const raw =
+      '[grid_content]<h6><a href="https://www.moscowfotoawards.com/winners/hm/2018/10-20144-18/">' +
+      '<img src="https://example.com/wp-content/uploads/mifa_seal_2019.png" width="180" height="180" /></a></h6>' +
+      "<h6>Silver in Fine Art Moving Images</h6><p>Moscow International Foto Awards 2018</p>[/grid_content]";
+    const { html } = flattenWordPressBuilders(raw);
+    expect(html).toContain("data-wp-feature-card");
+    expect(html).toContain('data-wp-feature-image="https://example.com/wp-content/uploads/mifa_seal_2019.png"');
+    expect(html).toContain('data-wp-feature-link="https://www.moscowfotoawards.com/winners/hm/2018/10-20144-18/"');
+    expect(html).toContain('data-wp-feature-title="Silver in Fine Art Moving Images"');
+    expect(html).toContain('data-wp-feature-body="Moscow International Foto Awards 2018"');
+    expect(html).not.toMatch(/\[grid_content/);
+  });
+
+  it("wraps multiple [grid_content] items in [grids] as features-grid section stub", () => {
+    const raw =
+      '[grids column= "3"][grid_content]<h6>One</h6><p>First org</p>[/grid_content]' +
+      '[grid_content]<h6>Two</h6><p>Second org</p>[/grid_content][/grids]';
+    const { html } = flattenWordPressBuilders(raw);
+    expect(html).toContain('data-wp-widget="features-grid"');
+    expect(html).toContain('data-wp-feature-columns="3"');
+    expect(html).toContain('data-wp-feature-title="One"');
+    expect(html).toContain('data-wp-feature-title="Two"');
   });
 
   it("flattens Oshine [testimonials] to testimonials widget stub with per-item attrs", () => {

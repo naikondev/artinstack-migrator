@@ -1,0 +1,36 @@
+{
+  "content": [
+    {
+      "type": "wp-widget",
+      "tagName": "section",
+      "attributes": {
+        "data-wp-widget": "features-grid",
+        "data-wp-feature-columns": "3"
+      },
+      "components": [
+        {
+          "type": "default",
+          "tagName": "div",
+          "attributes": {
+            "data-wp-feature-card": "",
+            "data-wp-feature-image": "https://example.com/wp-content/uploads/mifa_seal_2019.png",
+            "data-wp-feature-link": "https://www.moscowfotoawards.com/winners/hm/2018/10-20144-18/",
+            "data-wp-feature-title": "Silver in Fine Art Moving Images",
+            "data-wp-feature-body": "Moscow International Foto Awards 2018"
+          }
+        },
+        {
+          "type": "default",
+          "tagName": "div",
+          "attributes": {
+            "data-wp-feature-card": "",
+            "data-wp-feature-title": "Gold",
+            "data-wp-feature-body": "IPA 2022"
+          }
+        }
+      ]
+    }
+  ],
+  "styles": [],
+  "contentHtml": "<section data-wp-widget=\"features-grid\" data-wp-feature-columns=\"3\"><div data-wp-feature-card=\"\" data-wp-feature-image=\"https://example.com/wp-content/uploads/mifa_seal_2019.png\" data-wp-feature-link=\"https://www.moscowfotoawards.com/winners/hm/2018/10-20144-18/\" data-wp-feature-title=\"Silver in Fine Art Moving Images\" data-wp-feature-body=\"Moscow International Foto Awards 2018\">​</div><div data-wp-feature-card=\"\" data-wp-feature-title=\"Gold\" data-wp-feature-body=\"IPA 2022\">​</div></section>"
+}

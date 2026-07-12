@@ -139,6 +139,19 @@
       "golden": "golden/wp-widget-testimonials.snapshot.json",
       "description": "OSS-26 testimonials widget stub preserves per-item child attrs",
       "gates": ["wp_widget"]
+    },
+    {
+      "id": "wp-widget-features-title-icon",
+      "html": "html/wp-widget-features-title-icon.html",
+      "golden": "golden/wp-widget-features-title-icon.snapshot.json",
+      "description": "tatsu_title_icon feature-card stub preserves icon/title/body attrs"
+    },
+    {
+      "id": "wp-widget-features-grid-content",
+      "html": "html/wp-widget-features-grid-content.html",
+      "golden": "golden/wp-widget-features-grid-content.snapshot.json",
+      "description": "grid_content features-grid section stub preserves per-item attrs",
+      "gates": ["wp_widget"]
     }
   ]
 }

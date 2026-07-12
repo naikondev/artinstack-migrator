@@ -219,6 +219,10 @@ export interface WordPressWidgetRegistry {
   testimonialsWrapperTags: readonly string[];
   /** Inner testimonial item shortcode tag. */
   testimonialItemTag: string;
+  /** Feature-card item shortcodes (Tatsu `tatsu_title_icon`, Oshine `grid_content`, …). */
+  featureCardShortcodeTags: readonly string[];
+  /** Awards/gear grid wrapper shortcodes (`[grids]` → `features-grid` section stub). */
+  featuresGridWrapperTags: readonly string[];
   /** In-body RevSlider / MasterSlider shortcodes → slider widget stub (alias only). */
   sliderShortcodeTags: readonly string[];
   /** WordPress core gallery shortcode tag (`ids=` split handled in engine). */
@@ -256,6 +260,8 @@ export const WORDPRESS_WIDGET_REGISTRY: WordPressWidgetRegistry = {
   blogShortcodeTags: ["blog", "recent_posts"],
   testimonialsWrapperTags: ["testimonials"],
   testimonialItemTag: "testimonial",
+  featureCardShortcodeTags: ["tatsu_title_icon", "grid_content"],
+  featuresGridWrapperTags: ["grids"],
   sliderShortcodeTags: ["rev_slider", "masterslider"],
   galleryShortcode: "gallery",
   idGalleryShortcodes: ["oshine_gallery", "vc_gallery", "nggallery"],
