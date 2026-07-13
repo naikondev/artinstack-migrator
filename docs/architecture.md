@@ -6,6 +6,24 @@ The package owns **parsing, normalization, analysis, and orchestration of the mi
 
 ---
 
+## ArtInStack platform integration
+
+[`@artinstack/migrator`](https://www.npmjs.com/package/@artinstack/migrator) is **public OSS (MIT)**. Host applications implement `MigrationSink`; this package does not require ArtInStack.
+
+[**ArtInStack**](https://www.artinstack.com) is the **primary production integration** today — not an exclusive one. The same parsers and DTOs power the dashboard import flow and are available to any third-party host.
+
+| Layer | Where it lives |
+| --- | --- |
+| **Parsers, DTOs, CLI, `MigrationSink` interface** | This repository (npm + GitHub) — reusable by anyone |
+| **Scan UI, job queue, worker, storage writes** | Host application (ArtInStack is one reference implementation) |
+| **ArtInStack customer docs** | [Platform migration overview](https://www.artinstack.com/docs/platform-migration/platform-migration-overview) on artinstack.com |
+
+**Typical ArtInStack path:** export WordPress WXR → **Settings → Import Site** → scan and select entities → background worker runs `runMigration()` with a HTTP `MigrationSink` into the photographer workspace. Automatic **301 redirects** preserve legacy URLs after cutover.
+
+**Typical OSS path:** `artinstack-migrate wordpress export.xml --dry-run --report ./preview/` to inspect conflicts and normalized JSON without an ArtInStack account — or implement `MigrationSink` for another CMS.
+
+---
+
 ## Goals
 
 | Goal | Approach |

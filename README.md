@@ -4,6 +4,15 @@ Stateless content normalizer and migration framework for transforming **WordPres
 
 Portable parsers and JSON export are useful without any specific host. Job orchestration, credentials, and UI are implemented separately via `MigrationSink`.
 
+## Used by [ArtInStack](https://www.artinstack.com) (optional host)
+
+**MIT-licensed OSS** — use the CLI, export normalized JSON, or implement `MigrationSink` for **any** CMS or product. No ArtInStack account required.
+
+[ArtInStack](https://www.artinstack.com) is one production integration: the creative operating system for photographers and studios (websites, portfolios, client delivery, commerce, and courses). The platform’s import UI runs this package under the hood.
+
+- **Any host** — parsers, normalizer DTOs, conflict analysis, `MigrationSink` contract, and `artinstack-migrate` CLI (dry-run, filesystem export, custom sinks).
+- **ArtInStack product** — workspace owners use **Settings → Import Site**: scan WordPress WXR, preview entities, confirm import, review reports. [Customer docs](https://www.artinstack.com/docs/platform-migration/platform-migration-overview) cover export formats, SEO redirects, and cutover.
+
 See [docs/architecture.md](./docs/architecture.md) for the high-level blueprint: data flow, DTOs, sink contract, and source mappings.
 
 ## Package layout
@@ -192,7 +201,7 @@ pnpm dev          # watch build
 | CLI + filesystem JSON export | Yes | No |
 | `MigrationSink` interface | Yes | Implementation |
 | Map `data-wp-widget` stubs → platform blocks; populate slider heroes from hints | No | Yes |
-| Jobs, worker, credentials, UI | No | Yes |
+| Jobs, worker, credentials, UI | No | Your host — [example: ArtInStack Import Site](https://www.artinstack.com/docs/platform-migration/platform-migration-overview) |
 
 ## License
 
