@@ -1,6 +1,6 @@
 {
   "name": "@artinstack/migrator",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "description": "MIT OSS migration framework — WordPress, SmugMug, Squarespace, Wix to portable DTOs. CLI + MigrationSink for any host; also powers import on artinstack.com",
   "license": "MIT",
   "author": "ArtInStack",
