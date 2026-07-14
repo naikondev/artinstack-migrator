@@ -4,7 +4,7 @@ Stateless content normalizer and migration framework for transforming **WordPres
 
 Portable parsers and JSON export are useful without any specific host. Job orchestration, credentials, and UI are implemented separately via `MigrationSink`.
 
-## Used by [ArtInStack](https://www.artinstack.com) (optional host)
+## Used by [ArtInStack](https://www.artinstack.com) (as an optional host)
 
 **MIT-licensed OSS** — use the CLI, export normalized JSON, or implement `MigrationSink` for **any** CMS or product. No ArtInStack account required.
 

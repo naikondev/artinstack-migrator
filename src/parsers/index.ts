@@ -3,13 +3,30 @@ export {
   SmugMugApiClient,
   SMUGMUG_API_BASE,
   SMUGMUG_OAUTH_ENDPOINTS,
+  buildSmugMugAuthorizeUrl,
   buildSmugMugAuthorizationHeader,
+  createSmugMugOAuthSession,
+  getSmugMugAccessToken,
+  getSmugMugRequestToken,
+  parseSmugMugOAuthFormBody,
   readSmugMugCredentialsFromEnv,
   signSmugMugOAuthRequest,
   smugmugAdapter,
+  smugMugConsumerCredentialsSchema,
   smugMugCredentialsSchema,
 } from "./smugmug/index.js";
-export type { SmugMugClientOptions, SmugMugCredentials } from "./smugmug/index.js";
+export type {
+  SmugMugAccessLevel,
+  SmugMugAuthorizeUrlOptions,
+  SmugMugClientOptions,
+  SmugMugConsumerCredentials,
+  SmugMugCredentials,
+  SmugMugOAuthSession,
+  SmugMugOAuthSigningMaterial,
+  SmugMugOAuthTokenPair,
+  SmugMugPermissionLevel,
+  SmugMugRequestTokenResult,
+} from "./smugmug/index.js";
 export { squarespaceAdapter } from "./squarespace/index.js";
 export { wixAdapter, WixCollectionClient, WixPageSnapshotCollector } from "./wix/index.js";
 export {

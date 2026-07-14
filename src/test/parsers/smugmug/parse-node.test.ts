@@ -6,8 +6,14 @@ import { collectEntities } from "../../../normalizer/bundle.js";
 import { buildPortfolioMediaLinks } from "../../../normalizer/portfolio-media.js";
 import {
   SmugMugApiClient,
+  SMUGMUG_OAUTH_ENDPOINTS,
+  buildSmugMugAuthorizeUrl,
   buildSmugMugAuthorizationHeader,
+  createSmugMugOAuthSession,
+  getSmugMugAccessToken,
+  getSmugMugRequestToken,
   oauthPercentEncode,
+  parseSmugMugOAuthFormBody,
   signSmugMugOAuthRequest,
 } from "../../../parsers/smugmug/api.js";
 import { smugmugAdapter } from "../../../parsers/smugmug/index.js";
@@ -152,6 +158,44 @@ describe("SmugMug API client (OAuth + crawl)", () => {
     ).toBe(signature);
   });
 
+  it("signs request-token phase with empty token secret (no oauth_token)", () => {
+    const withEmpty = signSmugMugOAuthRequest({
+      method: "POST",
+      url: "https://api.smugmug.com/services/oauth/1.0a/getRequestToken",
+      credentials: {
+        consumerKey: credentials.consumerKey,
+        consumerSecret: credentials.consumerSecret,
+        accessTokenSecret: "",
+      },
+      oauthParams: {
+        oauth_consumer_key: credentials.consumerKey,
+        oauth_signature_method: "HMAC-SHA1",
+        oauth_timestamp: "1318622958",
+        oauth_nonce: "fixed-nonce",
+        oauth_version: "1.0",
+        oauth_callback: "https://app.example/callback",
+      },
+    });
+    const omittedSecret = signSmugMugOAuthRequest({
+      method: "POST",
+      url: "https://api.smugmug.com/services/oauth/1.0a/getRequestToken",
+      credentials: {
+        consumerKey: credentials.consumerKey,
+        consumerSecret: credentials.consumerSecret,
+      },
+      oauthParams: {
+        oauth_consumer_key: credentials.consumerKey,
+        oauth_signature_method: "HMAC-SHA1",
+        oauth_timestamp: "1318622958",
+        oauth_nonce: "fixed-nonce",
+        oauth_version: "1.0",
+        oauth_callback: "https://app.example/callback",
+      },
+    });
+    expect(withEmpty).toBe(omittedSecret);
+    expect(withEmpty).toMatch(/^[A-Za-z0-9+/=]+$/);
+  });
+
   it("formats Authorization header with oauth_signature", () => {
     const header = buildSmugMugAuthorizationHeader({
       method: "GET",
@@ -163,6 +207,107 @@ describe("SmugMug API client (OAuth + crawl)", () => {
     expect(header.startsWith("OAuth ")).toBe(true);
     expect(header).toContain('oauth_consumer_key="test-consumer-key"');
     expect(header).toContain("oauth_signature=");
+  });
+
+  it("omits oauth_token and includes oauth_callback for request-token headers", () => {
+    const header = buildSmugMugAuthorizationHeader({
+      method: "POST",
+      url: "https://api.smugmug.com/services/oauth/1.0a/getRequestToken",
+      credentials: {
+        consumerKey: credentials.consumerKey,
+        consumerSecret: credentials.consumerSecret,
+        accessTokenSecret: "",
+      },
+      oauthExtras: { oauth_callback: "https://app.example/oauth/callback" },
+      nonce: "abc123",
+      timestamp: "1700000000",
+    });
+    expect(header).toContain("oauth_callback=");
+    expect(header).not.toContain("oauth_token=");
+  });
+
+  it("runs OAuth handshake helpers against mocked endpoints", async () => {
+    expect(parseSmugMugOAuthFormBody("oauth_token=rt&oauth_token_secret=rts&oauth_callback_confirmed=true")).toEqual({
+      oauth_token: "rt",
+      oauth_token_secret: "rts",
+      oauth_callback_confirmed: "true",
+    });
+
+    const fetchImpl: typeof fetch = async (input, init) => {
+      const url =
+        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+      const headers = new Headers(init?.headers);
+      const auth = headers.get("Authorization") ?? "";
+      expect(init?.method).toBe("POST");
+      expect(auth.startsWith("OAuth ")).toBe(true);
+
+      if (url === SMUGMUG_OAUTH_ENDPOINTS.requestToken) {
+        expect(auth).toContain("oauth_callback=");
+        expect(auth).not.toContain('oauth_token="');
+        return new Response(
+          "oauth_token=request-token&oauth_token_secret=request-secret&oauth_callback_confirmed=true",
+          { status: 200, headers: { "Content-Type": "application/x-www-form-urlencoded" } },
+        );
+      }
+
+      if (url === SMUGMUG_OAUTH_ENDPOINTS.accessToken) {
+        expect(auth).toContain('oauth_token="request-token"');
+        expect(auth).toContain("oauth_verifier=");
+        return new Response("oauth_token=access-token&oauth_token_secret=access-secret", {
+          status: 200,
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        });
+      }
+
+      return new Response(`unexpected ${url}`, { status: 404 });
+    };
+
+    const request = await getSmugMugRequestToken({
+      consumer: {
+        consumerKey: credentials.consumerKey,
+        consumerSecret: credentials.consumerSecret,
+      },
+      callbackUrl: "https://app.example/oauth/callback",
+      fetchImpl,
+      nonce: "n1",
+      timestamp: "1700000001",
+    });
+    expect(request).toEqual({
+      token: "request-token",
+      tokenSecret: "request-secret",
+      callbackConfirmed: true,
+    });
+
+    const authorizeUrl = buildSmugMugAuthorizeUrl({ requestToken: request.token });
+    expect(authorizeUrl).toContain("oauth_token=request-token");
+    expect(authorizeUrl).toContain("Access=Full");
+    expect(authorizeUrl).toContain("Permissions=Modify");
+
+    const access = await getSmugMugAccessToken({
+      consumer: {
+        consumerKey: credentials.consumerKey,
+        consumerSecret: credentials.consumerSecret,
+      },
+      requestToken: { token: request.token, tokenSecret: request.tokenSecret },
+      verifier: "verifier-123",
+      fetchImpl,
+      nonce: "n2",
+      timestamp: "1700000002",
+    });
+    expect(access).toEqual({ token: "access-token", tokenSecret: "access-secret" });
+
+    const session = await createSmugMugOAuthSession({
+      consumerKey: credentials.consumerKey,
+      consumerSecret: credentials.consumerSecret,
+      callbackUrl: "https://app.example/oauth/callback",
+      fetchImpl,
+      nonce: "n3",
+      timestamp: "1700000003",
+    });
+    expect(session.requestToken).toBe("request-token");
+    expect(session.requestTokenSecret).toBe("request-secret");
+    expect(session.authorizeUrl).toContain("oauth_token=request-token");
+    expect(session.callbackConfirmed).toBe(true);
   });
 
   it("crawls mock API pages into flat export and normalizes entities", async () => {

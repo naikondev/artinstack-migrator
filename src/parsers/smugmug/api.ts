@@ -14,14 +14,58 @@ export const SMUGMUG_OAUTH_ENDPOINTS = {
   accessToken: "https://api.smugmug.com/services/oauth/1.0a/getAccessToken",
 } as const;
 
-export const smugMugCredentialsSchema = z.object({
+export const smugMugConsumerCredentialsSchema = z.object({
   consumerKey: z.string().min(1),
   consumerSecret: z.string().min(1),
+});
+
+export type SmugMugConsumerCredentials = z.infer<typeof smugMugConsumerCredentialsSchema>;
+
+export const smugMugCredentialsSchema = smugMugConsumerCredentialsSchema.extend({
   accessToken: z.string().min(1),
   accessTokenSecret: z.string().min(1),
 });
 
 export type SmugMugCredentials = z.infer<typeof smugMugCredentialsSchema>;
+
+/** Material for HMAC-SHA1 signing — token fields omitted/empty during request-token phase. */
+export type SmugMugOAuthSigningMaterial = {
+  consumerKey: string;
+  consumerSecret: string;
+  accessToken?: string;
+  /** Empty string (or omitted) for `getRequestToken`. */
+  accessTokenSecret?: string;
+};
+
+export type SmugMugOAuthTokenPair = {
+  token: string;
+  tokenSecret: string;
+};
+
+export type SmugMugRequestTokenResult = SmugMugOAuthTokenPair & {
+  callbackConfirmed: boolean;
+};
+
+export type SmugMugAccessLevel = "Full" | "Public";
+export type SmugMugPermissionLevel = "Read" | "Add" | "Modify";
+
+export type SmugMugAuthorizeUrlOptions = {
+  requestToken: string;
+  /** SmugMug Access query param (default Full for migration crawl). */
+  access?: SmugMugAccessLevel;
+  /** SmugMug Permissions query param (default Modify for migration crawl). */
+  permissions?: SmugMugPermissionLevel;
+  allowThirdPartyLogin?: boolean;
+  showSignUpButton?: boolean;
+  username?: string;
+};
+
+export type SmugMugOAuthSession = {
+  requestToken: string;
+  requestTokenSecret: string;
+  authorizeUrl: string;
+  callbackConfirmed: boolean;
+};
 
 export const smugMugClientOptionsSchema = z.object({
   credentials: smugMugCredentialsSchema,
@@ -152,11 +196,11 @@ function collectSignatureParams(
   return params;
 }
 
-/** Build OAuth 1.0a HMAC-SHA1 signature for a SmugMug API request. */
+/** Build OAuth 1.0a HMAC-SHA1 signature for a SmugMug API or handshake request. */
 export function signSmugMugOAuthRequest(input: {
   method: string;
   url: string;
-  credentials: SmugMugCredentials;
+  credentials: SmugMugOAuthSigningMaterial;
   oauthParams: Record<string, string>;
   bodyParams?: Record<string, string>;
 }): string {
@@ -169,32 +213,45 @@ export function signSmugMugOAuthRequest(input: {
     oauthPercentEncode(normalizeRequestUrl(url)),
     oauthPercentEncode(parameterString),
   ].join("&");
-  const signingKey = `${oauthPercentEncode(input.credentials.consumerSecret)}&${oauthPercentEncode(input.credentials.accessTokenSecret)}`;
+  // Request-token phase uses consumerSecret& (empty token secret).
+  const tokenSecret = input.credentials.accessTokenSecret ?? "";
+  const signingKey = `${oauthPercentEncode(input.credentials.consumerSecret)}&${oauthPercentEncode(tokenSecret)}`;
   return createHmac("sha1", signingKey).update(signatureBase).digest("base64");
 }
 
-function buildOAuthParams(credentials: SmugMugCredentials, nonce: string, timestamp: string) {
-  return {
+function buildOAuthParams(
+  credentials: SmugMugOAuthSigningMaterial,
+  nonce: string,
+  timestamp: string,
+  extras?: Record<string, string>,
+): Record<string, string> {
+  const params: Record<string, string> = {
     oauth_consumer_key: credentials.consumerKey,
-    oauth_token: credentials.accessToken,
     oauth_signature_method: "HMAC-SHA1",
     oauth_timestamp: timestamp,
     oauth_nonce: nonce,
     oauth_version: "1.0",
+    ...(extras ?? {}),
   };
+  if (credentials.accessToken) {
+    params.oauth_token = credentials.accessToken;
+  }
+  return params;
 }
 
 export function buildSmugMugAuthorizationHeader(input: {
   method: string;
   url: string;
-  credentials: SmugMugCredentials;
+  credentials: SmugMugOAuthSigningMaterial;
   nonce?: string;
   timestamp?: string;
   bodyParams?: Record<string, string>;
+  /** Extra oauth_* params (e.g. oauth_callback, oauth_verifier). */
+  oauthExtras?: Record<string, string>;
 }): string {
   const nonce = input.nonce ?? randomBytes(16).toString("hex");
   const timestamp = input.timestamp ?? String(Math.floor(Date.now() / 1000));
-  const oauthParams = buildOAuthParams(input.credentials, nonce, timestamp);
+  const oauthParams = buildOAuthParams(input.credentials, nonce, timestamp, input.oauthExtras);
   const signature = signSmugMugOAuthRequest({
     method: input.method,
     url: input.url,
@@ -202,12 +259,203 @@ export function buildSmugMugAuthorizationHeader(input: {
     oauthParams,
     bodyParams: input.bodyParams,
   });
-  const headerParams = { ...oauthParams, oauth_signature: signature };
+  const headerParams: Record<string, string> = { ...oauthParams, oauth_signature: signature };
   const headerValue = Object.keys(headerParams)
     .sort()
-    .map((key) => `${oauthPercentEncode(key)}="${oauthPercentEncode(headerParams[key as keyof typeof headerParams]!)}"`)
+    .map((key) => `${oauthPercentEncode(key)}="${oauthPercentEncode(headerParams[key]!)}"`)
     .join(", ");
   return `OAuth ${headerValue}`;
+}
+
+/** Parse `application/x-www-form-urlencoded` OAuth token responses. */
+export function parseSmugMugOAuthFormBody(body: string): Record<string, string> {
+  const params = new URLSearchParams(body.trim());
+  const out: Record<string, string> = {};
+  params.forEach((value, key) => {
+    out[key] = value;
+  });
+  return out;
+}
+
+function requireOAuthFormField(fields: Record<string, string>, name: string): string {
+  const value = fields[name]?.trim();
+  if (!value) {
+    throw new Error(`SmugMug OAuth response missing ${name}`);
+  }
+  return value;
+}
+
+async function postSmugMugOAuthTokenEndpoint(input: {
+  url: string;
+  credentials: SmugMugOAuthSigningMaterial;
+  oauthExtras?: Record<string, string>;
+  fetchImpl?: typeof fetch;
+  nonce?: string;
+  timestamp?: string;
+}): Promise<Record<string, string>> {
+  const fetchImpl = input.fetchImpl ?? fetch;
+  const authorization = buildSmugMugAuthorizationHeader({
+    method: "POST",
+    url: input.url,
+    credentials: input.credentials,
+    oauthExtras: input.oauthExtras,
+    nonce: input.nonce,
+    timestamp: input.timestamp,
+  });
+  const response = await fetchImpl(input.url, {
+    method: "POST",
+    headers: {
+      Accept: "application/x-www-form-urlencoded",
+      Authorization: authorization,
+    },
+  });
+  const body = await response.text();
+  if (!response.ok) {
+    throw new Error(
+      `SmugMug OAuth HTTP ${response.status}${body ? `: ${body.slice(0, 200)}` : ""}`,
+    );
+  }
+  return parseSmugMugOAuthFormBody(body);
+}
+
+/**
+ * Step 1 — temporary credentials.
+ * Signs with consumer secret + empty token secret; includes `oauth_callback` (URL or `oob`).
+ */
+export async function getSmugMugRequestToken(input: {
+  consumer: SmugMugConsumerCredentials;
+  callbackUrl: string;
+  fetchImpl?: typeof fetch;
+  nonce?: string;
+  timestamp?: string;
+}): Promise<SmugMugRequestTokenResult> {
+  const consumer = smugMugConsumerCredentialsSchema.parse(input.consumer);
+  const callbackUrl = input.callbackUrl.trim();
+  if (!callbackUrl) {
+    throw new Error("SmugMug OAuth callbackUrl is required (use a URL or \"oob\")");
+  }
+
+  const fields = await postSmugMugOAuthTokenEndpoint({
+    url: SMUGMUG_OAUTH_ENDPOINTS.requestToken,
+    credentials: {
+      consumerKey: consumer.consumerKey,
+      consumerSecret: consumer.consumerSecret,
+      accessTokenSecret: "",
+    },
+    oauthExtras: { oauth_callback: callbackUrl },
+    fetchImpl: input.fetchImpl,
+    nonce: input.nonce,
+    timestamp: input.timestamp,
+  });
+
+  return {
+    token: requireOAuthFormField(fields, "oauth_token"),
+    tokenSecret: requireOAuthFormField(fields, "oauth_token_secret"),
+    callbackConfirmed: fields.oauth_callback_confirmed === "true",
+  };
+}
+
+/** Step 2 — browser authorize URL (host redirects the photographer here). */
+export function buildSmugMugAuthorizeUrl(options: SmugMugAuthorizeUrlOptions): string {
+  const requestToken = options.requestToken.trim();
+  if (!requestToken) {
+    throw new Error("SmugMug authorize URL requires requestToken");
+  }
+
+  const url = new URL(SMUGMUG_OAUTH_ENDPOINTS.authorize);
+  url.searchParams.set("oauth_token", requestToken);
+  url.searchParams.set("Access", options.access ?? "Full");
+  url.searchParams.set("Permissions", options.permissions ?? "Modify");
+  if (options.allowThirdPartyLogin !== undefined) {
+    url.searchParams.set("allowThirdPartyLogin", options.allowThirdPartyLogin ? "1" : "0");
+  }
+  if (options.showSignUpButton !== undefined) {
+    url.searchParams.set("showSignUpButton", options.showSignUpButton ? "true" : "false");
+  }
+  if (options.username?.trim()) {
+    url.searchParams.set("username", options.username.trim());
+  }
+  return url.toString();
+}
+
+/**
+ * Step 3 — exchange request token + verifier for long-lived access credentials.
+ * Signs with consumer secret + request token secret.
+ */
+export async function getSmugMugAccessToken(input: {
+  consumer: SmugMugConsumerCredentials;
+  requestToken: SmugMugOAuthTokenPair;
+  verifier: string;
+  fetchImpl?: typeof fetch;
+  nonce?: string;
+  timestamp?: string;
+}): Promise<SmugMugOAuthTokenPair> {
+  const consumer = smugMugConsumerCredentialsSchema.parse(input.consumer);
+  const token = input.requestToken.token.trim();
+  const tokenSecret = input.requestToken.tokenSecret;
+  const verifier = input.verifier.trim();
+  if (!token || tokenSecret === undefined || tokenSecret === null) {
+    throw new Error("SmugMug access-token exchange requires request token + secret");
+  }
+  if (!verifier) {
+    throw new Error("SmugMug access-token exchange requires oauth_verifier");
+  }
+
+  const fields = await postSmugMugOAuthTokenEndpoint({
+    url: SMUGMUG_OAUTH_ENDPOINTS.accessToken,
+    credentials: {
+      consumerKey: consumer.consumerKey,
+      consumerSecret: consumer.consumerSecret,
+      accessToken: token,
+      accessTokenSecret: tokenSecret,
+    },
+    oauthExtras: { oauth_verifier: verifier },
+    fetchImpl: input.fetchImpl,
+    nonce: input.nonce,
+    timestamp: input.timestamp,
+  });
+
+  return {
+    token: requireOAuthFormField(fields, "oauth_token"),
+    tokenSecret: requireOAuthFormField(fields, "oauth_token_secret"),
+  };
+}
+
+/**
+ * Connect-UI start helper: request token + authorize URL.
+ * Host stores `requestTokenSecret` in session/cookie for the callback → `getSmugMugAccessToken`.
+ */
+export async function createSmugMugOAuthSession(input: {
+  consumerKey: string;
+  consumerSecret: string;
+  callbackUrl: string;
+  access?: SmugMugAccessLevel;
+  permissions?: SmugMugPermissionLevel;
+  fetchImpl?: typeof fetch;
+  nonce?: string;
+  timestamp?: string;
+}): Promise<SmugMugOAuthSession> {
+  const request = await getSmugMugRequestToken({
+    consumer: {
+      consumerKey: input.consumerKey,
+      consumerSecret: input.consumerSecret,
+    },
+    callbackUrl: input.callbackUrl,
+    fetchImpl: input.fetchImpl,
+    nonce: input.nonce,
+    timestamp: input.timestamp,
+  });
+
+  return {
+    requestToken: request.token,
+    requestTokenSecret: request.tokenSecret,
+    authorizeUrl: buildSmugMugAuthorizeUrl({
+      requestToken: request.token,
+      access: input.access,
+      permissions: input.permissions,
+    }),
+    callbackConfirmed: request.callbackConfirmed,
+  };
 }
 
 export function readSmugMugCredentialsFromEnv(

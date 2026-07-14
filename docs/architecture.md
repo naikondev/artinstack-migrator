@@ -359,14 +359,7 @@ Featured images reference attachment ids, not inline bytes:
 | Captions / keywords | `caption`, tags where supported |
 | EXIF/IPTC | Preserved in asset metadata when present in source |
 
-**Live API (public package):** `src/parsers/smugmug/api.ts` ships OAuth 1.0a signing, endpoint paths, pagination, bounded retry/throttle, and recursive node crawl. **No secrets in the package** — hosts or CLI pass `SmugMugCredentials` at runtime (`SMUGMUG_CONSUMER_KEY`, `SMUGMUG_CONSUMER_SECRET`, `SMUGMUG_ACCESS_TOKEN`, `SMUGMUG_ACCESS_TOKEN_SECRET`). OAuth redirect and token storage stay in the host application.
-
-```ts
-import { SmugMugApiClient, readSmugMugCredentialsFromEnv } from "@artinstack/migrator";
-
-const client = new SmugMugApiClient({ credentials: readSmugMugCredentialsFromEnv() });
-const doc = await client.crawlExport(); // flat tables → parse-node.ts → DTOs
-```
+**Live API (public package):** `api.ts` provides OAuth 1.0a signing, handshake helpers (request → authorize → access), pagination/retry, and recursive node crawl. **No secrets in the package** — the host supplies consumer keys for Connect, vaults photographer access tokens, and owns redirect/CSRF/session. After connect, hosts build `SmugMugApiClient` with full credentials and run crawl → DTOs.
 
 Use bounded concurrency (e.g. 4–8 parallel uploads) per import to respect API rate limits.
 
@@ -635,7 +628,7 @@ Transformers: **HtmlToGrapes** (`htmlToGrapes()` → `GrapesProjectSnapshot`, go
 |-------|------------------------|------------------|
 | Parsers + normalizer DTOs (portable HTML after adapter preprocessing) | Yes | No |
 | WordPress builder flattening + origin URL rewrite | Yes | Optional same config on adapter input |
-| SmugMug OAuth signing + API crawl (`api.ts`) | Yes | Supplies credentials |
+| SmugMug OAuth signing + handshake + API crawl (`api.ts`) | Yes | Supplies credentials / calls handshake helpers |
 | Squarespace json-pretty collector (`collect.ts`) | Yes | Supplies authenticated `fetch` |
 | Dry-run, conflicts, migration report | Yes | No |
 | CLI + filesystem export | Yes | No |
@@ -645,7 +638,7 @@ Transformers: **HtmlToGrapes** (`htmlToGrapes()` → `GrapesProjectSnapshot`, go
 | `MigrationSink` interface + `runMigration` | Yes | Implementation |
 | Sanitization, uploads, slug policy | No | Yes |
 | WordPress dynamic shortcodes (`[portfolio]`, forms, maps) | No | Yes |
-| SmugMug OAuth redirect + token vault | No | Yes |
+| SmugMug OAuth redirect + CSRF/session + token vault | No | Yes |
 | Jobs, worker, UI, credentials, billing | No | Yes |
 
 ---

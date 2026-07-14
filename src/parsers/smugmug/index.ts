@@ -123,13 +123,30 @@ export {
   SmugMugApiClient,
   SMUGMUG_API_BASE,
   SMUGMUG_OAUTH_ENDPOINTS,
+  buildSmugMugAuthorizeUrl,
   buildSmugMugAuthorizationHeader,
+  createSmugMugOAuthSession,
+  getSmugMugAccessToken,
+  getSmugMugRequestToken,
   oauthPercentEncode,
+  parseSmugMugOAuthFormBody,
   readSmugMugCredentialsFromEnv,
   signSmugMugOAuthRequest,
+  smugMugConsumerCredentialsSchema,
   smugMugCredentialsSchema,
 } from "./api.js";
-export type { SmugMugClientOptions, SmugMugCredentials } from "./api.js";
+export type {
+  SmugMugAccessLevel,
+  SmugMugAuthorizeUrlOptions,
+  SmugMugClientOptions,
+  SmugMugConsumerCredentials,
+  SmugMugCredentials,
+  SmugMugOAuthSession,
+  SmugMugOAuthSigningMaterial,
+  SmugMugOAuthTokenPair,
+  SmugMugPermissionLevel,
+  SmugMugRequestTokenResult,
+} from "./api.js";
 export {
   enumerateSmugMugEntities,
   isSmugMugFlatExport,
