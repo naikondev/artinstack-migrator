@@ -131,6 +131,7 @@ export {
   oauthPercentEncode,
   parseSmugMugOAuthFormBody,
   readSmugMugCredentialsFromEnv,
+  resolveSmugMugUriLink,
   signSmugMugOAuthRequest,
   smugMugConsumerCredentialsSchema,
   smugMugCredentialsSchema,

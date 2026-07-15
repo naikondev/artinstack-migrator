@@ -10,6 +10,7 @@ export {
   getSmugMugRequestToken,
   parseSmugMugOAuthFormBody,
   readSmugMugCredentialsFromEnv,
+  resolveSmugMugUriLink,
   signSmugMugOAuthRequest,
   smugmugAdapter,
   smugMugConsumerCredentialsSchema,

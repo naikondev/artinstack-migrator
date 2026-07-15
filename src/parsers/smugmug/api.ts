@@ -113,10 +113,13 @@ interface SmugMugApiEnvelope<T> {
   Message: string;
 }
 
+/** SmugMug URI link — string when `_shorturis` is used, otherwise `{ Uri }`. */
+type SmugMugUriLink = string | { Uri?: string };
+
 interface SmugMugUserWire {
   NickName?: string;
   Uri: string;
-  Uris: { Node: string };
+  Uris: { Node: SmugMugUriLink };
 }
 
 interface SmugMugNodeWire {
@@ -127,7 +130,7 @@ interface SmugMugNodeWire {
   UrlName?: string;
   WebUri?: string;
   Uri: string;
-  Uris?: { Album?: string; ChildNodes?: string };
+  Uris?: { Album?: SmugMugUriLink; ChildNodes?: SmugMugUriLink };
 }
 
 interface SmugMugImageMetadataWire {
@@ -473,6 +476,19 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Resolve a SmugMug URI link. Default API responses use `{ Uri, Locator, … }`;
+ * `_shorturis` responses use a bare string.
+ */
+export function resolveSmugMugUriLink(link: SmugMugUriLink | null | undefined, label: string): string {
+  if (typeof link === "string" && link.trim()) return link.trim();
+  if (link && typeof link === "object") {
+    const uri = link.Uri;
+    if (typeof uri === "string" && uri.trim()) return uri.trim();
+  }
+  throw new Error(`SmugMug response missing ${label} URI`);
+}
+
 function albumKeyFromUri(uri: string): string {
   const match = uri.match(/\/album\/([^/?!]+)/i);
   if (!match?.[1]) {
@@ -544,7 +560,10 @@ export class SmugMugApiClient {
   /** Validate credentials against `GET /user/!authuser`. */
   async validateCredentials(): Promise<{ nick?: string; rootNodeUri: string }> {
     const user = await this.getAuthUser();
-    return { nick: user.NickName, rootNodeUri: user.Uris.Node };
+    return {
+      nick: user.NickName,
+      rootNodeUri: resolveSmugMugUriLink(user.Uris.Node, "User.Uris.Node"),
+    };
   }
 
   /** Crawl the authenticated user's node tree into flat export tables for `parse-node.ts`. */
@@ -554,7 +573,8 @@ export class SmugMugApiClient {
     const albums: SmugMugFlatAlbum[] = [];
     const images: SmugMugFlatImage[] = [];
 
-    await this.walkNode(user.Uris.Node, undefined, folders, albums, images);
+    const rootNodeUri = resolveSmugMugUriLink(user.Uris.Node, "User.Uris.Node");
+    await this.walkNode(rootNodeUri, undefined, folders, albums, images);
 
     return {
       exportVersion: 1,
@@ -566,7 +586,13 @@ export class SmugMugApiClient {
   }
 
   private async getAuthUser(): Promise<SmugMugUserWire> {
-    const envelope = await this.requestJson<SmugMugUserWire>(`${SMUGMUG_API_BASE}/user/!authuser`);
+    const envelope = await this.requestJson<SmugMugUserWire & { User?: SmugMugUserWire }>(
+      `${SMUGMUG_API_BASE}/user/!authuser`,
+    );
+    // Envelope may flatten User fields onto Response, or nest under Response.User.
+    if (envelope.Response.User?.Uris?.Node != null) {
+      return envelope.Response.User;
+    }
     return envelope.Response;
   }
 
@@ -602,8 +628,8 @@ export class SmugMugApiClient {
           description: child.Description,
           url: child.WebUri,
         });
-        const albumUri = child.Uris?.Album;
-        if (albumUri) {
+        if (child.Uris?.Album != null) {
+          const albumUri = resolveSmugMugUriLink(child.Uris.Album, "Node.Uris.Album");
           await this.collectAlbumImages(albumUri, child.NodeID, images);
         }
       }

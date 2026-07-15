@@ -14,6 +14,7 @@ import {
   getSmugMugRequestToken,
   oauthPercentEncode,
   parseSmugMugOAuthFormBody,
+  resolveSmugMugUriLink,
   signSmugMugOAuthRequest,
 } from "../../../parsers/smugmug/api.js";
 import { smugmugAdapter } from "../../../parsers/smugmug/index.js";
@@ -438,5 +439,57 @@ describe("SmugMug API client (OAuth + crawl)", () => {
     expect(buildPortfolioMediaLinks(bundle)).toEqual([
       { portfolioSourceId: "album-iceland", assetSourceId: "img-aurora", sort: 0 },
     ]);
+  });
+
+  it("resolves expanded Uris.Node objects (live API default, not _shorturis)", async () => {
+    expect(resolveSmugMugUriLink("/api/v2/node/abc", "Node")).toBe("/api/v2/node/abc");
+    expect(resolveSmugMugUriLink({ Uri: "/api/v2/node/abc" }, "Node")).toBe("/api/v2/node/abc");
+
+    const fetchImpl: typeof fetch = async (input) => {
+      const url =
+        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+      if (url === "https://api.smugmug.com/api/v2/user/!authuser") {
+        return new Response(
+          JSON.stringify({
+            Code: 200,
+            Message: "Ok",
+            Response: {
+              User: {
+                NickName: "demo",
+                Uri: "/api/v2/user/demo",
+                Uris: {
+                  Node: {
+                    Uri: "/api/v2/node/root-node",
+                    Locator: "Node",
+                    LocatorType: "Object",
+                  },
+                },
+              },
+            },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (url.startsWith("https://api.smugmug.com/api/v2/node/root-node!children")) {
+        return new Response(
+          JSON.stringify({
+            Code: 200,
+            Message: "Ok",
+            Response: { Node: [], Pages: { Total: 0, Start: 1, Count: 0 } },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      return new Response(`missing mock for ${url}`, { status: 404 });
+    };
+
+    const client = new SmugMugApiClient({
+      credentials,
+      fetchImpl,
+      requestIntervalMs: 0,
+    });
+    const exportDoc = await client.crawlExport();
+    expect(exportDoc.Folders).toEqual([]);
+    expect(exportDoc.Albums).toEqual([]);
   });
 });
