@@ -11,6 +11,7 @@ export {
   parseSmugMugOAuthFormBody,
   readSmugMugCredentialsFromEnv,
   resolveSmugMugUriLink,
+  asSmugMugList,
   signSmugMugOAuthRequest,
   smugmugAdapter,
   smugMugConsumerCredentialsSchema,

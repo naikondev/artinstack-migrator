@@ -15,6 +15,7 @@ import {
   oauthPercentEncode,
   parseSmugMugOAuthFormBody,
   resolveSmugMugUriLink,
+  asSmugMugList,
   signSmugMugOAuthRequest,
 } from "../../../parsers/smugmug/api.js";
 import { smugmugAdapter } from "../../../parsers/smugmug/index.js";
@@ -130,7 +131,7 @@ describe("SmugMug API client (OAuth + crawl)", () => {
   it("builds a deterministic HMAC-SHA1 signature", () => {
     const signature = signSmugMugOAuthRequest({
       method: "GET",
-      url: "https://api.smugmug.com/api/v2/user/!authuser?count=1&start=1",
+      url: "https://api.smugmug.com/api/v2!authuser?count=1&start=1",
       credentials,
       oauthParams: {
         oauth_consumer_key: credentials.consumerKey,
@@ -145,7 +146,7 @@ describe("SmugMug API client (OAuth + crawl)", () => {
     expect(
       signSmugMugOAuthRequest({
         method: "GET",
-        url: "https://api.smugmug.com/api/v2/user/!authuser?count=1&start=1",
+        url: "https://api.smugmug.com/api/v2!authuser?count=1&start=1",
         credentials,
         oauthParams: {
           oauth_consumer_key: credentials.consumerKey,
@@ -200,7 +201,7 @@ describe("SmugMug API client (OAuth + crawl)", () => {
   it("formats Authorization header with oauth_signature", () => {
     const header = buildSmugMugAuthorizationHeader({
       method: "GET",
-      url: "https://api.smugmug.com/api/v2/user/!authuser",
+      url: "https://api.smugmug.com/api/v2!authuser",
       credentials,
       nonce: "abc123",
       timestamp: "1700000000",
@@ -314,7 +315,7 @@ describe("SmugMug API client (OAuth + crawl)", () => {
   it("crawls mock API pages into flat export and normalizes entities", async () => {
     const responses = new Map<string, unknown>([
       [
-        "https://api.smugmug.com/api/v2/user/!authuser",
+        "https://api.smugmug.com/api/v2!authuser",
         {
           Code: 200,
           Message: "Ok",
@@ -444,11 +445,13 @@ describe("SmugMug API client (OAuth + crawl)", () => {
   it("resolves expanded Uris.Node objects (live API default, not _shorturis)", async () => {
     expect(resolveSmugMugUriLink("/api/v2/node/abc", "Node")).toBe("/api/v2/node/abc");
     expect(resolveSmugMugUriLink({ Uri: "/api/v2/node/abc" }, "Node")).toBe("/api/v2/node/abc");
+    expect(asSmugMugList({ NodeID: "one" })).toEqual([{ NodeID: "one" }]);
+    expect(asSmugMugList([{ NodeID: "a" }, { NodeID: "b" }])).toHaveLength(2);
 
     const fetchImpl: typeof fetch = async (input) => {
       const url =
         typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-      if (url === "https://api.smugmug.com/api/v2/user/!authuser") {
+      if (url === "https://api.smugmug.com/api/v2!authuser") {
         return new Response(
           JSON.stringify({
             Code: 200,
@@ -471,11 +474,56 @@ describe("SmugMug API client (OAuth + crawl)", () => {
         );
       }
       if (url.startsWith("https://api.smugmug.com/api/v2/node/root-node!children")) {
+        // Single child as object (not array) — live API does this often.
         return new Response(
           JSON.stringify({
             Code: 200,
             Message: "Ok",
-            Response: { Node: [], Pages: { Total: 0, Start: 1, Count: 0 } },
+            Response: {
+              Node: {
+                NodeID: "album-solo",
+                Type: "Album",
+                Name: "Solo",
+                Uri: "/api/v2/node/album-solo",
+                // Album URI omitted — client must re-fetch with _filteruri=Album
+              },
+              Pages: { Total: 1, Start: 1, Count: 1 },
+            },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (url.startsWith("https://api.smugmug.com/api/v2/node/album-solo?_filteruri=Album")) {
+        return new Response(
+          JSON.stringify({
+            Code: 200,
+            Message: "Ok",
+            Response: {
+              NodeID: "album-solo",
+              Type: "Album",
+              Name: "Solo",
+              Uri: "/api/v2/node/album-solo",
+              Uris: { Album: { Uri: "/api/v2/album/alb-solo" } },
+            },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (url.includes("/api/v2/album/alb-solo!images")) {
+        return new Response(
+          JSON.stringify({
+            Code: 200,
+            Message: "Ok",
+            Response: {
+              AlbumImage: {
+                ImageKey: "img-1",
+                Image: {
+                  FileName: "one.jpg",
+                  ImageSizeDetails: { OriginalImageUrl: "https://photos.smugmug.com/one.jpg" },
+                },
+              },
+              Pages: { Total: 1, Start: 1, Count: 1 },
+            },
           }),
           { status: 200, headers: { "Content-Type": "application/json" } },
         );
@@ -489,7 +537,36 @@ describe("SmugMug API client (OAuth + crawl)", () => {
       requestIntervalMs: 0,
     });
     const exportDoc = await client.crawlExport();
-    expect(exportDoc.Folders).toEqual([]);
-    expect(exportDoc.Albums).toEqual([]);
+    expect(exportDoc.Albums).toHaveLength(1);
+    expect(exportDoc.Images).toHaveLength(1);
+    expect(exportDoc.Images[0]?.originalUrl).toBe("https://photos.smugmug.com/one.jpg");
+  });
+
+  it("signs private media downloads via fetchAuthenticatedBytes", async () => {
+    const fetchImpl: typeof fetch = async (input, init) => {
+      const url =
+        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+      const headers = new Headers(init?.headers);
+      expect(headers.get("Authorization")?.startsWith("OAuth ")).toBe(true);
+      expect(headers.get("Accept")).toBe("*/*");
+      if (url === "https://photos.smugmug.com/private/original.jpg") {
+        return new Response(Uint8Array.from([1, 2, 3, 4]), {
+          status: 200,
+          headers: { "Content-Type": "image/jpeg" },
+        });
+      }
+      return new Response("missing", { status: 404 });
+    };
+
+    const client = new SmugMugApiClient({
+      credentials,
+      fetchImpl,
+      requestIntervalMs: 0,
+    });
+    const bytes = await client.fetchAuthenticatedBytes(
+      "https://photos.smugmug.com/private/original.jpg",
+    );
+    expect(bytes.contentType).toBe("image/jpeg");
+    expect([...bytes.body]).toEqual([1, 2, 3, 4]);
   });
 });

@@ -100,6 +100,12 @@ const ALBUM_IMAGES_CONFIG = {
   },
 };
 
+/** Normalize SmugMug list payloads — one child is often a bare object, not an array. */
+export function asSmugMugList<T>(value: T | T[] | null | undefined): T[] {
+  if (value == null) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
 interface SmugMugPages {
   Total?: number;
   Start?: number;
@@ -147,7 +153,10 @@ interface SmugMugImageWire {
   Caption?: string;
   KeywordsArray?: string[];
   ImageMetadata?: SmugMugImageMetadataWire;
-  ImageSizeDetails?: { OriginalImageUrl?: string };
+  ImageSizeDetails?: {
+    OriginalImageUrl?: string;
+    ImageSizeOriginal?: { Url?: string };
+  };
 }
 
 interface SmugMugAlbumImageWire {
@@ -512,8 +521,12 @@ function mapAlbumImage(
 ): SmugMugFlatImage {
   const image = albumImage.Image;
   const metadata = image?.ImageMetadata ?? albumImage.ImageMetadata;
+  const sizeDetails = image?.ImageSizeDetails;
   const originalUrl =
-    image?.ImageSizeDetails?.OriginalImageUrl ?? albumImage.LargestImage?.Url ?? albumImage.WebUri;
+    sizeDetails?.OriginalImageUrl ??
+    sizeDetails?.ImageSizeOriginal?.Url ??
+    albumImage.LargestImage?.Url ??
+    albumImage.WebUri;
   const fileName = image?.FileName ?? albumImage.FileName;
   return {
     sourceId: albumImage.ImageKey,
@@ -557,7 +570,7 @@ export class SmugMugApiClient {
     this.fetchImpl = parsed.fetchImpl ?? fetch;
   }
 
-  /** Validate credentials against `GET /user/!authuser`. */
+  /** Validate credentials against `GET /api/v2!authuser`. */
   async validateCredentials(): Promise<{ nick?: string; rootNodeUri: string }> {
     const user = await this.getAuthUser();
     return {
@@ -586,8 +599,9 @@ export class SmugMugApiClient {
   }
 
   private async getAuthUser(): Promise<SmugMugUserWire> {
+    // Documented special endpoint is `/api/v2!authuser` (not `/api/v2/user/!authuser`).
     const envelope = await this.requestJson<SmugMugUserWire & { User?: SmugMugUserWire }>(
-      `${SMUGMUG_API_BASE}/user/!authuser`,
+      `${SMUGMUG_API_BASE}!authuser`,
     );
     // Envelope may flatten User fields onto Response, or nest under Response.User.
     if (envelope.Response.User?.Uris?.Node != null) {
@@ -628,12 +642,33 @@ export class SmugMugApiClient {
           description: child.Description,
           url: child.WebUri,
         });
-        if (child.Uris?.Album != null) {
-          const albumUri = resolveSmugMugUriLink(child.Uris.Album, "Node.Uris.Album");
+        const albumUri = await this.resolveAlbumUri(child);
+        if (albumUri) {
           await this.collectAlbumImages(albumUri, child.NodeID, images);
         }
       }
     }
+  }
+
+  /**
+   * Album nodes usually expose `Uris.Album`; if missing, re-fetch the node with `_filteruri=Album`.
+   */
+  private async resolveAlbumUri(child: SmugMugNodeWire): Promise<string | null> {
+    if (child.Uris?.Album != null) {
+      return resolveSmugMugUriLink(child.Uris.Album, "Node.Uris.Album");
+    }
+    try {
+      const envelope = await this.requestJson<
+        SmugMugNodeWire & { Node?: SmugMugNodeWire }
+      >(`${child.Uri}?_filteruri=Album`);
+      const node = envelope.Response.Node ?? envelope.Response;
+      if (node.Uris?.Album != null) {
+        return resolveSmugMugUriLink(node.Uris.Album, "Node.Uris.Album");
+      }
+    } catch {
+      // fall through
+    }
+    return null;
   }
 
   private async collectAlbumImages(
@@ -653,16 +688,18 @@ export class SmugMugApiClient {
   }
 
   private async *paginateNodes(path: string): AsyncGenerator<SmugMugNodeWire> {
-    for await (const page of this.paginate<{ Node?: SmugMugNodeWire[] }>(path)) {
-      for (const node of page.Node ?? []) {
+    for await (const page of this.paginate<{ Node?: SmugMugNodeWire | SmugMugNodeWire[] }>(path)) {
+      for (const node of asSmugMugList(page.Node)) {
         yield node;
       }
     }
   }
 
   private async *paginateAlbumImages(path: string): AsyncGenerator<SmugMugAlbumImageWire> {
-    for await (const page of this.paginate<{ AlbumImage?: SmugMugAlbumImageWire[] }>(path)) {
-      for (const albumImage of page.AlbumImage ?? []) {
+    for await (const page of this.paginate<{
+      AlbumImage?: SmugMugAlbumImageWire | SmugMugAlbumImageWire[];
+    }>(path)) {
+      for (const albumImage of asSmugMugList(page.AlbumImage)) {
         yield albumImage;
       }
     }
@@ -679,9 +716,35 @@ export class SmugMugApiClient {
     }
   }
 
+  /**
+   * OAuth-signed GET for private original/media URLs (and API endpoints).
+   * Hosts should prefer this over anonymous `fetch` when downloading vault images.
+   */
+  async fetchAuthenticated(
+    url: string,
+    options?: { accept?: string },
+  ): Promise<Response> {
+    return this.requestWithRetry(toAbsoluteUrl(url), {
+      accept: options?.accept ?? "*/*",
+    });
+  }
+
+  /** Convenience: signed GET → bytes (for MigrationSink `resolveAssetStream`). */
+  async fetchAuthenticatedBytes(
+    url: string,
+  ): Promise<{ body: Uint8Array; contentType: string | undefined; contentLength: number }> {
+    const response = await this.fetchAuthenticated(url);
+    const buffer = new Uint8Array(await response.arrayBuffer());
+    return {
+      body: buffer,
+      contentType: response.headers.get("content-type") ?? undefined,
+      contentLength: buffer.byteLength,
+    };
+  }
+
   private async requestJson<T>(pathOrUrl: string): Promise<SmugMugApiEnvelope<T>> {
     const url = toAbsoluteUrl(pathOrUrl);
-    const response = await this.requestWithRetry(url);
+    const response = await this.requestWithRetry(url, { accept: "application/json" });
     const body = (await response.json()) as SmugMugApiEnvelope<T>;
     if (body.Code !== 200) {
       throw new Error(`SmugMug API error ${body.Code}: ${body.Message}`);
@@ -689,8 +752,12 @@ export class SmugMugApiClient {
     return body;
   }
 
-  private async requestWithRetry(url: URL): Promise<Response> {
+  private async requestWithRetry(
+    url: URL,
+    options?: { accept?: string },
+  ): Promise<Response> {
     let attempt = 0;
+    const accept = options?.accept ?? "application/json";
     while (true) {
       await this.throttle();
       const authorization = buildSmugMugAuthorizationHeader({
@@ -701,7 +768,7 @@ export class SmugMugApiClient {
       const response = await this.fetchImpl(url, {
         method: "GET",
         headers: {
-          Accept: "application/json",
+          Accept: accept,
           Authorization: authorization,
         },
       });

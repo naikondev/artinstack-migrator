@@ -132,6 +132,7 @@ export {
   parseSmugMugOAuthFormBody,
   readSmugMugCredentialsFromEnv,
   resolveSmugMugUriLink,
+  asSmugMugList,
   signSmugMugOAuthRequest,
   smugMugConsumerCredentialsSchema,
   smugMugCredentialsSchema,
