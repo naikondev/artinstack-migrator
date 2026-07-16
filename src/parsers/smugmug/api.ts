@@ -79,26 +79,39 @@ export const smugMugClientOptionsSchema = z.object({
 
 export type SmugMugClientOptions = z.input<typeof smugMugClientOptionsSchema>;
 
+/**
+ * `album/{key}!images` returns AlbumImage objects. Expand keys must be AlbumImage
+ * URI names (see live `Uris.ImageSizeDetails`), not a nested `AlbumImage`/`Image` wrapper.
+ * Pair with `_expandmethod=inline` so expansions nest under `Uris.<Name>.<Locator>`.
+ * Do not filter ImageSizeDetails down to OriginalImageUrl only — owner tokens often
+ * expose ImageSizeOriginal / sized URLs without that single field.
+ */
 const ALBUM_IMAGES_CONFIG = {
   expand: {
-    AlbumImage: {
-      expand: {
-        Image: {
-          filter: ["FileName", "Caption", "KeywordsArray"],
-          filteruri: ["ImageMetadata", "ImageSizeDetails"],
-          expand: {
-            ImageMetadata: {
-              filter: ["ISO", "Aperture", "ApertureValue", "ShutterSpeed", "ExposureTime", "FocalLength"],
-            },
-            ImageSizeDetails: {
-              filter: ["OriginalImageUrl"],
-            },
-          },
-        },
-      },
+    ImageSizeDetails: {},
+    ImageMetadata: {
+      filter: ["ISO", "Aperture", "ApertureValue", "ShutterSpeed", "ExposureTime", "FocalLength"],
+    },
+    LargestImage: {
+      filter: ["Url"],
     },
   },
 };
+
+/** Prefer larger SmugMug size keys when OriginalImageUrl is absent (public API). */
+const SMUGMUG_SIZE_PREFERENCE = [
+  "ImageSizeOriginal",
+  "ImageSize5K",
+  "ImageSize4K",
+  "ImageSizeX5Large",
+  "ImageSizeX4Large",
+  "ImageSizeX3Large",
+  "ImageSizeX2Large",
+  "ImageSizeXLarge",
+  "ImageSizeLarge",
+  "ImageSizeMedium",
+  "ImageSizeSmall",
+] as const;
 
 /** Normalize SmugMug list payloads — one child is often a bare object, not an array. */
 export function asSmugMugList<T>(value: T | T[] | null | undefined): T[] {
@@ -148,25 +161,46 @@ interface SmugMugImageMetadataWire {
   FocalLength?: number | string;
 }
 
+interface SmugMugImageSizeDetailsWire {
+  OriginalImageUrl?: string;
+  ImageSizeOriginal?: { Url?: string };
+  LargestImageSize?: string;
+  UsableSizes?: string[];
+  [sizeKey: string]: unknown;
+}
+
 interface SmugMugImageWire {
   FileName?: string;
   Caption?: string;
   KeywordsArray?: string[];
+  KeywordArray?: string[];
   ImageMetadata?: SmugMugImageMetadataWire;
-  ImageSizeDetails?: {
-    OriginalImageUrl?: string;
-    ImageSizeOriginal?: { Url?: string };
-  };
+  ImageSizeDetails?: SmugMugImageSizeDetailsWire;
 }
+
+/** Inline expansion nest: `Uris.ImageSizeDetails.ImageSizeDetails` (expandmethod=inline). */
+type SmugMugInlineUri<T> = SmugMugUriLink | (Record<string, unknown> & { Uri?: string } & {
+  [locator: string]: T | string | undefined;
+});
 
 interface SmugMugAlbumImageWire {
   ImageKey: string;
   Caption?: string;
   FileName?: string;
   WebUri?: string;
+  /** CDN archive URL on AlbumImage (photos.smugmug.com/…); not the gallery WebUri. */
+  ArchivedUri?: string;
+  KeywordArray?: string[];
+  KeywordsArray?: string[];
   Image?: SmugMugImageWire;
   LargestImage?: { Url?: string };
   ImageMetadata?: SmugMugImageMetadataWire;
+  ImageSizeDetails?: SmugMugImageSizeDetailsWire;
+  Uris?: {
+    ImageSizeDetails?: SmugMugInlineUri<SmugMugImageSizeDetailsWire>;
+    LargestImage?: SmugMugInlineUri<{ Url?: string }>;
+    ImageMetadata?: SmugMugInlineUri<SmugMugImageMetadataWire>;
+  };
 }
 
 /** RFC 3986 encoding used by OAuth 1.0a parameter normalization. */
@@ -514,20 +548,95 @@ function nodeIdFromUri(uri: string): string {
   return match[1];
 }
 
+function unwrapInlineExpansion<T extends object>(
+  link: unknown,
+  locator: string,
+): T | undefined {
+  if (!link || typeof link !== "object") return undefined;
+  const record = link as Record<string, unknown>;
+  const nested = record[locator];
+  if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+    return nested as T;
+  }
+  return undefined;
+}
+
+function sizeUrlFromDetails(details: SmugMugImageSizeDetailsWire | undefined): string | undefined {
+  if (!details) return undefined;
+  if (typeof details.OriginalImageUrl === "string" && details.OriginalImageUrl.trim()) {
+    return details.OriginalImageUrl.trim();
+  }
+  if (typeof details.ImageSizeOriginal?.Url === "string" && details.ImageSizeOriginal.Url.trim()) {
+    return details.ImageSizeOriginal.Url.trim();
+  }
+
+  const preferredKeys = [
+    details.LargestImageSize,
+    ...(details.UsableSizes ?? []),
+    ...SMUGMUG_SIZE_PREFERENCE,
+  ].filter((key): key is string => typeof key === "string" && key.length > 0);
+
+  const seen = new Set<string>();
+  for (const key of preferredKeys) {
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const size = details[key];
+    if (size && typeof size === "object" && !Array.isArray(size)) {
+      const url = (size as { Url?: string }).Url;
+      if (typeof url === "string" && url.trim()) return url.trim();
+    }
+  }
+  return undefined;
+}
+
+function resolveAlbumImageDownloadUrl(albumImage: SmugMugAlbumImageWire): string | undefined {
+  const sizeDetails =
+    unwrapInlineExpansion<SmugMugImageSizeDetailsWire>(
+      albumImage.Uris?.ImageSizeDetails,
+      "ImageSizeDetails",
+    ) ??
+    albumImage.ImageSizeDetails ??
+    albumImage.Image?.ImageSizeDetails;
+
+  const fromSizes = sizeUrlFromDetails(sizeDetails);
+  if (fromSizes) return fromSizes;
+
+  const largestInline = unwrapInlineExpansion<{ Url?: string }>(
+    albumImage.Uris?.LargestImage,
+    "LargestImage",
+  );
+  const largestUrl = largestInline?.Url ?? albumImage.LargestImage?.Url;
+  if (typeof largestUrl === "string" && largestUrl.trim()) return largestUrl.trim();
+
+  // AlbumImage ArchivedUri is a photos.smugmug.com CDN URL — never fall back to WebUri
+  // (gallery HTML page like …/i-Lg46s9k).
+  if (typeof albumImage.ArchivedUri === "string" && albumImage.ArchivedUri.trim()) {
+    return albumImage.ArchivedUri.trim();
+  }
+
+  return undefined;
+}
+
 function mapAlbumImage(
   albumImage: SmugMugAlbumImageWire,
   portfolioSourceId: string,
   sort: number,
 ): SmugMugFlatImage {
   const image = albumImage.Image;
-  const metadata = image?.ImageMetadata ?? albumImage.ImageMetadata;
-  const sizeDetails = image?.ImageSizeDetails;
-  const originalUrl =
-    sizeDetails?.OriginalImageUrl ??
-    sizeDetails?.ImageSizeOriginal?.Url ??
-    albumImage.LargestImage?.Url ??
-    albumImage.WebUri;
+  const metadata =
+    unwrapInlineExpansion<SmugMugImageMetadataWire>(
+      albumImage.Uris?.ImageMetadata,
+      "ImageMetadata",
+    ) ??
+    albumImage.ImageMetadata ??
+    image?.ImageMetadata;
+  const originalUrl = resolveAlbumImageDownloadUrl(albumImage);
   const fileName = image?.FileName ?? albumImage.FileName;
+  const keywords =
+    (image?.KeywordsArray?.length ? image.KeywordsArray : undefined) ??
+    (image?.KeywordArray?.length ? image.KeywordArray : undefined) ??
+    (albumImage.KeywordsArray?.length ? albumImage.KeywordsArray : undefined) ??
+    (albumImage.KeywordArray?.length ? albumImage.KeywordArray : undefined);
   return {
     sourceId: albumImage.ImageKey,
     portfolioSourceId,
@@ -535,7 +644,7 @@ function mapAlbumImage(
     fileName,
     originalUrl,
     caption: albumImage.Caption ?? image?.Caption,
-    keywords: image?.KeywordsArray?.length ? image.KeywordsArray : undefined,
+    keywords,
     exif: metadata
       ? {
           iso: metadata.ISO,
@@ -678,7 +787,8 @@ export class SmugMugApiClient {
   ): Promise<void> {
     const albumKey = albumKeyFromUri(albumUri);
     const configQuery = `_config=${encodeURIComponent(JSON.stringify(ALBUM_IMAGES_CONFIG))}`;
-    const initialPath = `${SMUGMUG_API_BASE}/album/${albumKey}!images?${configQuery}`;
+    // Inline expansions nest under AlbumImage.Uris.<Name> (docs: expansions.html).
+    const initialPath = `${SMUGMUG_API_BASE}/album/${albumKey}!images?${configQuery}&_expandmethod=inline`;
 
     let sort = 0;
     for await (const albumImage of this.paginateAlbumImages(initialPath)) {

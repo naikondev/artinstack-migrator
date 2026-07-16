@@ -367,26 +367,19 @@ describe("SmugMug API client (OAuth + crawl)", () => {
     const imagesConfig = encodeURIComponent(
       JSON.stringify({
         expand: {
-          AlbumImage: {
-            expand: {
-              Image: {
-                filter: ["FileName", "Caption", "KeywordsArray"],
-                filteruri: ["ImageMetadata", "ImageSizeDetails"],
-                expand: {
-                  ImageMetadata: {
-                    filter: ["ISO", "Aperture", "ApertureValue", "ShutterSpeed", "ExposureTime", "FocalLength"],
-                  },
-                  ImageSizeDetails: { filter: ["OriginalImageUrl"] },
-                },
-              },
-            },
+          ImageSizeDetails: {},
+          ImageMetadata: {
+            filter: ["ISO", "Aperture", "ApertureValue", "ShutterSpeed", "ExposureTime", "FocalLength"],
+          },
+          LargestImage: {
+            filter: ["Url"],
           },
         },
       }),
     );
 
     responses.set(
-      `https://api.smugmug.com/api/v2/album/alb-key-1!images?_config=${imagesConfig}&count=100&start=1`,
+      `https://api.smugmug.com/api/v2/album/alb-key-1!images?_config=${imagesConfig}&_expandmethod=inline&count=100&start=1`,
       {
         Code: 200,
         Message: "Ok",
@@ -395,11 +388,27 @@ describe("SmugMug API client (OAuth + crawl)", () => {
             {
               ImageKey: "img-aurora",
               Caption: "Aurora",
-              Image: {
-                FileName: "aurora.jpg",
-                KeywordsArray: ["iceland"],
-                ImageSizeDetails: { OriginalImageUrl: "https://photos.smugmug.com/aurora.jpg" },
-                ImageMetadata: { ISO: 3200, Aperture: 2.8, ShutterSpeed: "15s", FocalLength: 24 },
+              FileName: "aurora.jpg",
+              KeywordArray: ["iceland"],
+              // Live API nests expansions under Uris with expandmethod=inline
+              Uris: {
+                ImageSizeDetails: {
+                  Uri: "/api/v2/image/img-aurora!sizedetails",
+                  Locator: "ImageSizeDetails",
+                  ImageSizeDetails: {
+                    OriginalImageUrl: "https://photos.smugmug.com/aurora.jpg",
+                  },
+                },
+                ImageMetadata: {
+                  Uri: "/api/v2/image/img-aurora!metadata",
+                  Locator: "ImageMetadata",
+                  ImageMetadata: {
+                    ISO: 3200,
+                    Aperture: 2.8,
+                    ShutterSpeed: "15s",
+                    FocalLength: 24,
+                  },
+                },
               },
             },
           ],
@@ -510,6 +519,8 @@ describe("SmugMug API client (OAuth + crawl)", () => {
         );
       }
       if (url.includes("/api/v2/album/alb-solo!images")) {
+        expect(url).toContain("_expandmethod=inline");
+        expect(url).toContain("_config=");
         return new Response(
           JSON.stringify({
             Code: 200,
@@ -517,9 +528,17 @@ describe("SmugMug API client (OAuth + crawl)", () => {
             Response: {
               AlbumImage: {
                 ImageKey: "img-1",
-                Image: {
-                  FileName: "one.jpg",
-                  ImageSizeDetails: { OriginalImageUrl: "https://photos.smugmug.com/one.jpg" },
+                FileName: "one.jpg",
+                WebUri: "https://demo.smugmug.com/Solo/i-img-1",
+                ArchivedUri: "https://photos.smugmug.com/archived/one.jpg",
+                Uris: {
+                  ImageSizeDetails: {
+                    Uri: "/api/v2/image/img-1!sizedetails",
+                    Locator: "ImageSizeDetails",
+                    ImageSizeDetails: {
+                      OriginalImageUrl: "https://photos.smugmug.com/one.jpg",
+                    },
+                  },
                 },
               },
               Pages: { Total: 1, Start: 1, Count: 1 },
@@ -540,6 +559,90 @@ describe("SmugMug API client (OAuth + crawl)", () => {
     expect(exportDoc.Albums).toHaveLength(1);
     expect(exportDoc.Images).toHaveLength(1);
     expect(exportDoc.Images[0]?.originalUrl).toBe("https://photos.smugmug.com/one.jpg");
+  });
+
+  it("prefers ArchivedUri over gallery WebUri when size details omit originals", async () => {
+    const fetchImpl: typeof fetch = async (input) => {
+      const url =
+        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+      if (url === "https://api.smugmug.com/api/v2!authuser") {
+        return new Response(
+          JSON.stringify({
+            Code: 200,
+            Message: "Ok",
+            Response: {
+              User: {
+                NickName: "demo",
+                Uri: "/api/v2/user/demo",
+                Uris: { Node: { Uri: "/api/v2/node/root" } },
+              },
+            },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (url.startsWith("https://api.smugmug.com/api/v2/node/root!children")) {
+        return new Response(
+          JSON.stringify({
+            Code: 200,
+            Message: "Ok",
+            Response: {
+              Node: {
+                NodeID: "album-a",
+                Type: "Album",
+                Name: "A",
+                Uri: "/api/v2/node/album-a",
+                Uris: { Album: { Uri: "/api/v2/album/alb-a" } },
+              },
+              Pages: { Total: 1, Start: 1, Count: 1 },
+            },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (url.includes("/api/v2/album/alb-a!images")) {
+        return new Response(
+          JSON.stringify({
+            Code: 200,
+            Message: "Ok",
+            Response: {
+              AlbumImage: {
+                ImageKey: "img-page-only",
+                FileName: "page-fallback.jpg",
+                WebUri: "https://demo.smugmug.com/A/i-img-page-only",
+                ArchivedUri: "https://photos.smugmug.com/archive/page-fallback.jpg",
+                Uris: {
+                  ImageSizeDetails: {
+                    Uri: "/api/v2/image/img-page-only!sizedetails",
+                    Locator: "ImageSizeDetails",
+                    ImageSizeDetails: {
+                      UsableSizes: ["ImageSizeLarge"],
+                      ImageSizeLarge: {
+                        Url: "https://photos.smugmug.com/sizes/page-fallback-L.jpg",
+                      },
+                    },
+                  },
+                },
+              },
+              Pages: { Total: 1, Start: 1, Count: 1 },
+            },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      return new Response(`missing mock for ${url}`, { status: 404 });
+    };
+
+    const client = new SmugMugApiClient({
+      credentials,
+      fetchImpl,
+      requestIntervalMs: 0,
+    });
+    const exportDoc = await client.crawlExport();
+    expect(exportDoc.Images[0]?.originalUrl).toBe(
+      "https://photos.smugmug.com/sizes/page-fallback-L.jpg",
+    );
+    expect(exportDoc.Images[0]?.originalUrl).not.toContain("demo.smugmug.com");
   });
 
   it("signs private media downloads via fetchAuthenticatedBytes", async () => {
