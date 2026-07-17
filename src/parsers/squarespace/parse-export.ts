@@ -8,6 +8,7 @@ import type {
   NormalizedCategory,
   NormalizedEntity,
   NormalizedPage,
+  NormalizedPortfolio,
   NormalizedPost,
   NormalizedTag,
   PublishStatus,
@@ -21,6 +22,7 @@ import {
 import type {
   SquarespaceBlock,
   SquarespaceExport,
+  SquarespaceGalleryCollection,
   SquarespaceGalleryItem,
   SquarespacePage,
   SquarespacePost,
@@ -311,6 +313,149 @@ function assetFromUrl(
   };
 }
 
+/** Stable portfolio id for a Squarespace gallery block (host idempotency key). */
+export function galleryPortfolioSourceId(
+  parentSourceId: string,
+  block: SquarespaceBlock,
+  galleryIndex: number,
+): string {
+  const blockId = block.id?.trim();
+  if (blockId) return `gallery:${blockId}`;
+  return `gallery:${parentSourceId}:${galleryIndex}`;
+}
+
+function countGalleryPortfolios(blocks: SquarespaceBlock[] | undefined): number {
+  if (!blocks?.length) return 0;
+  return blocks.filter(
+    (block) => block.type.toLowerCase() === "gallery" && (block.items?.length ?? 0) > 0,
+  ).length;
+}
+
+function collectGalleryImageUrls(blocks: SquarespaceBlock[] | undefined): Set<string> {
+  const urls = new Set<string>();
+  if (!blocks?.length) return urls;
+  for (const block of blocks) {
+    if (block.type.toLowerCase() !== "gallery") continue;
+    for (const item of block.items ?? []) {
+      if (item.imageUrl) urls.add(item.imageUrl);
+    }
+  }
+  return urls;
+}
+
+function galleryAssetSourceId(
+  portfolioSourceId: string,
+  item: SquarespaceGalleryItem,
+  sort: number,
+): string {
+  const itemId = item.id?.trim();
+  if (itemId) return itemId;
+  return `${portfolioSourceId}:${sort}`;
+}
+
+/**
+ * Emit one `NormalizedPortfolio` per non-empty gallery block, plus linked assets
+ * with `portfolioSourceId` + `sort` for `buildPortfolioMediaLinks()`.
+ */
+export function* emitGalleriesFromBlocks(
+  blocks: SquarespaceBlock[] | undefined,
+  parent: { sourceId: string; title: string; url?: string },
+  exportedAt?: string,
+): Generator<NormalizedEntity> {
+  if (!blocks?.length) return;
+
+  const nonEmptyGalleries = blocks.filter(
+    (block) => block.type.toLowerCase() === "gallery" && (block.items?.length ?? 0) > 0,
+  );
+  if (nonEmptyGalleries.length === 0) return;
+
+  let galleryIndex = 0;
+  for (const block of blocks) {
+    if (block.type.toLowerCase() !== "gallery") continue;
+    const items = (block.items ?? []).filter((item) => Boolean(item.imageUrl?.trim()));
+    if (items.length === 0) continue;
+
+    const sourceId = galleryPortfolioSourceId(parent.sourceId, block, galleryIndex);
+    const slugBase = block.id?.trim()
+      ? sanitizeSlug(block.id)
+      : sanitizeSlug(`gallery-${galleryIndex + 1}`);
+    const title =
+      nonEmptyGalleries.length === 1
+        ? parent.title
+        : `${parent.title} — Gallery ${galleryIndex + 1}`;
+
+    yield {
+      type: "portfolio",
+      source: sourceMeta(sourceId, parent.url, exportedAt),
+      sourceId,
+      title,
+      slug: slugBase.startsWith("gallery") ? slugBase : `gallery-${slugBase}`,
+    } satisfies NormalizedPortfolio;
+
+    yield* emitGalleryAssets(sourceId, items, exportedAt);
+
+    galleryIndex += 1;
+  }
+}
+
+/** Stable portfolio id for a standalone gallery collection page. */
+export function galleryCollectionPortfolioSourceId(collectionId: string): string {
+  return `gallery-collection:${collectionId}`;
+}
+
+function* emitGalleryAssets(
+  portfolioSourceId: string,
+  items: SquarespaceGalleryItem[],
+  exportedAt?: string,
+): Generator<NormalizedAsset> {
+  for (let sort = 0; sort < items.length; sort++) {
+    const item = items[sort]!;
+    const assetSourceId = galleryAssetSourceId(portfolioSourceId, item, sort);
+    const filename = filenameFromUrl(item.imageUrl, `${assetSourceId}.jpg`);
+    yield {
+      type: "asset",
+      source: sourceMeta(assetSourceId, item.imageUrl, exportedAt),
+      sourceId: assetSourceId,
+      sourceUrl: item.imageUrl,
+      filename,
+      mimeType: guessMime(filename),
+      caption: item.caption,
+      altText: item.altText,
+      portfolioSourceId,
+      sort,
+    } satisfies NormalizedAsset;
+  }
+}
+
+/**
+ * Emit one `NormalizedPortfolio` per non-empty top-level gallery collection
+ * (json-pretty gallery pages), plus linked ordered assets.
+ */
+export function* emitGalleryCollections(
+  galleries: SquarespaceGalleryCollection[] | undefined,
+  exportedAt?: string,
+): Generator<NormalizedEntity> {
+  if (!galleries?.length) return;
+
+  for (const gallery of galleries) {
+    const items = gallery.items.filter((item) => Boolean(item.imageUrl?.trim()));
+    if (items.length === 0) continue;
+
+    const sourceId = galleryCollectionPortfolioSourceId(gallery.id);
+    const slugBase = sanitizeSlug(gallery.slug || gallery.id);
+    yield {
+      type: "portfolio",
+      source: sourceMeta(sourceId, gallery.url, exportedAt),
+      sourceId,
+      title: gallery.title,
+      slug: slugBase.startsWith("gallery") ? slugBase : `gallery-${slugBase}`,
+      description: gallery.description,
+    } satisfies NormalizedPortfolio;
+
+    yield* emitGalleryAssets(sourceId, items, exportedAt);
+  }
+}
+
 export function isSquarespaceExport(value: unknown): value is SquarespaceExport {
   if (!value || typeof value !== "object") return false;
   const record = value as SquarespaceExport;
@@ -344,8 +489,9 @@ function* emitAssetsFromContent(
   contentHtml: string,
   explicitUrls: string[],
   exportedAt?: string,
+  excludeUrls?: Set<string>,
 ): Generator<NormalizedAsset> {
-  const seen = new Set<string>();
+  const seen = new Set<string>(excludeUrls ?? []);
   const urls = [...explicitUrls, ...discoverContentAssetUrls(contentHtml)];
   let index = 0;
   for (const url of urls) {
@@ -372,7 +518,14 @@ async function* emitPage(page: SquarespacePage, exportedAt?: string): AsyncGener
     seoDescription: page.seoDescription,
   } satisfies NormalizedPage;
 
-  yield* emitAssetsFromContent(contentHtml, assetUrls, exportedAt);
+  yield* emitGalleriesFromBlocks(
+    page.blocks,
+    { sourceId: page.id, title: page.title, url: page.url },
+    exportedAt,
+  );
+
+  const galleryUrls = collectGalleryImageUrls(page.blocks);
+  yield* emitAssetsFromContent(contentHtml, assetUrls, exportedAt, galleryUrls);
 }
 
 async function* emitPost(post: SquarespacePost, exportedAt?: string): AsyncGenerator<NormalizedEntity> {
@@ -412,7 +565,14 @@ async function* emitPost(post: SquarespacePost, exportedAt?: string): AsyncGener
     } satisfies NormalizedAsset;
   }
 
-  yield* emitAssetsFromContent(contentHtml, assetUrls, exportedAt);
+  yield* emitGalleriesFromBlocks(
+    post.blocks,
+    { sourceId: post.id, title: post.title, url: post.url },
+    exportedAt,
+  );
+
+  const galleryUrls = collectGalleryImageUrls(post.blocks);
+  yield* emitAssetsFromContent(contentHtml, assetUrls, exportedAt, galleryUrls);
 }
 
 /** Parse Squarespace JSON export → normalizer DTOs (static HTML snapshots). */
@@ -449,6 +609,15 @@ export async function* enumerateSquarespaceEntities(
   for (const post of doc.posts ?? []) {
     yield* emitPost(post, exportedAt);
   }
+
+  yield* emitGalleryCollections(doc.galleries, exportedAt);
+}
+
+function countCollectionPortfolios(galleries: SquarespaceGalleryCollection[] | undefined): number {
+  if (!galleries?.length) return 0;
+  return galleries.filter((gallery) =>
+    gallery.items.some((item) => Boolean(item.imageUrl?.trim())),
+  ).length;
 }
 
 export function summarizeSquarespaceExport(doc: SquarespaceExport): {
@@ -456,12 +625,22 @@ export function summarizeSquarespaceExport(doc: SquarespaceExport): {
   posts: number;
   categories: number;
   tags: number;
+  portfolios: number;
 } {
+  let portfolios = 0;
+  for (const page of doc.pages) {
+    portfolios += countGalleryPortfolios(page.blocks);
+  }
+  for (const post of doc.posts ?? []) {
+    portfolios += countGalleryPortfolios(post.blocks);
+  }
+  portfolios += countCollectionPortfolios(doc.galleries);
   return {
     pages: doc.pages.length,
     posts: doc.posts?.length ?? 0,
     categories: doc.categories?.length ?? 0,
     tags: doc.tags?.length ?? 0,
+    portfolios,
   };
 }
 
@@ -500,7 +679,7 @@ export async function validateSquarespaceExportFile(filePath: string): Promise<{
       posts: summary.posts,
       categories: summary.categories,
       tags: summary.tags,
-      portfolios: 0,
+      portfolios: summary.portfolios,
       assets: 0,
     },
   };

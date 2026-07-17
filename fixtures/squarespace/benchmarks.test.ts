@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { collectEntities, bundleCounts } from "../../src/normalizer/bundle.js";
+import { buildPortfolioMediaLinks } from "../../src/normalizer/portfolio-media.js";
 import { squarespaceAdapter } from "../../src/parsers/squarespace/index.js";
 import {
   flattenSquarespaceBlock,
@@ -44,7 +45,7 @@ describe("M0c Squarespace benchmark fixtures", () => {
     expect(results.every((r) => r.ok), JSON.stringify(results, null, 2)).toBe(true);
   });
 
-  it("creative-studio-site: pages, posts, assets, unsupported blocks", async () => {
+  it("creative-studio-site: pages, posts, gallery portfolios, assets, unsupported blocks", async () => {
     const bundle = await collectEntities(
       squarespaceAdapter.enumerateEntities({
         input: { path: join(FIXTURES_ROOT, "creative-studio-site.json") },
@@ -56,7 +57,8 @@ describe("M0c Squarespace benchmark fixtures", () => {
       posts: 2,
       categories: 2,
       tags: 2,
-      assets: 5,
+      assets: 8,
+      portfolios: 2,
     });
 
     const home = bundle.pages.find((p) => p.isHomePage);
@@ -65,6 +67,30 @@ describe("M0c Squarespace benchmark fixtures", () => {
     const post = bundle.posts.find((p) => p.sourceId === "post-desert-light");
     expect(post?.featuredAssetSourceId).toBe("featured-post-desert-light");
     expect(post?.categorySlugs).toContain("travel");
+    expect(post?.contentHtml).toContain("sqs-gallery");
+
+    expect(bundle.portfolios).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceId: "gallery:block-post-gallery",
+          title: "Desert Light Study",
+        }),
+        expect.objectContaining({
+          sourceId: "gallery-collection:col-selected-works",
+          title: "Selected Works",
+          slug: "gallery-selected-works",
+        }),
+      ]),
+    );
+
+    const links = buildPortfolioMediaLinks(bundle);
+    expect(links).toEqual([
+      { portfolioSourceId: "gallery-collection:col-selected-works", assetSourceId: "sw-1", sort: 0 },
+      { portfolioSourceId: "gallery-collection:col-selected-works", assetSourceId: "sw-2", sort: 1 },
+      { portfolioSourceId: "gallery-collection:col-selected-works", assetSourceId: "sw-3", sort: 2 },
+      { portfolioSourceId: "gallery:block-post-gallery", assetSourceId: "gal-1", sort: 0 },
+      { portfolioSourceId: "gallery:block-post-gallery", assetSourceId: "gal-2", sort: 1 },
+    ]);
 
     const conflicts = analyzeConflicts(bundle);
     expect(conflicts.unsupportedBlocks.some((b) => b.blockType === "product")).toBe(true);

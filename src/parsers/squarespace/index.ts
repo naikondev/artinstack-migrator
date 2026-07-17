@@ -49,6 +49,7 @@ export const squarespaceAdapter: MigrationAdapter = {
             posts: summary.posts,
             categories: summary.categories,
             tags: summary.tags,
+            portfolios: summary.portfolios,
           },
         };
       }
@@ -69,6 +70,7 @@ export const squarespaceAdapter: MigrationAdapter = {
             posts: summary.posts,
             categories: summary.categories,
             tags: summary.tags,
+            portfolios: summary.portfolios,
           },
         };
       }
@@ -104,14 +106,15 @@ export const squarespaceAdapter: MigrationAdapter = {
   },
 };
 
-export type { SquarespaceExport } from "./types.js";
 export {
   SQUARESPACE_JSON_FORMAT,
   SquarespaceCollectionClient,
   buildJsonPrettyUrl,
   extractBlocksFromBodyHtml,
   inferBlockTypeFromClassName,
+  isGalleryCollection,
   mapJsonPrettyWire,
+  mapWireGalleryItem,
   mergeSquarespaceExportPartials,
   squarespaceClientOptionsSchema,
 } from "./collect.js";
@@ -119,12 +122,21 @@ export type { SquarespaceClientOptions, SquarespaceCollectTarget } from "./colle
 export {
   SUPPORTED_BLOCK_TYPES,
   UNSUPPORTED_BLOCK_TYPES,
+  emitGalleriesFromBlocks,
+  emitGalleryCollections,
   enumerateSquarespaceEntities,
   findUnsupportedBlockMarkers,
   flattenSquarespaceBlock,
   flattenSquarespaceBlocks,
+  galleryCollectionPortfolioSourceId,
+  galleryPortfolioSourceId,
   isSquarespaceExport,
   loadSquarespaceExport,
   summarizeSquarespaceExport,
   validateSquarespaceExportFile,
 } from "./parse-export.js";
+export type {
+  SquarespaceExport,
+  SquarespaceGalleryCollection,
+  SquarespaceGalleryItem,
+} from "./types.js";

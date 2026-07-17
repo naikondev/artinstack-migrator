@@ -20,6 +20,7 @@ export interface SquarespaceManifestFixture {
     categories: number;
     tags: number;
     assets: number;
+    portfolios?: number;
   };
   gates?: string[];
   dryRunExitCode?: number;
@@ -87,6 +88,31 @@ export async function validateSquarespaceFixture(
     const types = new Set(conflicts.unsupportedBlocks.map((b) => b.blockType));
     if (!types.has("product") || !types.has("form")) {
       errors.push("unsupported_blocks: missing product or form block flags");
+    }
+  }
+
+  if (gates.includes("gallery_portfolios")) {
+    if (bundle.portfolios.length < 1) {
+      errors.push(
+        "gallery_portfolios: expected at least one portfolio from gallery blocks or collections",
+      );
+    }
+    const linked = bundle.media.filter((asset) => asset.portfolioSourceId);
+    if (linked.length < 1) {
+      errors.push("gallery_portfolios: expected gallery assets with portfolioSourceId");
+    }
+    const missingSort = linked.some((asset) => asset.sort === undefined);
+    if (missingSort) {
+      errors.push("gallery_portfolios: gallery assets must include sort order");
+    }
+    const hasBlock = bundle.portfolios.some((p) => p.sourceId.startsWith("gallery:"));
+    const hasCollection = bundle.portfolios.some((p) =>
+      p.sourceId.startsWith("gallery-collection:"),
+    );
+    if (!hasBlock || !hasCollection) {
+      errors.push(
+        "gallery_portfolios: expected both gallery block (`gallery:…`) and collection (`gallery-collection:…`) portfolios",
+      );
     }
   }
 

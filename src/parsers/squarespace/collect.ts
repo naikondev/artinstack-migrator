@@ -6,6 +6,7 @@ import type {
   SquarespaceBlock,
   SquarespaceCategory,
   SquarespaceExport,
+  SquarespaceGalleryCollection,
   SquarespaceGalleryItem,
   SquarespacePage,
   SquarespacePost,
@@ -272,11 +273,89 @@ function isBlogCollection(collection: WireRecord | undefined): boolean {
   return typeName.includes("blog");
 }
 
+/** Gallery / portfolio collection pages — items are media, not blog posts. */
+export function isGalleryCollection(collection: WireRecord | undefined): boolean {
+  if (!collection) return false;
+  if (isBlogCollection(collection)) return false;
+  const typeName = String(collection.typeName ?? "").toLowerCase();
+  const typeLabel = String(collection.typeLabel ?? "").toLowerCase();
+  return (
+    typeName.includes("gallery") ||
+    typeLabel.includes("gallery") ||
+    typeName === "portfolio" ||
+    typeLabel === "portfolio"
+  );
+}
+
 function isStaticPageItem(item: WireRecord, collection: WireRecord | undefined): boolean {
   const recordTypeLabel = String(item.recordTypeLabel ?? "").toLowerCase();
   if (recordTypeLabel.includes("page")) return true;
   const collectionType = String(collection?.typeName ?? collection?.typeLabel ?? "").toLowerCase();
   return collectionType === "page" || collectionType.includes("page-collection");
+}
+
+function stripSimpleHtml(value: string): string {
+  return value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+/** Map one json-pretty gallery-collection item → export gallery item. */
+export function mapWireGalleryItem(item: WireRecord): SquarespaceGalleryItem | undefined {
+  const resolved =
+    typeof item.assetUrl === "string" && item.assetUrl.trim()
+      ? item.assetUrl.trim()
+      : typeof item.imageUrl === "string" && item.imageUrl.trim()
+        ? item.imageUrl.trim()
+        : "";
+  if (!resolved.startsWith("http")) return undefined;
+
+  const rawCaption =
+    typeof item.body === "string"
+      ? stripSimpleHtml(item.body)
+      : typeof item.excerpt === "string"
+        ? item.excerpt.trim()
+        : typeof item.caption === "string"
+          ? item.caption.trim()
+          : undefined;
+
+  return {
+    id: String(item.id ?? item.systemDataId ?? item.urlId ?? ""),
+    imageUrl: resolved,
+    altText:
+      typeof item.altText === "string"
+        ? item.altText
+        : typeof item.title === "string"
+          ? item.title
+          : undefined,
+    caption: rawCaption || undefined,
+  };
+}
+
+function mapWireGalleryCollection(
+  collection: WireRecord,
+  items: WireRecord[],
+  context?: { fetchedUrl?: string },
+): SquarespaceGalleryCollection {
+  const id = String(collection.id ?? collection.urlId ?? collection.fullUrl ?? "gallery");
+  const title = String(collection.title ?? collection.navigationTitle ?? "Gallery");
+  const slug = sanitizeSlug(String(collection.urlId ?? collection.title ?? id));
+  const galleryItems = items
+    .map((item) => mapWireGalleryItem(item))
+    .filter((item): item is SquarespaceGalleryItem => !!item);
+
+  return {
+    id,
+    title,
+    slug,
+    url:
+      typeof collection.fullUrl === "string"
+        ? collection.fullUrl
+        : context?.fetchedUrl,
+    description:
+      typeof collection.description === "string"
+        ? stripSimpleHtml(collection.description)
+        : undefined,
+    items: galleryItems,
+  };
 }
 
 function mapWireItemToPost(item: WireRecord): SquarespacePost {
@@ -369,6 +448,7 @@ export function mapJsonPrettyWire(
     site: siteFromWire(wire),
     pages: [],
     posts: [],
+    galleries: [],
     categories: mapWireCategories(collection),
     tags: [],
   };
@@ -377,6 +457,11 @@ export function mapJsonPrettyWire(
     const itemRecords = wire.items
       .map((entry) => asRecord(entry))
       .filter((entry): entry is WireRecord => !!entry);
+
+    if (collection && isGalleryCollection(collection)) {
+      partial.galleries = [mapWireGalleryCollection(collection, itemRecords, context)];
+      return partial;
+    }
 
     partial.tags = mapWireTags(itemRecords);
 
@@ -402,6 +487,11 @@ export function mapJsonPrettyWire(
       partial.posts!.push(mapWireItemToPost(item));
       partial.tags = mapWireTags([item]);
     }
+    return partial;
+  }
+
+  if (collection && isGalleryCollection(collection)) {
+    partial.galleries = [mapWireGalleryCollection(collection, [], context)];
     return partial;
   }
 
@@ -450,6 +540,7 @@ export function mergeSquarespaceExportPartials(
     exportedAt: new Date().toISOString(),
     pages: [],
     posts: [],
+    galleries: [],
     categories: [],
     tags: [],
   };
@@ -458,12 +549,14 @@ export function mergeSquarespaceExportPartials(
     if (partial.site) merged.site = { ...merged.site, ...partial.site };
     merged.pages.push(...(partial.pages ?? []));
     merged.posts!.push(...(partial.posts ?? []));
+    merged.galleries!.push(...(partial.galleries ?? []));
     merged.categories!.push(...(partial.categories ?? []));
     merged.tags!.push(...(partial.tags ?? []));
   }
 
   merged.pages = dedupeById(merged.pages);
   merged.posts = dedupeById(merged.posts ?? []);
+  merged.galleries = dedupeById(merged.galleries ?? []);
   merged.categories = dedupeBySlug(merged.categories ?? []);
   merged.tags = dedupeBySlug(merged.tags ?? []);
   return merged;

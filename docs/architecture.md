@@ -370,10 +370,10 @@ Use bounded concurrency (e.g. 4–8 parallel uploads) per import to respect API 
 | Blog posts | `NormalizedPost` |
 | Static pages | `NormalizedPage` |
 | Block JSON | Flatten to `contentHtml` + minimal CSS, or map to structured component tree |
-| Galleries | `NormalizedAsset` rows from gallery/image blocks |
+| Galleries | `NormalizedPortfolio` (+ linked assets with `portfolioSourceId` / `sort`); page/post **gallery blocks** keep inline HTML; standalone **gallery collection** pages (`?format=json-pretty`) map to `galleries[]` → `gallery-collection:{id}` |
 | Unsupported blocks | Placeholder markers → `conflicts.unsupportedBlocks[]` |
 
-**Export format:** JSON (`exportVersion: 1`) with `pages[]` / `posts[]` and either `blocks[]` or pre-rendered `contentHtml`. Parser: `src/parsers/squarespace/parse-export.ts`.
+**Export format:** JSON (`exportVersion: 1`) with `pages[]` / `posts[]` / optional `galleries[]`, and either `blocks[]` or pre-rendered `contentHtml`. Parser: `src/parsers/squarespace/parse-export.ts`.
 
 **Live collection (public package):** `src/parsers/squarespace/collect.ts` appends `?format=json-pretty`, maps wire JSON → `SquarespaceExport`, and paginates collection lists. **No cookies or API keys in the package** — the host injects an authenticated `fetch` (session cookies, proxy, etc.).
 

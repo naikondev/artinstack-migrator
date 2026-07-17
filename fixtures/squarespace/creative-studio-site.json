@@ -124,5 +124,30 @@
       "tagSlugs": ["film"],
       "contentHtml": "<p>Static snapshot page with pre-rendered HTML and an inline image.</p><img src=\"https://images.squarespace-cdn.com/content/v1/contact-sheet.jpg\" alt=\"Contact sheet\" />"
     }
+  ],
+  "galleries": [
+    {
+      "id": "col-selected-works",
+      "title": "Selected Works",
+      "slug": "selected-works",
+      "url": "https://creative-studio.example/selected-works",
+      "description": "A curated gallery collection page.",
+      "items": [
+        {
+          "id": "sw-1",
+          "imageUrl": "https://images.squarespace-cdn.com/content/v1/selected-01.jpg",
+          "caption": "Frame one"
+        },
+        {
+          "id": "sw-2",
+          "imageUrl": "https://images.squarespace-cdn.com/content/v1/selected-02.jpg",
+          "altText": "Frame two"
+        },
+        {
+          "id": "sw-3",
+          "imageUrl": "https://images.squarespace-cdn.com/content/v1/selected-03.jpg"
+        }
+      ]
+    }
   ]
 }

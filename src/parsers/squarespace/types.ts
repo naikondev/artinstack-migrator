@@ -65,12 +65,24 @@ export interface SquarespaceTag {
   slug: string;
 }
 
+/** Standalone gallery collection page (`?format=json-pretty` on a gallery URL). */
+export interface SquarespaceGalleryCollection {
+  id: string;
+  title: string;
+  slug: string;
+  url?: string;
+  description?: string;
+  items: SquarespaceGalleryItem[];
+}
+
 export interface SquarespaceExport {
   exportVersion: string | number;
   exportedAt?: string;
   site?: { url?: string; title?: string };
   pages: SquarespacePage[];
   posts?: SquarespacePost[];
+  /** Top-level gallery collections (not embedded page/post blocks). */
+  galleries?: SquarespaceGalleryCollection[];
   categories?: SquarespaceCategory[];
   tags?: SquarespaceTag[];
 }

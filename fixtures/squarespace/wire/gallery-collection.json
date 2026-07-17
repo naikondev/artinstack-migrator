@@ -1,0 +1,42 @@
+{
+  "website": {
+    "authenticUrl": "https://creative-studio.example",
+    "siteTitle": "Creative Studio"
+  },
+  "collection": {
+    "id": "col-selected-works",
+    "typeName": "gallery",
+    "typeLabel": "Gallery",
+    "title": "Selected Works",
+    "urlId": "selected-works",
+    "fullUrl": "https://creative-studio.example/selected-works",
+    "description": "<p>A curated gallery collection page.</p>"
+  },
+  "pagination": {
+    "nextPage": false
+  },
+  "items": [
+    {
+      "id": "sw-1",
+      "urlId": "frame-one",
+      "title": "Frame one",
+      "fullUrl": "https://creative-studio.example/selected-works/frame-one",
+      "assetUrl": "https://images.squarespace-cdn.com/content/v1/selected-01.jpg",
+      "body": "<p>Frame one</p>"
+    },
+    {
+      "id": "sw-2",
+      "urlId": "frame-two",
+      "title": "Frame two",
+      "fullUrl": "https://creative-studio.example/selected-works/frame-two",
+      "assetUrl": "https://images.squarespace-cdn.com/content/v1/selected-02.jpg"
+    },
+    {
+      "id": "sw-3",
+      "urlId": "frame-three",
+      "title": "Frame three",
+      "fullUrl": "https://creative-studio.example/selected-works/frame-three",
+      "assetUrl": "https://images.squarespace-cdn.com/content/v1/selected-03.jpg"
+    }
+  ]
+}
