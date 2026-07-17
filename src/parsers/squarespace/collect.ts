@@ -26,6 +26,11 @@ export const squarespaceClientOptionsSchema = z.object({
   retryBaseDelayMs: z.number().int().min(0).default(500),
   maxRetryDelayMs: z.number().int().min(0).default(8000),
   requestIntervalMs: z.number().int().min(0).default(200),
+  /**
+   * When json-pretty yields an empty classic layout (common on 7.1 section pages),
+   * fetch the rendered HTML once and parse `.sqs-block` content from `#sections`.
+   */
+  htmlFallback: z.boolean().default(true),
   fetchImpl: z.custom<typeof fetch>().optional(),
 });
 
@@ -100,6 +105,52 @@ export function inferBlockTypeFromClassName(className: string): string {
   const raw = match[1].toLowerCase();
   if (raw === "horizontalrule") return "line";
   return raw.replace(/-block$/g, "");
+}
+
+/** True when json-pretty `mainContent` is an empty classic LayoutEngine shell. */
+export function isEmptyClassicMainContent(html: string | undefined): boolean {
+  if (!html?.trim()) return true;
+  const $ = cheerio.load(html, { xml: false });
+  if ($(".sqs-block").length > 0) return false;
+  if ($(".sqs-layout.empty").length > 0) return true;
+  // Tiny shells with no blocks are not usable page bodies.
+  return html.replace(/\s+/g, " ").trim().length < 280;
+}
+
+/** True when an export page has no blocks and no usable contentHtml. */
+export function pageContentIsEmpty(page: Pick<SquarespacePage, "blocks" | "contentHtml">): boolean {
+  if ((page.blocks?.length ?? 0) > 0) return false;
+  return isEmptyClassicMainContent(page.contentHtml);
+}
+
+/**
+ * Pull the primary page body from a rendered Squarespace HTML document.
+ * Prefers 7.1 `#sections` / `article.sections`, then `main`.
+ */
+export function extractPageBodyHtml(html: string): string {
+  if (!html.trim()) return "";
+  const $ = cheerio.load(html, { xml: false });
+  const sections = $("#sections").first();
+  if (sections.length) return sections.html() ?? "";
+  const article = $("article.sections").first();
+  if (article.length) return article.html() ?? "";
+  const main = $("main#page, main[role='main'], main").first();
+  if (main.length) return main.html() ?? "";
+  return "";
+}
+
+/** Map rendered page HTML into export `blocks` / `contentHtml`. */
+export function extractPageContentFromHtml(
+  html: string,
+): Pick<SquarespacePage, "blocks" | "contentHtml"> {
+  const body = extractPageBodyHtml(html);
+  if (!body.trim()) return { contentHtml: "" };
+
+  const parsedBlocks = extractBlocksFromBodyHtml(body);
+  if (parsedBlocks.length > 0) {
+    return { blocks: parsedBlocks };
+  }
+  return { contentHtml: body };
 }
 
 /** Parse rendered `body` HTML into block entries when wire JSON has no structured blocks. */
@@ -346,10 +397,10 @@ function mapWireGalleryCollection(
     id,
     title,
     slug,
-    url:
-      typeof collection.fullUrl === "string"
-        ? collection.fullUrl
-        : context?.fetchedUrl,
+    url: resolveAbsoluteUrl(
+      typeof collection.fullUrl === "string" ? collection.fullUrl : undefined,
+      context?.fetchedUrl,
+    ),
     description:
       typeof collection.description === "string"
         ? stripSimpleHtml(collection.description)
@@ -358,13 +409,16 @@ function mapWireGalleryCollection(
   };
 }
 
-function mapWireItemToPost(item: WireRecord): SquarespacePost {
+function mapWireItemToPost(item: WireRecord, options?: { fallbackUrl?: string }): SquarespacePost {
   const content = mapWireItemContent(item);
   return {
     id: String(item.id ?? item.systemDataId ?? item.urlId ?? ""),
     title: String(item.title ?? "Untitled"),
     slug: sanitizeSlug(String(item.urlId ?? item.title ?? item.id ?? "post")),
-    url: typeof item.fullUrl === "string" ? item.fullUrl : undefined,
+    url: resolveAbsoluteUrl(
+      typeof item.fullUrl === "string" ? item.fullUrl : undefined,
+      options?.fallbackUrl,
+    ),
     excerpt: typeof item.excerpt === "string" ? item.excerpt : undefined,
     publishedAt: mapPublishOn(item.publishOn ?? item.addedOn),
     status: mapWorkflowState(item.workflowState),
@@ -377,6 +431,20 @@ function mapWireItemToPost(item: WireRecord): SquarespacePost {
   };
 }
 
+function resolveAbsoluteUrl(
+  raw: string | undefined,
+  fallback?: string,
+): string | undefined {
+  const candidate = raw?.trim() || fallback?.trim();
+  if (!candidate) return undefined;
+  try {
+    if (fallback) return new URL(candidate, fallback).toString();
+    return new URL(candidate).toString();
+  } catch {
+    return candidate.startsWith("http") ? candidate : undefined;
+  }
+}
+
 function mapWireItemToPage(
   item: WireRecord,
   options?: { isHomePage?: boolean; fallbackUrl?: string },
@@ -386,10 +454,10 @@ function mapWireItemToPage(
     id: String(item.id ?? item.urlId ?? ""),
     title: String(item.title ?? "Untitled"),
     slug: sanitizeSlug(String(item.urlId ?? item.title ?? item.id ?? "page")),
-    url:
-      typeof item.fullUrl === "string"
-        ? item.fullUrl
-        : options?.fallbackUrl,
+    url: resolveAbsoluteUrl(
+      typeof item.fullUrl === "string" ? item.fullUrl : undefined,
+      options?.fallbackUrl,
+    ),
     status: mapWorkflowState(item.workflowState),
     isHomePage: options?.isHomePage,
     seoTitle: readSeo(item.seoData, "title"),
@@ -471,7 +539,7 @@ export function mapJsonPrettyWire(
           mapWireItemToPage(item, { fallbackUrl: context?.fetchedUrl, isHomePage: context?.isHomePage }),
         );
       } else {
-        partial.posts!.push(mapWireItemToPost(item));
+        partial.posts!.push(mapWireItemToPost(item, { fallbackUrl: context?.fetchedUrl }));
       }
     }
     return partial;
@@ -484,7 +552,7 @@ export function mapJsonPrettyWire(
         mapWireItemToPage(item, { fallbackUrl: context?.fetchedUrl, isHomePage: context?.isHomePage }),
       );
     } else {
-      partial.posts!.push(mapWireItemToPost(item));
+      partial.posts!.push(mapWireItemToPost(item, { fallbackUrl: context?.fetchedUrl }));
       partial.tags = mapWireTags([item]);
     }
     return partial;
@@ -496,14 +564,25 @@ export function mapJsonPrettyWire(
   }
 
   if (collection && isBlogCollection(collection) === false) {
+    const mainContent =
+      typeof wire.mainContent === "string" ? wire.mainContent : undefined;
+    const body =
+      mainContent && !isEmptyClassicMainContent(mainContent)
+        ? mainContent
+        : typeof collection.description === "string"
+          ? collection.description
+          : undefined;
     partial.pages!.push(
       mapWireItemToPage(
         {
           id: collection.id ?? collection.urlId ?? collection.fullUrl,
           title: collection.title ?? collection.navigationTitle,
           urlId: collection.urlId,
-          fullUrl: collection.fullUrl ?? context?.fetchedUrl,
-          body: collection.description,
+          fullUrl: resolveAbsoluteUrl(
+            typeof collection.fullUrl === "string" ? collection.fullUrl : undefined,
+            context?.fetchedUrl,
+          ),
+          body,
           workflowState: collection.draft ? 2 : 1,
           seoData: collection.seoData,
         },
@@ -584,6 +663,7 @@ export class SquarespaceCollectionClient {
   readonly retryBaseDelayMs: number;
   readonly maxRetryDelayMs: number;
   readonly requestIntervalMs: number;
+  readonly htmlFallback: boolean;
   readonly fetchImpl: typeof fetch;
 
   private lastRequestAt = 0;
@@ -595,6 +675,7 @@ export class SquarespaceCollectionClient {
     this.retryBaseDelayMs = parsed.retryBaseDelayMs;
     this.maxRetryDelayMs = parsed.maxRetryDelayMs;
     this.requestIntervalMs = parsed.requestIntervalMs;
+    this.htmlFallback = parsed.htmlFallback;
     this.fetchImpl = parsed.fetchImpl ?? fetch;
   }
 
@@ -603,8 +684,17 @@ export class SquarespaceCollectionClient {
   }
 
   async fetchWire(url: string): Promise<unknown> {
-    const response = await this.requestWithRetry(this.buildJsonPrettyUrl(url));
+    const response = await this.requestWithRetry(this.buildJsonPrettyUrl(url), {
+      accept: "application/json, text/html, */*",
+    });
     return response.json() as Promise<unknown>;
+  }
+
+  async fetchHtml(url: string): Promise<string> {
+    const response = await this.requestWithRetry(url, {
+      accept: "text/html,application/xhtml+xml",
+    });
+    return response.text();
   }
 
   async collectExport(targets: SquarespaceCollectTarget[]): Promise<SquarespaceExport> {
@@ -625,7 +715,32 @@ export class SquarespaceCollectionClient {
       }
     }
 
-    return mergeSquarespaceExportPartials(partials);
+    const merged = mergeSquarespaceExportPartials(partials);
+    if (this.htmlFallback) {
+      await this.enrichEmptyPagesFromHtml(merged);
+    }
+    return merged;
+  }
+
+  private async enrichEmptyPagesFromHtml(doc: SquarespaceExport): Promise<void> {
+    for (const page of doc.pages) {
+      if (!pageContentIsEmpty(page)) continue;
+      const pageUrl = page.url?.trim();
+      if (!pageUrl) continue;
+      try {
+        const html = await this.fetchHtml(pageUrl);
+        const content = extractPageContentFromHtml(html);
+        if (content.blocks?.length) {
+          page.blocks = content.blocks;
+          delete page.contentHtml;
+        } else if (content.contentHtml?.trim()) {
+          page.contentHtml = content.contentHtml;
+          delete page.blocks;
+        }
+      } catch {
+        // Leave empty page; host scan can surface the gap.
+      }
+    }
   }
 
   private async collectCollectionPages(
@@ -649,13 +764,17 @@ export class SquarespaceCollectionClient {
     return partials;
   }
 
-  private async requestWithRetry(url: string): Promise<Response> {
+  private async requestWithRetry(
+    url: string,
+    options?: { accept?: string },
+  ): Promise<Response> {
     let attempt = 0;
+    const accept = options?.accept ?? "application/json, text/html, */*";
     while (true) {
       await this.throttle();
       const response = await this.fetchImpl(url, {
         method: "GET",
-        headers: { Accept: "application/json" },
+        headers: { Accept: accept },
       });
 
       if (response.ok) {

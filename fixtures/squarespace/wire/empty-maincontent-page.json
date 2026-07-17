@@ -1,0 +1,17 @@
+{
+  "mainContent": "<div class=\"sqs-layout sqs-grid-12 columns-12 empty\" data-type=\"page\" id=\"page-balcony\"></div>",
+  "website": {
+    "authenticUrl": "https://creative-studio.example",
+    "siteTitle": "Creative Studio"
+  },
+  "collection": {
+    "id": "col-balcony",
+    "typeName": "page",
+    "typeLabel": "page",
+    "title": "Balcony Studio",
+    "urlId": "balcony-studio",
+    "fullUrl": "/balcony-studio",
+    "description": ""
+  },
+  "empty": false
+}

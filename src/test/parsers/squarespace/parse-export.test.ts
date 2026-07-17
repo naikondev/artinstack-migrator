@@ -8,8 +8,11 @@ import { analyzeConflicts } from "../../../sinks/conflicts.js";
 import {
   SquarespaceCollectionClient,
   buildJsonPrettyUrl,
+  extractPageContentFromHtml,
+  isEmptyClassicMainContent,
   mapJsonPrettyWire,
   mergeSquarespaceExportPartials,
+  pageContentIsEmpty,
 } from "../../../parsers/squarespace/collect.js";
 import { squarespaceAdapter } from "../../../parsers/squarespace/index.js";
 import {
@@ -215,6 +218,62 @@ describe("Squarespace json-pretty collector", () => {
       imageUrl: "https://images.squarespace-cdn.com/content/v1/selected-01.jpg",
       caption: "Frame one",
     });
+  });
+
+  it("detects empty classic mainContent and parses 7.1 sections HTML", async () => {
+    const emptyWire = JSON.parse(
+      await readFile(join(FIXTURES_ROOT, "wire/empty-maincontent-page.json"), "utf8"),
+    );
+    expect(isEmptyClassicMainContent(emptyWire.mainContent)).toBe(true);
+
+    const partial = mapJsonPrettyWire(emptyWire, {
+      fetchedUrl: "https://creative-studio.example/balcony-studio",
+    });
+    expect(partial.pages).toHaveLength(1);
+    expect(pageContentIsEmpty(partial.pages![0]!)).toBe(true);
+    expect(partial.pages![0]?.url).toBe("https://creative-studio.example/balcony-studio");
+
+    const html = await readFile(join(FIXTURES_ROOT, "wire/balcony-sections.html"), "utf8");
+    const content = extractPageContentFromHtml(html);
+    expect(content.blocks?.map((b) => b.type)).toEqual(["html", "image"]);
+    expect(content.blocks?.[1]).toMatchObject({
+      type: "image",
+      imageUrl: "https://images.squarespace-cdn.com/content/v1/balcony-hero.jpg",
+    });
+  });
+
+  it("htmlFallback fills empty 7.1 section pages after json-pretty", async () => {
+    const emptyWire = JSON.parse(
+      await readFile(join(FIXTURES_ROOT, "wire/empty-maincontent-page.json"), "utf8"),
+    );
+    const html = await readFile(join(FIXTURES_ROOT, "wire/balcony-sections.html"), "utf8");
+
+    const fetchImpl: typeof fetch = async (input) => {
+      const url = typeof input === "string" ? input : input.toString();
+      if (url.includes("format=json-pretty")) {
+        return new Response(JSON.stringify(emptyWire), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      if (url === "https://creative-studio.example/balcony-studio") {
+        return new Response(html, {
+          status: 200,
+          headers: { "Content-Type": "text/html" },
+        });
+      }
+      return new Response(`missing mock for ${url}`, { status: 404 });
+    };
+
+    const client = new SquarespaceCollectionClient({ fetchImpl, requestIntervalMs: 0 });
+    const doc = await client.collectExport([
+      { url: "https://creative-studio.example/balcony-studio", kind: "page" },
+    ]);
+
+    expect(doc.pages).toHaveLength(1);
+    expect(pageContentIsEmpty(doc.pages[0]!)).toBe(false);
+    expect(doc.pages[0]?.blocks?.some((b) => b.type === "html")).toBe(true);
+    expect(doc.pages[0]?.blocks?.some((b) => b.type === "image")).toBe(true);
   });
 
   it("collects via injected fetch and normalizes entities", async () => {

@@ -111,11 +111,15 @@ export {
   SquarespaceCollectionClient,
   buildJsonPrettyUrl,
   extractBlocksFromBodyHtml,
+  extractPageBodyHtml,
+  extractPageContentFromHtml,
   inferBlockTypeFromClassName,
+  isEmptyClassicMainContent,
   isGalleryCollection,
   mapJsonPrettyWire,
   mapWireGalleryItem,
   mergeSquarespaceExportPartials,
+  pageContentIsEmpty,
   squarespaceClientOptionsSchema,
 } from "./collect.js";
 export type { SquarespaceClientOptions, SquarespaceCollectTarget } from "./collect.js";

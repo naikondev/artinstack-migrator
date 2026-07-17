@@ -35,7 +35,13 @@ export {
   SquarespaceCollectionClient,
   SQUARESPACE_JSON_FORMAT,
   buildJsonPrettyUrl,
+  extractBlocksFromBodyHtml,
+  extractPageBodyHtml,
+  extractPageContentFromHtml,
+  isEmptyClassicMainContent,
+  isGalleryCollection,
   mapJsonPrettyWire,
+  pageContentIsEmpty,
 } from "./squarespace/index.js";
 export type { SquarespaceClientOptions, SquarespaceCollectTarget } from "./squarespace/index.js";
 
