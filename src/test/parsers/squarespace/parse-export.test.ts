@@ -8,10 +8,12 @@ import { analyzeConflicts } from "../../../sinks/conflicts.js";
 import {
   SquarespaceCollectionClient,
   buildJsonPrettyUrl,
+  collectionItemsLookLikeGalleryMedia,
   extractBlocksFromBodyHtml,
   extractPageContentFromHtml,
   inferBlockTypeFromClassName,
   isEmptyClassicMainContent,
+  isGalleryCollection,
   mapJsonPrettyWire,
   mergeSquarespaceExportPartials,
   pageContentIsEmpty,
@@ -223,6 +225,133 @@ describe("Squarespace json-pretty collector", () => {
     });
   });
 
+  it("maps 7.0 gallery (type 1 + typeName gallery) into galleries[] not posts", async () => {
+    const wire = JSON.parse(
+      await readFile(join(FIXTURES_ROOT, "wire/gallery-7-0-type-gallery.json"), "utf8"),
+    );
+    expect(isGalleryCollection(wire.collection)).toBe(true);
+    const partial = mapJsonPrettyWire(wire, {
+      fetchedUrl: "https://creative-studio.example/selected-works-gallery",
+    });
+    expect(partial.posts).toEqual([]);
+    expect(partial.galleries).toHaveLength(1);
+    expect(partial.galleries?.[0]?.items).toHaveLength(2);
+  });
+
+  it("maps 7.0 project (type 1 + typeName project) into galleries[]", async () => {
+    const wire = JSON.parse(
+      await readFile(join(FIXTURES_ROOT, "wire/project-7-0-type-project.json"), "utf8"),
+    );
+    expect(isGalleryCollection(wire.collection)).toBe(true);
+    const partial = mapJsonPrettyWire(wire, {
+      fetchedUrl: "https://creative-studio.example/case-study-alpha",
+    });
+    expect(partial.posts).toEqual([]);
+    expect(partial.galleries).toHaveLength(1);
+    expect(partial.galleries?.[0]?.items).toHaveLength(2);
+  });
+
+  it("does not treat 7.0 index folders as galleries (type 1 + typeName index)", () => {
+    expect(
+      isGalleryCollection({
+        type: 1,
+        typeName: "index",
+        typeLabel: "index",
+        folder: true,
+        title: "Work",
+      }),
+    ).toBe(false);
+  });
+
+  it("structural fallback: ambiguous typeName + media-shaped items → galleries[]", async () => {
+    const wire = JSON.parse(
+      await readFile(join(FIXTURES_ROOT, "wire/ambiguous-media-collection.json"), "utf8"),
+    );
+
+    expect(isGalleryCollection(wire.collection)).toBe(false);
+    expect(collectionItemsLookLikeGalleryMedia(wire.items)).toBe(true);
+
+    const partial = mapJsonPrettyWire(wire, {
+      fetchedUrl: "https://creative-studio.example/works",
+    });
+    expect(partial.posts).toEqual([]);
+    expect(partial.galleries).toHaveLength(1);
+    expect(partial.galleries?.[0]?.items).toHaveLength(3);
+  });
+
+  it("does not treat blog items as gallery via featured images", async () => {
+    const blogWire = JSON.parse(
+      await readFile(join(FIXTURES_ROOT, "wire/blog-collection.json"), "utf8"),
+    );
+    expect(isGalleryCollection(blogWire.collection)).toBe(false);
+    expect(collectionItemsLookLikeGalleryMedia(blogWire.items)).toBe(false);
+
+    const partial = mapJsonPrettyWire(blogWire, {
+      fetchedUrl: "https://creative-studio.example/journal",
+    });
+    expect(partial.galleries).toEqual([]);
+    expect(partial.posts).toHaveLength(1);
+  });
+
+  it("merges gallery items when list + singular portfolio item share collection id", () => {
+    const list = mapJsonPrettyWire(
+      {
+        collection: {
+          id: "col-design",
+          type: 23,
+          typeName: "portfolio-grid-basic",
+          title: "Design",
+          urlId: "design",
+        },
+        items: [
+          {
+            id: "a",
+            urlId: "a",
+            title: "A",
+            recordTypeLabel: "portfolio-item",
+            assetUrl: "https://images.squarespace-cdn.com/content/v1/a.jpg",
+            body: "",
+          },
+          {
+            id: "b",
+            urlId: "b",
+            title: "B",
+            recordTypeLabel: "portfolio-item",
+            assetUrl: "https://images.squarespace-cdn.com/content/v1/b.jpg",
+            body: "",
+          },
+        ],
+      },
+      { fetchedUrl: "https://creative-studio.example/design" },
+    );
+    const singular = mapJsonPrettyWire(
+      {
+        collection: {
+          id: "col-design",
+          type: 23,
+          typeName: "portfolio-grid-basic",
+          title: "Design",
+          urlId: "design",
+        },
+        item: {
+          id: "c",
+          urlId: "c",
+          title: "C",
+          recordType: 59,
+          recordTypeLabel: "portfolio-item",
+          assetUrl: "https://images.squarespace-cdn.com/content/v1/c.jpg",
+          body: "",
+        },
+      },
+      { fetchedUrl: "https://creative-studio.example/design/c" },
+    );
+
+    const merged = mergeSquarespaceExportPartials([list, singular]);
+    expect(merged.posts).toHaveLength(0);
+    expect(merged.galleries).toHaveLength(1);
+    expect(merged.galleries?.[0]?.items.map((i) => i.id).sort()).toEqual(["a", "b", "c"]);
+  });
+
   it("detects empty classic mainContent and parses 7.1 sections HTML", async () => {
     const emptyWire = JSON.parse(
       await readFile(join(FIXTURES_ROOT, "wire/empty-maincontent-page.json"), "utf8"),
@@ -265,14 +394,14 @@ describe("Squarespace json-pretty collector", () => {
   });
 
   it("OSS-33: Fluid Engine post body keeps prose (not empty unsupported shells)", async () => {
-    const body = await readFile(join(FIXTURES_ROOT, "wire/softgood-fluid-post-body.html"), "utf8");
+    const body = await readFile(join(FIXTURES_ROOT, "wire/fluid-engine-post-body.html"), "utf8");
     const blocks = extractBlocksFromBodyHtml(body);
     expect(blocks.map((b) => b.type)).toEqual(["spacer", "html", "image", "html", "quote"]);
 
     const flattened = blocks.map((b) => flattenSquarespaceBlock(b).contentHtml).join("\n");
-    expect(flattened).toContain("I stumbled upon Soft Good Studio");
-    expect(flattened).toContain("Hi Emilie!");
-    expect(flattened).toContain("can’t please everyone");
+    expect(flattened).toContain("Sample interview intro paragraph");
+    expect(flattened).toContain("Sample question heading");
+    expect(flattened).toContain("Sample quote text that must survive flatten");
     expect(flattened).toContain("sqs-block-image");
     expect(flattened.match(/sqs-block-unsupported/g) ?? []).toHaveLength(0);
 
@@ -280,9 +409,9 @@ describe("Squarespace json-pretty collector", () => {
       exportVersion: 1,
       posts: [
         {
-          id: "post-softgood",
-          title: "Soft Good Studio",
-          slug: "softgoodstudio",
+          id: "post-fluid-engine",
+          title: "Fluid Engine Interview",
+          slug: "fluid-engine-interview",
           blocks,
         },
       ],
@@ -294,7 +423,7 @@ describe("Squarespace json-pretty collector", () => {
     }
     const post = entities.find((e) => e.type === "post");
     expect(post && post.type === "post" && post.contentHtml).toContain(
-      "I stumbled upon Soft Good Studio",
+      "Sample interview intro paragraph",
     );
   });
 

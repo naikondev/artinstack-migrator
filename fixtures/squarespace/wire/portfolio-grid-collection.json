@@ -1,0 +1,43 @@
+{
+  "website": {
+    "authenticUrl": "https://creative-studio.example",
+    "siteTitle": "Creative Studio"
+  },
+  "collection": {
+    "id": "col-design",
+    "type": 23,
+    "typeName": "portfolio-grid-basic",
+    "typeLabel": "portfolio-grid-basic",
+    "ordering": 1,
+    "title": "Design",
+    "urlId": "design",
+    "fullUrl": "https://creative-studio.example/design"
+  },
+  "pagination": {
+    "nextPage": false
+  },
+  "items": [
+    {
+      "id": "proj-balcony",
+      "urlId": "balcony",
+      "title": "Balcony Studio",
+      "fullUrl": "https://creative-studio.example/design/balcony",
+      "recordType": 59,
+      "recordTypeLabel": "portfolio-item",
+      "contentType": "image/png",
+      "assetUrl": "https://images.squarespace-cdn.com/content/v1/balcony-cover.png",
+      "body": ""
+    },
+    {
+      "id": "proj-binghaus",
+      "urlId": "binghaus",
+      "title": "Bing Haus",
+      "fullUrl": "https://creative-studio.example/design/binghaus",
+      "recordType": 59,
+      "recordTypeLabel": "portfolio-item",
+      "contentType": "image/jpeg",
+      "assetUrl": "https://images.squarespace-cdn.com/content/v1/binghaus-cover.jpg",
+      "body": ""
+    }
+  ]
+}

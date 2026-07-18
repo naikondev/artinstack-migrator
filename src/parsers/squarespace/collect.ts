@@ -104,7 +104,7 @@ export function inferBlockTypeFromClassName(className: string): string {
    * 7.1 / Fluid Engine often lists `sqs-block-website-component` *before*
    * the concrete type (`sqs-block-html`, `sqs-block-quote`, …). Prefer the
    * concrete type so text/quote/spacer flatten to HTML instead of empty
-   * `sqs-block-unsupported` (OSS-33 / meiwensee softgoodstudio).
+   * `sqs-block-unsupported` (OSS-33).
    */
   const GENERIC_TYPES = new Set(["website-component", "content"]);
   const PREFERRED_TYPES = [
@@ -366,26 +366,141 @@ function mapWireItemContent(item: WireRecord): Pick<SquarespacePage, "blocks" | 
   return { contentHtml: body };
 }
 
-function isBlogCollection(collection: WireRecord | undefined): boolean {
-  if (!collection) return false;
-  const ordering = String(collection.ordering ?? "").toLowerCase();
-  if (ordering === "chronological" || ordering === "calendar") return true;
-  const typeName = String(collection.typeName ?? collection.typeLabel ?? "").toLowerCase();
-  return typeName.includes("blog");
+function collectionTypeNumber(collection: WireRecord): number | undefined {
+  const raw = collection.type;
+  if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+  if (typeof raw === "string" && raw.trim()) {
+    const n = Number.parseInt(raw, 10);
+    if (Number.isFinite(n)) return n;
+  }
+  return undefined;
 }
 
-/** Gallery / portfolio collection pages — items are media, not blog posts. */
+function isBlogCollection(collection: WireRecord | undefined): boolean {
+  if (!collection) return false;
+  const typeName = String(collection.typeName ?? collection.typeLabel ?? "").toLowerCase();
+  // Prefer typeName — on 7.0, `type: 1` is shared by blog, gallery, index, and project.
+  if (typeName.includes("blog")) return true;
+  // String ordering only (live wire often uses numeric 1/2/3).
+  const ordering = String(collection.ordering ?? "").toLowerCase();
+  if (ordering === "chronological" || ordering === "calendar") {
+    // Do not treat index/gallery/project folders as blogs just because ordering is chronological-like.
+    if (
+      typeName.includes("gallery") ||
+      typeName.includes("portfolio") ||
+      typeName === "project" ||
+      typeName === "index" ||
+      typeName === "album"
+    ) {
+      return false;
+    }
+    return true;
+  }
+  return false;
+}
+
+function itemHasHttpImageUrl(item: WireRecord): boolean {
+  for (const key of ["assetUrl", "imageUrl"] as const) {
+    const value = item[key];
+    if (typeof value === "string" && value.trim().startsWith("http")) return true;
+  }
+  return false;
+}
+
+/** True when item body has no meaningful prose (portfolio covers often ship empty `body`). */
+export function itemBodyIsEmpty(item: WireRecord): boolean {
+  const body = typeof item.body === "string" ? item.body : "";
+  return stripSimpleHtml(body).length === 0;
+}
+
+/**
+ * Portfolio / gallery *item* shape (not URL path).
+ * - 7.1: `recordType: 59`, `recordTypeLabel: "portfolio-item"`
+ * - 7.0 gallery/project: `recordType: 2`, `recordTypeLabel: "image"`, `contentType: image/*`
+ */
+export function isPortfolioOrGalleryItemRecord(item: WireRecord): boolean {
+  const label = String(item.recordTypeLabel ?? "").toLowerCase();
+  if (
+    label.includes("portfolio") ||
+    label.includes("gallery") ||
+    label === "image"
+  ) {
+    return true;
+  }
+  const recordType = item.recordType;
+  if (recordType === 59 || recordType === "59" || recordType === 2 || recordType === "2") {
+    return true;
+  }
+  const contentType = String(item.contentType ?? "").toLowerCase();
+  return contentType.startsWith("image/");
+}
+
+/**
+ * Structural fallback when `collection.typeName` is ambiguous: items are mostly
+ * cover/media rows (http image URL + empty body and/or portfolio/gallery item records),
+ * not blog posts with prose bodies.
+ */
+export function collectionItemsLookLikeGalleryMedia(items: WireRecord[]): boolean {
+  if (items.length === 0) return false;
+  let mediaLike = 0;
+  for (const item of items) {
+    if (!itemHasHttpImageUrl(item)) continue;
+    if (itemBodyIsEmpty(item) || isPortfolioOrGalleryItemRecord(item)) {
+      mediaLike += 1;
+    }
+  }
+  return mediaLike >= Math.ceil(items.length * 0.6);
+}
+
+/**
+ * Gallery / portfolio / project collection pages — items are media, not blog posts.
+ *
+ * Prefer Squarespace typeName/typeLabel (never URL path segments — slugs are user-defined).
+ *
+ * Verified against live Squarespace `?format=json-pretty` payloads:
+ * - 7.1 portfolio grids: `type: 23`, `typeName` like `portfolio-grid-basic`
+ * - 7.0 gallery: `type: 1`, `typeName: "gallery"`, items `recordTypeLabel: "image"`
+ * - 7.0 project: `type: 1`, `typeName: "project"`, image items
+ * - 7.0 index: `type: 1`, `typeName: "index"`, `folder: true` — **not** a media
+ *   gallery (empty `items[]`; children are separate gallery/project collections)
+ *
+ * Note: hypothesized integers `type: 3|20|30` were **not** observed on these demos;
+ * 7.0 reuses `type: 1` across blog/gallery/index/project and discriminates via `typeName`.
+ */
 export function isGalleryCollection(collection: WireRecord | undefined): boolean {
   if (!collection) return false;
   if (isBlogCollection(collection)) return false;
+
   const typeName = String(collection.typeName ?? "").toLowerCase();
   const typeLabel = String(collection.typeLabel ?? "").toLowerCase();
+
+  // Index/folder pages nest other collections; they are not image galleries themselves.
+  if (typeName === "index" || typeLabel === "index" || collection.folder === true) {
+    return false;
+  }
+
+  // 7.1 portfolio page family (grid / hover / etc.).
+  if (collectionTypeNumber(collection) === 23) return true;
+
   return (
     typeName.includes("gallery") ||
     typeLabel.includes("gallery") ||
-    typeName === "portfolio" ||
-    typeLabel === "portfolio"
+    typeName.includes("portfolio") ||
+    typeLabel.includes("portfolio") ||
+    typeName === "project" ||
+    typeLabel === "project" ||
+    typeName === "album" ||
+    typeLabel === "album"
   );
+}
+
+function shouldMapItemsAsGallery(
+  collection: WireRecord | undefined,
+  items: WireRecord[],
+): boolean {
+  if (isBlogCollection(collection)) return false;
+  if (collection && isGalleryCollection(collection)) return true;
+  return collectionItemsLookLikeGalleryMedia(items);
 }
 
 function isStaticPageItem(item: WireRecord, collection: WireRecord | undefined): boolean {
@@ -576,8 +691,10 @@ export function mapJsonPrettyWire(
       .map((entry) => asRecord(entry))
       .filter((entry): entry is WireRecord => !!entry);
 
-    if (collection && isGalleryCollection(collection)) {
-      partial.galleries = [mapWireGalleryCollection(collection, itemRecords, context)];
+    if (shouldMapItemsAsGallery(collection, itemRecords)) {
+      if (collection) {
+        partial.galleries = [mapWireGalleryCollection(collection, itemRecords, context)];
+      }
       return partial;
     }
 
@@ -597,6 +714,17 @@ export function mapJsonPrettyWire(
 
   const item = asRecord(wire.item);
   if (item) {
+    // Singular portfolio/gallery item URL — never emit an empty blog post.
+    // Fold into the parent collection gallery (merge unions items by gallery id).
+    if (
+      collection &&
+      !isBlogCollection(collection) &&
+      (isGalleryCollection(collection) ||
+        (isPortfolioOrGalleryItemRecord(item) && itemHasHttpImageUrl(item) && itemBodyIsEmpty(item)))
+    ) {
+      partial.galleries = [mapWireGalleryCollection(collection, [item], context)];
+      return partial;
+    }
     if (isStaticPageItem(item, collection)) {
       partial.pages!.push(
         mapWireItemToPage(item, { fallbackUrl: context?.fetchedUrl, isHomePage: context?.isHomePage }),
@@ -660,6 +788,38 @@ function dedupeBySlug<T extends { slug: string }>(items: T[]): T[] {
   return [...seen.values()];
 }
 
+/** Union gallery rows that share an id (list + singular item collects). */
+function mergeGalleriesById(
+  galleries: SquarespaceGalleryCollection[],
+): SquarespaceGalleryCollection[] {
+  const byId = new Map<string, SquarespaceGalleryCollection>();
+  for (const gallery of galleries) {
+    const prev = byId.get(gallery.id);
+    if (!prev) {
+      byId.set(gallery.id, {
+        ...gallery,
+        items: [...(gallery.items ?? [])],
+      });
+      continue;
+    }
+    const itemMap = new Map<string, SquarespaceGalleryItem>();
+    for (const item of [...(prev.items ?? []), ...(gallery.items ?? [])]) {
+      const key = item.id?.trim() || item.imageUrl;
+      itemMap.set(key, item);
+    }
+    byId.set(gallery.id, {
+      ...prev,
+      ...gallery,
+      title: prev.title || gallery.title,
+      slug: prev.slug || gallery.slug,
+      url: prev.url || gallery.url,
+      description: prev.description || gallery.description,
+      items: [...itemMap.values()],
+    });
+  }
+  return [...byId.values()];
+}
+
 /** Merge multiple mapped partial exports into one canonical `SquarespaceExport`. */
 export function mergeSquarespaceExportPartials(
   partials: Partial<SquarespaceExport>[],
@@ -685,7 +845,7 @@ export function mergeSquarespaceExportPartials(
 
   merged.pages = dedupeById(merged.pages);
   merged.posts = dedupeById(merged.posts ?? []);
-  merged.galleries = dedupeById(merged.galleries ?? []);
+  merged.galleries = mergeGalleriesById(merged.galleries ?? []);
   merged.categories = dedupeBySlug(merged.categories ?? []);
   merged.tags = dedupeBySlug(merged.tags ?? []);
   return merged;

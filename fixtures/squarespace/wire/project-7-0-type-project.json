@@ -1,0 +1,40 @@
+{
+  "website": {
+    "authenticUrl": "https://creative-studio.example",
+    "siteTitle": "Creative Studio"
+  },
+  "collection": {
+    "id": "col-project-alpha",
+    "type": 1,
+    "typeName": "project",
+    "typeLabel": "project",
+    "ordering": 1,
+    "title": "Case Study Alpha",
+    "urlId": "case-study-alpha",
+    "fullUrl": "https://creative-studio.example/case-study-alpha",
+    "folder": false
+  },
+  "pagination": { "nextPage": false },
+  "items": [
+    {
+      "id": "proj-img-1",
+      "urlId": "case-1",
+      "title": "Berlin 1",
+      "recordType": 2,
+      "recordTypeLabel": "image",
+      "contentType": "image/jpeg",
+      "assetUrl": "https://images.squarespace-cdn.com/content/v1/case-1.jpg",
+      "body": ""
+    },
+    {
+      "id": "proj-img-2",
+      "urlId": "case-2",
+      "title": "Berlin 2",
+      "recordType": 2,
+      "recordTypeLabel": "image",
+      "contentType": "image/jpeg",
+      "assetUrl": "https://images.squarespace-cdn.com/content/v1/case-2.jpg",
+      "body": ""
+    }
+  ]
+}

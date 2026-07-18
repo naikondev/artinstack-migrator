@@ -1,0 +1,40 @@
+{
+  "website": {
+    "authenticUrl": "https://creative-studio.example",
+    "siteTitle": "Creative Studio"
+  },
+  "collection": {
+    "id": "col-gallery-7-0",
+    "type": 1,
+    "typeName": "gallery",
+    "typeLabel": "gallery",
+    "ordering": 1,
+    "title": "portfolio",
+    "urlId": "selected-works-gallery",
+    "fullUrl": "https://creative-studio.example/selected-works-gallery",
+    "folder": false
+  },
+  "pagination": { "nextPage": false },
+  "items": [
+    {
+      "id": "img-1",
+      "urlId": "caravan",
+      "title": "Caravan",
+      "recordType": 2,
+      "recordTypeLabel": "image",
+      "contentType": "image/jpeg",
+      "assetUrl": "https://images.squarespace-cdn.com/content/v1/caravan.jpg",
+      "body": "<p>Short caption</p>"
+    },
+    {
+      "id": "img-2",
+      "urlId": "cliffs",
+      "title": "Cliffs",
+      "recordType": 2,
+      "recordTypeLabel": "image",
+      "contentType": "image/jpeg",
+      "assetUrl": "https://images.squarespace-cdn.com/content/v1/cliffs.jpg",
+      "body": ""
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "website": {
+    "authenticUrl": "https://creative-studio.example",
+    "siteTitle": "Creative Studio"
+  },
+  "collection": {
+    "id": "col-works",
+    "type": 99,
+    "typeName": "custom-showcase",
+    "typeLabel": "custom-showcase",
+    "ordering": 1,
+    "title": "Works",
+    "urlId": "works",
+    "fullUrl": "https://creative-studio.example/works"
+  },
+  "pagination": {
+    "nextPage": false
+  },
+  "items": [
+    {
+      "id": "work-1",
+      "urlId": "alpha",
+      "title": "Alpha",
+      "assetUrl": "https://images.squarespace-cdn.com/content/v1/alpha.jpg",
+      "contentType": "image/jpeg",
+      "body": ""
+    },
+    {
+      "id": "work-2",
+      "urlId": "beta",
+      "title": "Beta",
+      "assetUrl": "https://images.squarespace-cdn.com/content/v1/beta.jpg",
+      "contentType": "image/jpeg",
+      "body": ""
+    },
+    {
+      "id": "work-3",
+      "urlId": "gamma",
+      "title": "Gamma",
+      "assetUrl": "https://images.squarespace-cdn.com/content/v1/gamma.jpg",
+      "body": ""
+    }
+  ]
+}
