@@ -100,11 +100,61 @@ function readSeo(seoData: unknown, field: "title" | "description"): string | und
 
 /** Infer block type from Squarespace LayoutEngine / Fluid Engine class names. */
 export function inferBlockTypeFromClassName(className: string): string {
-  const match = className.match(/\bsqs-block-([a-z0-9-]+)\b/i);
-  if (!match?.[1]) return "html";
-  const raw = match[1].toLowerCase();
+  /**
+   * 7.1 / Fluid Engine often lists `sqs-block-website-component` *before*
+   * the concrete type (`sqs-block-html`, `sqs-block-quote`, …). Prefer the
+   * concrete type so text/quote/spacer flatten to HTML instead of empty
+   * `sqs-block-unsupported` (OSS-33 / meiwensee softgoodstudio).
+   */
+  const GENERIC_TYPES = new Set(["website-component", "content"]);
+  const PREFERRED_TYPES = [
+    "image",
+    "html",
+    "text",
+    "quote",
+    "markdown",
+    "gallery",
+    "button",
+    "video",
+    "embed",
+    "code",
+    "spacer",
+    "line",
+    "horizontalrule",
+    "hr",
+    "form",
+    "newsletter",
+    "map",
+    "product",
+    "products",
+    "summary",
+    "social",
+  ] as const;
+
+  const found: string[] = [];
+  for (const match of className.matchAll(/\bsqs-block-([a-z0-9-]+)\b/gi)) {
+    let raw = (match[1] ?? "").toLowerCase();
+    if (!raw) continue;
+    raw = raw.replace(/-block$/g, "");
+    if (raw === "horizontalrule") raw = "line";
+    if (GENERIC_TYPES.has(raw)) continue;
+    found.push(raw);
+  }
+
+  for (const preferred of PREFERRED_TYPES) {
+    if (found.includes(preferred)) {
+      return preferred === "horizontalrule" ? "line" : preferred;
+    }
+  }
+  if (found.length > 0) return found[0]!;
+
+  // No concrete type — fall back to first sqs-block-* including generics.
+  const fallback = className.match(/\bsqs-block-([a-z0-9-]+)\b/i);
+  if (!fallback?.[1]) return "html";
+  let raw = fallback[1].toLowerCase().replace(/-block$/g, "");
   if (raw === "horizontalrule") return "line";
-  return raw.replace(/-block$/g, "");
+  if (raw === "website-component") return "html";
+  return raw;
 }
 
 /** True when json-pretty `mainContent` is an empty classic LayoutEngine shell. */

@@ -147,7 +147,16 @@ export function flattenSquarespaceBlock(block: SquarespaceBlock): FlattenBlocksR
     };
   }
 
+  // Fluid Engine sometimes still labels a prose block as website-component after
+  // mapping; if HTML payload exists, treat as html rather than empty unsupported.
   if (!SUPPORTED_BLOCK_TYPES.has(type)) {
+    const htmlPayload = (block.html ?? block.value ?? "").trim();
+    if (htmlPayload.length > 0 && (type === "website-component" || type === "unknown" || !type)) {
+      return {
+        contentHtml: blockShell("html", block.html ?? block.value ?? "", blockId),
+        assetUrls,
+      };
+    }
     return {
       contentHtml: unsupportedPlaceholder(type || "unknown", blockId),
       assetUrls,

@@ -8,7 +8,9 @@ import { analyzeConflicts } from "../../../sinks/conflicts.js";
 import {
   SquarespaceCollectionClient,
   buildJsonPrettyUrl,
+  extractBlocksFromBodyHtml,
   extractPageContentFromHtml,
+  inferBlockTypeFromClassName,
   isEmptyClassicMainContent,
   mapJsonPrettyWire,
   mergeSquarespaceExportPartials,
@@ -17,6 +19,7 @@ import {
 import { squarespaceAdapter } from "../../../parsers/squarespace/index.js";
 import {
   enumerateSquarespaceEntities,
+  flattenSquarespaceBlock,
   summarizeSquarespaceExport,
 } from "../../../parsers/squarespace/parse-export.js";
 import type { SquarespaceExport } from "../../../parsers/squarespace/types.js";
@@ -240,6 +243,59 @@ describe("Squarespace json-pretty collector", () => {
       type: "image",
       imageUrl: "https://images.squarespace-cdn.com/content/v1/balcony-hero.jpg",
     });
+  });
+
+  it("OSS-33: prefers concrete Fluid Engine block types over website-component", () => {
+    expect(
+      inferBlockTypeFromClassName(
+        "sqs-block website-component-block sqs-block-website-component sqs-block-html html-block",
+      ),
+    ).toBe("html");
+    expect(
+      inferBlockTypeFromClassName(
+        "sqs-block website-component-block sqs-block-website-component sqs-block-quote quote-block",
+      ),
+    ).toBe("quote");
+    expect(
+      inferBlockTypeFromClassName(
+        "sqs-block website-component-block sqs-block-website-component sqs-block-spacer spacer-block",
+      ),
+    ).toBe("spacer");
+    expect(inferBlockTypeFromClassName("sqs-block image-block sqs-block-image")).toBe("image");
+  });
+
+  it("OSS-33: Fluid Engine post body keeps prose (not empty unsupported shells)", async () => {
+    const body = await readFile(join(FIXTURES_ROOT, "wire/softgood-fluid-post-body.html"), "utf8");
+    const blocks = extractBlocksFromBodyHtml(body);
+    expect(blocks.map((b) => b.type)).toEqual(["spacer", "html", "image", "html", "quote"]);
+
+    const flattened = blocks.map((b) => flattenSquarespaceBlock(b).contentHtml).join("\n");
+    expect(flattened).toContain("I stumbled upon Soft Good Studio");
+    expect(flattened).toContain("Hi Emilie!");
+    expect(flattened).toContain("can’t please everyone");
+    expect(flattened).toContain("sqs-block-image");
+    expect(flattened.match(/sqs-block-unsupported/g) ?? []).toHaveLength(0);
+
+    const doc: SquarespaceExport = {
+      exportVersion: 1,
+      posts: [
+        {
+          id: "post-softgood",
+          title: "Soft Good Studio",
+          slug: "softgoodstudio",
+          blocks,
+        },
+      ],
+      pages: [],
+    };
+    const entities = [];
+    for await (const entity of enumerateSquarespaceEntities({ data: doc })) {
+      entities.push(entity);
+    }
+    const post = entities.find((e) => e.type === "post");
+    expect(post && post.type === "post" && post.contentHtml).toContain(
+      "I stumbled upon Soft Good Studio",
+    );
   });
 
   it("htmlFallback fills empty 7.1 section pages after json-pretty", async () => {
