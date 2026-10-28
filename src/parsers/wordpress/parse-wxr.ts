@@ -85,7 +85,12 @@ interface WxrComment {
 interface WxrItem {
   title?: string;
   link?: string;
-  encoded?: string;
+  /**
+   * After `removeNSPrefix`, both `content:encoded` and `excerpt:encoded` land on
+   * this key. When both tags exist, fast-xml-parser yields a string array in
+   * document order: `[contentHtml, excerptHtml]`.
+   */
+  encoded?: string | string[];
   post_id?: string | number;
   post_date?: string;
   post_name?: string;
@@ -123,10 +128,22 @@ function asArray<T>(value: T | T[] | undefined): T[] {
 function textValue(value: unknown): string {
   if (value === undefined || value === null) return "";
   if (typeof value === "string" || typeof value === "number") return String(value);
+  // Never `String(array)` — Array.prototype.toString joins with commas and corrupts HTML
+  // when `content:encoded` + `excerpt:encoded` collide under removeNSPrefix.
+  if (Array.isArray(value)) {
+    return value.length === 0 ? "" : textValue(value[0]);
+  }
   if (typeof value === "object" && value !== null && "#text" in value) {
     return String((value as { "#text": unknown })["#text"] ?? "");
   }
   return String(value);
+}
+
+/** Normalize a parsed `*:encoded` field that may be a string or collision array. */
+function encodedParts(value: unknown): string[] {
+  if (value === undefined || value === null) return [];
+  if (Array.isArray(value)) return value.map((part) => textValue(part));
+  return [textValue(value)];
 }
 
 function mapPublishStatus(wpStatus: string | undefined): PublishStatus {
@@ -217,12 +234,16 @@ function parseItemComments(
 }
 
 function getContentEncoded(item: WxrItem): string {
-  const content = (item as { content?: { encoded?: string } | string }).content;
+  const content = (item as { content?: { encoded?: unknown } | string }).content;
   if (content !== undefined) {
     if (typeof content === "string") return content;
-    return textValue(content.encoded);
+    const parts = encodedParts(content.encoded);
+    return parts[0] ?? "";
   }
-  return textValue(item.encoded);
+  // removeNSPrefix: content:encoded (+ optional excerpt:encoded) → item.encoded.
+  // WXR document order is content then excerpt — content is always index 0.
+  const parts = encodedParts(item.encoded);
+  return parts[0] ?? "";
 }
 
 function sourceMeta(
@@ -337,10 +358,15 @@ export async function summarizeWxrImportFromFile(
 }
 
 function getExcerpt(item: WxrItem): string {
-  const excerpt = (item as { excerpt?: { encoded?: string } | string }).excerpt;
-  if (!excerpt) return "";
-  if (typeof excerpt === "string") return excerpt;
-  return textValue(excerpt.encoded);
+  const excerpt = (item as { excerpt?: { encoded?: unknown } | string }).excerpt;
+  if (excerpt !== undefined && excerpt !== null) {
+    if (typeof excerpt === "string") return excerpt;
+    return textValue((excerpt as { encoded?: unknown }).encoded);
+  }
+  // When excerpt:encoded collapsed into item.encoded alongside content:encoded.
+  const parts = encodedParts(item.encoded);
+  if (parts.length >= 2) return parts[1] ?? "";
+  return "";
 }
 
 function getPostMeta(item: WxrItem, key: string): string | undefined {

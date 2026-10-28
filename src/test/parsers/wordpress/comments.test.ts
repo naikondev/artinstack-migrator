@@ -33,6 +33,12 @@ describe("WXR comment parse (M-engagement)", () => {
     expect(bundleCounts(bundle).pages).toBe(1);
     expect(bundleCounts(bundle).comments).toBe(5);
 
+    // Fixture has content:encoded + empty excerpt:encoded; removeNSPrefix must not
+    // String([html, ""])-join them into a trailing comma on the post body.
+    const post = bundle.posts[0];
+    expect(post?.contentHtml).toContain("<p>Post body</p>");
+    expect(post?.contentHtml?.includes(",</body>")).toBe(false);
+
     const byId = new Map(bundle.comments.map((comment) => [comment.sourceId, comment]));
     expect(byId.get("101")).toMatchObject({
       type: "comment",
