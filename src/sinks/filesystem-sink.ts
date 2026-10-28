@@ -4,6 +4,7 @@ import { buildPortfolioMediaLinks } from "../normalizer/portfolio-media.js";
 import type {
   NormalizedAsset,
   NormalizedCategory,
+  NormalizedComment,
   NormalizedPage,
   NormalizedPortfolio,
   NormalizedPost,
@@ -11,6 +12,7 @@ import type {
   PortfolioMediaLink,
 } from "../normalizer/types.js";
 import type {
+  CreateCommentResult,
   CreatePageResult,
   CreatePostResult,
   MigrationRedirect,
@@ -63,6 +65,11 @@ export class FilesystemMigrationSink implements MigrationSink {
       targetId: page.sourceId,
       publicPath: page.source.path ?? `/${page.slug}`,
     };
+  }
+
+  async createComment(comment: NormalizedComment): Promise<CreateCommentResult> {
+    this.bundle.comments.push(comment);
+    return { targetId: comment.sourceId };
   }
 
   async linkPortfolioMedia(link: PortfolioMediaLink): Promise<void> {

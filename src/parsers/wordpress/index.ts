@@ -32,6 +32,7 @@ export type {
 } from "./builders/registry.js";
 export {
   DEFAULT_WORDPRESS_PORTFOLIO_CPT_SLUGS,
+  mapWpCommentModerationStatus,
   summarizeWxrImport,
   summarizeWxrImportFromFile,
   validateWxrFile,

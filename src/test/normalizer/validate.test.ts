@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  validateNormalizedComment,
   validateNormalizedEntity,
   validateNormalizedPage,
   validateNormalizedPost,
@@ -54,10 +55,33 @@ describe("validateNormalizedPage", () => {
   });
 });
 
+const validComment = {
+  type: "comment",
+  source: { platform: "wordpress", id: "c-1" },
+  sourceId: "c-1",
+  postSourceId: "post-1",
+  contentHtml: "Hello",
+  status: "approved",
+  authorType: "guest",
+  authorName: "Ada",
+} as const;
+
+describe("validateNormalizedComment", () => {
+  it("accepts a structurally valid comment", () => {
+    expect(validateNormalizedComment(validComment)).toEqual({ ok: true, issues: [] });
+  });
+
+  it("rejects member authorType", () => {
+    const result = validateNormalizedComment({ ...validComment, authorType: "member" });
+    expect(result.ok).toBe(false);
+  });
+});
+
 describe("validateNormalizedEntity", () => {
   it("accepts known entity types and rejects unknown discriminants", () => {
     expect(validateNormalizedEntity(validPost).ok).toBe(true);
     expect(validateNormalizedEntity(validPage).ok).toBe(true);
+    expect(validateNormalizedEntity(validComment).ok).toBe(true);
     expect(validateNormalizedEntity({ type: "portfolio" }).ok).toBe(false);
   });
 });

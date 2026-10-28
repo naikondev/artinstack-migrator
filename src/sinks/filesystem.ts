@@ -30,6 +30,7 @@ export async function writeFilesystemExport(options: WriteFilesystemOptions): Pr
   );
   await writeJson(join(options.outDir, "categories.json"), options.bundle.categories);
   await writeJson(join(options.outDir, "tags.json"), options.bundle.tags);
+  await writeJson(join(options.outDir, "comments.json"), options.bundle.comments);
 
   if (options.conflicts) {
     await writeJson(join(options.outDir, "conflicts.json"), options.conflicts);
@@ -48,5 +49,6 @@ export function bundleToCombinedJson(bundle: EntityBundle): Record<string, unkno
     portfolioMedia: buildPortfolioMediaLinks(bundle),
     categories: bundle.categories,
     tags: bundle.tags,
+    comments: bundle.comments,
   };
 }

@@ -4,6 +4,7 @@ import type { EntityBundle } from "../../normalizer/bundle.js";
 import type {
   NormalizedAsset,
   NormalizedCategory,
+  NormalizedComment,
   NormalizedPage,
   NormalizedPortfolio,
   NormalizedPost,
@@ -11,7 +12,7 @@ import type {
 } from "../../normalizer/types.js";
 import { rewriteInlineImages } from "../../transformers/rewrite-inline-images.js";
 import { FilesystemMigrationSink, portfolioMediaMatchesBundle } from "../../sinks/filesystem-sink.js";
-import { runMigrationFromBundle } from "../../sinks/run-migration.js";
+import { orderCommentsForWrite, runMigrationFromBundle } from "../../sinks/run-migration.js";
 import type { MigrationSink } from "../../sinks/types.js";
 
 const category: NormalizedCategory = {
@@ -68,6 +69,29 @@ const page: NormalizedPage = {
   status: "published",
 };
 
+const rootComment: NormalizedComment = {
+  type: "comment",
+  source: { platform: "wordpress", id: "c-1" },
+  sourceId: "c-1",
+  postSourceId: "post-1",
+  contentHtml: "Nice post",
+  status: "approved",
+  authorType: "guest",
+  authorName: "Ada",
+};
+
+const childComment: NormalizedComment = {
+  type: "comment",
+  source: { platform: "wordpress", id: "c-2" },
+  sourceId: "c-2",
+  postSourceId: "post-1",
+  parentSourceId: "c-1",
+  contentHtml: "Thanks!",
+  status: "approved",
+  authorType: "guest",
+  authorName: "Ben",
+};
+
 function shuffledBundle(): EntityBundle {
   return {
     posts: [post],
@@ -76,6 +100,7 @@ function shuffledBundle(): EntityBundle {
     portfolios: [portfolio],
     categories: [category],
     tags: [tag],
+    comments: [childComment, rootComment],
   };
 }
 
@@ -139,7 +164,7 @@ describe("runMigration findExisting asset hydration", () => {
 });
 
 describe("runMigration canonical write order", () => {
-  it("dispatches taxonomy → assets → portfolios → content → bindings → redirects", async () => {
+  it("dispatches taxonomy → assets → portfolios → content → engagement → bindings → redirects", async () => {
     const calls: string[] = [];
     const sink: MigrationSink = {
       createCategory: vi.fn(async () => {
@@ -166,6 +191,10 @@ describe("runMigration canonical write order", () => {
         calls.push("page");
         return { targetId: "page-1", publicPath: "/about" };
       }),
+      createComment: vi.fn(async (comment) => {
+        calls.push(`comment:${comment.sourceId}`);
+        return { targetId: comment.sourceId };
+      }),
       linkPortfolioMedia: vi.fn(async () => {
         calls.push("binding");
       }),
@@ -190,8 +219,10 @@ describe("runMigration canonical write order", () => {
     expect(calls.indexOf("tag")).toBeLessThan(calls.indexOf("asset"));
     expect(calls.indexOf("asset")).toBeLessThan(calls.indexOf("portfolio"));
     expect(calls.indexOf("portfolio")).toBeLessThan(calls.indexOf("post"));
-    expect(calls.indexOf("post")).toBeLessThan(calls.indexOf("binding"));
-    expect(calls.indexOf("page")).toBeLessThan(calls.indexOf("binding"));
+    expect(calls.indexOf("post")).toBeLessThan(calls.indexOf("comment:c-1"));
+    expect(calls.indexOf("page")).toBeLessThan(calls.indexOf("comment:c-1"));
+    expect(calls.indexOf("comment:c-1")).toBeLessThan(calls.indexOf("comment:c-2"));
+    expect(calls.indexOf("comment:c-2")).toBeLessThan(calls.indexOf("binding"));
     expect(calls.indexOf("binding")).toBeLessThan(calls.indexOf("redirect"));
     expect(sink.createPost).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -214,7 +245,15 @@ describe("runMigration canonical write order", () => {
     expect(sink.bundle.portfolios).toHaveLength(1);
     expect(sink.bundle.categories).toHaveLength(1);
     expect(sink.bundle.tags).toHaveLength(1);
+    expect(sink.bundle.comments).toHaveLength(2);
     expect(sink.redirects.length).toBeGreaterThan(0);
     expect(portfolioMediaMatchesBundle(sink)).toBe(true);
+  });
+});
+
+describe("orderCommentsForWrite", () => {
+  it("puts parents before children even when input is reversed", () => {
+    const ordered = orderCommentsForWrite([childComment, rootComment]);
+    expect(ordered.map((c) => c.sourceId)).toEqual(["c-1", "c-2"]);
   });
 });

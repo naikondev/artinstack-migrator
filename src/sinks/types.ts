@@ -4,6 +4,7 @@ import type {
   EntityKey,
   NormalizedAsset,
   NormalizedCategory,
+  NormalizedComment,
   NormalizedPage,
   NormalizedPortfolio,
   NormalizedPost,
@@ -20,6 +21,10 @@ export interface CreatePostResult {
 export interface CreatePageResult {
   targetId: string;
   publicPath: string;
+}
+
+export interface CreateCommentResult {
+  targetId: string;
 }
 
 export interface UploadAssetInput {
@@ -57,6 +62,8 @@ export interface MigrationSink {
   createPortfolio?(portfolio: NormalizedPortfolio): Promise<{ targetId: string }>;
   createPost(post: NormalizedPost): Promise<CreatePostResult>;
   createPage(page: NormalizedPage): Promise<CreatePageResult>;
+  /** M-engagement — optional until host implements comment import. */
+  createComment?(comment: NormalizedComment): Promise<CreateCommentResult>;
   linkPortfolioMedia?(link: PortfolioMediaLink): Promise<void>;
   writeRedirect?(redirect: MigrationRedirect): Promise<void>;
   reportProgress?(progress: MigrationProgress): Promise<void>;
@@ -91,6 +98,7 @@ export const MIGRATION_WRITE_STAGES = [
   "assets",
   "portfolios",
   "content",
+  "engagement",
   "bindings",
   "redirects",
 ] as const;

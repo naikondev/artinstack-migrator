@@ -6,6 +6,7 @@ import { shouldProcessEntity } from "../normalizer/idempotency.js";
 import { entityKey } from "../normalizer/types.js";
 import type {
   EntityKey,
+  NormalizedComment,
   NormalizedPage,
   NormalizedPost,
 } from "../normalizer/types.js";
@@ -133,6 +134,14 @@ export async function runMigrationFromBundle(
     });
   }
 
+  for (const comment of orderCommentsForWrite(bundle.comments)) {
+    const key = entityKey(comment, platform);
+    await track("engagement", key, async () => {
+      if (!sink.createComment) return;
+      await sink.createComment(comment);
+    });
+  }
+
   const portfolioLinks = buildPortfolioMediaLinks(bundle);
   for (const link of portfolioLinks) {
     const key: EntityKey = {
@@ -210,6 +219,43 @@ function mergeRewriteOptions(
 
 function emptyBody(): Readable {
   return Readable.from([]);
+}
+
+/**
+ * Parents before children so hosts can resolve `parentSourceId` maps.
+ * Unresolved parents stay at the end (host warns / attaches as roots).
+ */
+export function orderCommentsForWrite(comments: NormalizedComment[]): NormalizedComment[] {
+  if (comments.length <= 1) return comments;
+
+  const byId = new Map(comments.map((comment) => [comment.sourceId, comment]));
+  const remaining = new Set(comments.map((comment) => comment.sourceId));
+  const ordered: NormalizedComment[] = [];
+
+  while (remaining.size > 0) {
+    let progressed = false;
+    for (const sourceId of [...remaining]) {
+      const comment = byId.get(sourceId);
+      if (!comment) {
+        remaining.delete(sourceId);
+        continue;
+      }
+      const parentId = comment.parentSourceId;
+      if (parentId && remaining.has(parentId)) continue;
+      ordered.push(comment);
+      remaining.delete(sourceId);
+      progressed = true;
+    }
+    if (!progressed) {
+      for (const sourceId of remaining) {
+        const comment = byId.get(sourceId);
+        if (comment) ordered.push(comment);
+      }
+      break;
+    }
+  }
+
+  return ordered;
 }
 
 export type { EntityKey };

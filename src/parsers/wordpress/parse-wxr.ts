@@ -16,8 +16,10 @@ import { stampMigrationMediaRefs } from "../../transformers/rewrite-inline-image
 import { linkToPath, sanitizeSlug } from "../../lib/utility.js";
 import { flattenWordPressBuilders, parseSliderMetaValue, parseSliderShortcodeMarkup } from "./builders/flatten.js";
 import type {
+  CommentModerationStatus,
   NormalizedAsset,
   NormalizedCategory,
+  NormalizedComment,
   NormalizedEntity,
   NormalizedPage,
   NormalizedPost,
@@ -65,6 +67,21 @@ export interface WxrParseOptions {
   portfolioCptSlugs?: readonly string[];
 }
 
+interface WxrComment {
+  comment_id?: string | number;
+  comment_author?: string;
+  comment_author_email?: string;
+  comment_author_url?: string;
+  comment_author_IP?: string;
+  comment_date?: string;
+  comment_date_gmt?: string;
+  comment_content?: string;
+  comment_approved?: string | number;
+  comment_type?: string;
+  comment_parent?: string | number;
+  comment_user_id?: string | number;
+}
+
 interface WxrItem {
   title?: string;
   link?: string;
@@ -77,6 +94,7 @@ interface WxrItem {
   attachment_url?: string;
   postmeta?: WxrPostMeta | WxrPostMeta[];
   category?: WxrCategory | WxrCategory[];
+  comment?: WxrComment | WxrComment[];
 }
 
 interface WxrPostMeta {
@@ -121,6 +139,81 @@ function mapPublishStatus(wpStatus: string | undefined): PublishStatus {
     default:
       return "archived";
   }
+}
+
+/** WP `comment_approved` → AIS moderation status (M-engagement). */
+export function mapWpCommentModerationStatus(
+  approved: string | undefined,
+): { status: CommentModerationStatus; unknown?: boolean } {
+  const value = (approved ?? "").trim().toLowerCase();
+  switch (value) {
+    case "1":
+    case "approve":
+    case "approved":
+      return { status: "approved" };
+    case "0":
+    case "hold":
+    case "unapproved":
+    case "pending":
+      return { status: "pending" };
+    case "spam":
+      return { status: "spam" };
+    case "trash":
+      return { status: "rejected" };
+    default:
+      return { status: "pending", unknown: true };
+  }
+}
+
+function isImportableWpCommentType(commentType: string | undefined): boolean {
+  const normalized = (commentType ?? "").trim().toLowerCase();
+  return normalized === "" || normalized === "comment";
+}
+
+function parseItemComments(
+  item: WxrItem,
+  postSourceId: string,
+  exportedAt?: string,
+): NormalizedComment[] {
+  const comments: NormalizedComment[] = [];
+
+  for (const raw of asArray(item.comment)) {
+    if (!isImportableWpCommentType(textValue(raw.comment_type))) continue;
+
+    const commentId = textValue(raw.comment_id).trim();
+    const contentHtml = textValue(raw.comment_content);
+    if (!commentId || !contentHtml.trim()) continue;
+
+    const parentRaw = textValue(raw.comment_parent).trim();
+    const parentSourceId =
+      parentRaw && parentRaw !== "0" ? parentRaw : undefined;
+
+    const moderation = mapWpCommentModerationStatus(textValue(raw.comment_approved));
+    const authorName = textValue(raw.comment_author).trim() || undefined;
+    const authorEmail = textValue(raw.comment_author_email).trim() || undefined;
+    const authorUrl = textValue(raw.comment_author_url).trim() || undefined;
+    const publishedAt =
+      textValue(raw.comment_date_gmt).trim() ||
+      textValue(raw.comment_date).trim() ||
+      undefined;
+
+    comments.push({
+      type: "comment",
+      source: sourceMeta(commentId, undefined, exportedAt),
+      sourceId: commentId,
+      postSourceId,
+      parentSourceId,
+      contentHtml,
+      status: moderation.status,
+      authorType: "guest",
+      authorName,
+      authorEmail,
+      authorUrl,
+      publishedAt,
+    });
+  }
+
+  return comments;
 }
 
 function getContentEncoded(item: WxrItem): string {
@@ -689,6 +782,10 @@ export async function* enumerateWxrEntities(
         featuredAssetSourceId,
       };
       yield post;
+
+      for (const comment of parseItemComments(item, id, options.exportedAt)) {
+        yield comment;
+      }
     } else {
       const isHomePage =
         !isPortfolioCpt &&
@@ -769,6 +866,9 @@ export async function validateWxrFile(
     portfolioCpt: countWxrPortfolioCptItems(items),
     categories: 0,
     tags: 0,
+    comments: items
+      .filter((i) => textValue(i.post_type) === "post")
+      .reduce((count, item) => count + asArray(item.comment).length, 0),
     importableItemCount: importSummary.importableItemCount,
   };
 

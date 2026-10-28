@@ -21,6 +21,7 @@ export interface MigrationReport {
     portfolios: number;
     categories: number;
     tags: number;
+    comments: number;
     storageBytesEstimated?: number;
     assetDiscovery?: AssetDiscoverySummary;
     importableItemCount?: number;

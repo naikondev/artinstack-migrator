@@ -1,8 +1,18 @@
 export type MigrationPlatform = "wordpress" | "smugmug" | "squarespace" | "wix";
 
-export type EntityType = "post" | "page" | "asset" | "portfolio" | "category" | "tag";
+export type EntityType =
+  | "post"
+  | "page"
+  | "asset"
+  | "portfolio"
+  | "category"
+  | "tag"
+  | "comment";
 
 export type PublishStatus = "draft" | "published" | "archived";
+
+/** AIS comment moderation statuses — import maps legacy values into this set only. */
+export type CommentModerationStatus = "approved" | "pending" | "spam" | "rejected";
 
 export interface SourceMetadata {
   platform: MigrationPlatform;
@@ -32,6 +42,11 @@ export interface NormalizedPost {
   featuredAssetSourceId?: string;
   seoTitle?: string;
   seoDescription?: string;
+  /**
+   * Unambiguous like total from the source export (M-engagement).
+   * Host may opt in to seed `posts.likes_count`; never invents engagement_likes rows.
+   */
+  sourceLikeCount?: number;
 }
 
 /** RevSlider / MasterSlider reference from theme hero meta (OSS-27) — alias only, no slide payloads in WXR. */
@@ -122,13 +137,35 @@ export interface NormalizedTag {
   slug: string;
 }
 
+/**
+ * Independent comment entity (M-engagement) — not nested under NormalizedPost.
+ * Authors are always guest provenance; host resolves post/parent via source ids.
+ */
+export interface NormalizedComment {
+  type: "comment";
+  source: SourceMetadata;
+  sourceId: string;
+  /** Source id of the parent post (`NormalizedPost.sourceId`). */
+  postSourceId: string;
+  /** Source id of the parent comment when threaded; omit for roots. */
+  parentSourceId?: string;
+  contentHtml: string;
+  status: CommentModerationStatus;
+  authorType: "guest";
+  authorName?: string;
+  authorEmail?: string;
+  authorUrl?: string;
+  publishedAt?: string;
+}
+
 export type NormalizedEntity =
   | NormalizedPost
   | NormalizedPage
   | NormalizedAsset
   | NormalizedPortfolio
   | NormalizedCategory
-  | NormalizedTag;
+  | NormalizedTag
+  | NormalizedComment;
 
 export interface ValidationIssue {
   code: string;
@@ -148,6 +185,7 @@ export interface ValidationResult {
     portfolioCpt?: number;
     categories?: number;
     tags?: number;
+    comments?: number;
     /** WXR rows the parser would emit (OSS-19). */
     importableItemCount?: number;
     unsupportedOnly?: boolean;

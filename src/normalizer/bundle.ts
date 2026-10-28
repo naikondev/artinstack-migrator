@@ -1,6 +1,7 @@
 import type {
   NormalizedAsset,
   NormalizedCategory,
+  NormalizedComment,
   NormalizedEntity,
   NormalizedPage,
   NormalizedPortfolio,
@@ -15,6 +16,7 @@ export interface EntityBundle {
   portfolios: NormalizedPortfolio[];
   categories: NormalizedCategory[];
   tags: NormalizedTag[];
+  comments: NormalizedComment[];
 }
 
 export function emptyBundle(): EntityBundle {
@@ -25,6 +27,7 @@ export function emptyBundle(): EntityBundle {
     portfolios: [],
     categories: [],
     tags: [],
+    comments: [],
   };
 }
 
@@ -53,6 +56,9 @@ export async function collectEntities(
       case "tag":
         bundle.tags.push(entity);
         break;
+      case "comment":
+        bundle.comments.push(entity);
+        break;
       default: {
         const _exhaustive: never = entity;
         throw new Error(`Unknown entity type: ${(_exhaustive as NormalizedEntity).type}`);
@@ -70,6 +76,7 @@ export interface BundleCounts {
   portfolios: number;
   categories: number;
   tags: number;
+  comments: number;
 }
 
 export function bundleCounts(bundle: EntityBundle): BundleCounts {
@@ -80,5 +87,6 @@ export function bundleCounts(bundle: EntityBundle): BundleCounts {
     portfolios: bundle.portfolios.length,
     categories: bundle.categories.length,
     tags: bundle.tags.length,
+    comments: bundle.comments.length,
   };
 }

@@ -29,6 +29,24 @@ export const normalizedPostSchema = z.object({
   featuredAssetSourceId: z.string().optional(),
   seoTitle: z.string().optional(),
   seoDescription: z.string().optional(),
+  sourceLikeCount: z.number().int().nonnegative().optional(),
+});
+
+const commentModerationStatusSchema = z.enum(["approved", "pending", "spam", "rejected"]);
+
+export const normalizedCommentSchema = z.object({
+  type: z.literal("comment"),
+  source: sourceMetadataSchema,
+  sourceId: z.string().min(1),
+  postSourceId: z.string().min(1),
+  parentSourceId: z.string().min(1).optional(),
+  contentHtml: z.string().min(1),
+  status: commentModerationStatusSchema,
+  authorType: z.literal("guest"),
+  authorName: z.string().optional(),
+  authorEmail: z.string().optional(),
+  authorUrl: z.string().optional(),
+  publishedAt: z.string().optional(),
 });
 
 const pageHeroSliderHintSchema = z.object({
@@ -113,6 +131,7 @@ export const normalizedEntitySchema = z.discriminatedUnion("type", [
   normalizedPortfolioSchema,
   normalizedCategorySchema,
   normalizedTagSchema,
+  normalizedCommentSchema,
 ]);
 
 function zodIssuesToValidationIssues(issues: z.ZodIssue[]): ValidationIssue[] {
@@ -159,6 +178,11 @@ export function validateNormalizedCategory(category: unknown): ValidationResult 
 /** Opt-in structural check for a normalized tag DTO. */
 export function validateNormalizedTag(tag: unknown): ValidationResult {
   return parseToValidationResult(normalizedTagSchema, tag);
+}
+
+/** Opt-in structural check for a normalized comment DTO. */
+export function validateNormalizedComment(comment: unknown): ValidationResult {
+  return parseToValidationResult(normalizedCommentSchema, comment);
 }
 
 /** Opt-in structural check for any normalized entity discriminated by `type`. */
