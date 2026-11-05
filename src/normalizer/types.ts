@@ -14,6 +14,17 @@ export type PublishStatus = "draft" | "published" | "archived";
 /** AIS comment moderation statuses — import maps legacy values into this set only. */
 export type CommentModerationStatus = "approved" | "pending" | "spam" | "rejected";
 
+/**
+ * Content unit a comment attaches to (not the reply parent).
+ * Hosts import a subset (e.g. ArtInStack: post + portfolio today).
+ */
+export type CommentTargetType = "post" | "page" | "portfolio" | "media";
+
+export interface CommentTarget {
+  type: CommentTargetType;
+  sourceId: string;
+}
+
 export interface SourceMetadata {
   platform: MigrationPlatform;
   id: string;
@@ -139,14 +150,19 @@ export interface NormalizedTag {
 
 /**
  * Independent comment entity (M-engagement) — not nested under NormalizedPost.
- * Authors are always guest provenance; host resolves post/parent via source ids.
+ * `target` = content being discussed; `parentSourceId` = reply-to comment only.
  */
 export interface NormalizedComment {
   type: "comment";
   source: SourceMetadata;
   sourceId: string;
-  /** Source id of the parent post (`NormalizedPost.sourceId`). */
-  postSourceId: string;
+  /** Content being commented on (discriminated). */
+  target: CommentTarget;
+  /**
+   * @deprecated Prefer `target`. Still emitted when `target.type === "post"` so
+   * hosts can migrate off `postSourceId` without a mid-series package bump.
+   */
+  postSourceId?: string;
   /** Source id of the parent comment when threaded; omit for roots. */
   parentSourceId?: string;
   contentHtml: string;
@@ -156,6 +172,20 @@ export interface NormalizedComment {
   authorEmail?: string;
   authorUrl?: string;
   publishedAt?: string;
+}
+
+/** Resolve comment attachment target; accepts legacy `postSourceId`-only rows. */
+export function resolveCommentTarget(comment: {
+  target?: CommentTarget | null;
+  postSourceId?: string | null;
+}): CommentTarget {
+  if (comment.target?.type && comment.target.sourceId) {
+    return comment.target;
+  }
+  if (comment.postSourceId) {
+    return { type: "post", sourceId: comment.postSourceId };
+  }
+  throw new Error("NormalizedComment is missing target (and legacy postSourceId)");
 }
 
 export type NormalizedEntity =

@@ -120,7 +120,60 @@
 			<wp:comment_author_url></wp:comment_author_url>
 			<wp:comment_date><![CDATA[2024-01-03 10:00:00]]></wp:comment_date>
 			<wp:comment_date_gmt><![CDATA[2024-01-03 15:00:00]]></wp:comment_date_gmt>
-			<wp:comment_content><![CDATA[Page comment ignored]]></wp:comment_content>
+			<wp:comment_content><![CDATA[Page comment]]></wp:comment_content>
+			<wp:comment_approved><![CDATA[1]]></wp:comment_approved>
+			<wp:comment_type><![CDATA[]]></wp:comment_type>
+			<wp:comment_parent>0</wp:comment_parent>
+			<wp:comment_user_id>0</wp:comment_user_id>
+		</wp:comment>
+	</item>
+	<item>
+		<title><![CDATA[Hero shot]]></title>
+		<link>https://example.com/hero-shot/</link>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<content:encoded><![CDATA[]]></content:encoded>
+		<excerpt:encoded><![CDATA[]]></excerpt:encoded>
+		<wp:post_id>30</wp:post_id>
+		<wp:post_date><![CDATA[2024-01-01 12:00:00]]></wp:post_date>
+		<wp:post_date_gmt><![CDATA[2024-01-01 17:00:00]]></wp:post_date_gmt>
+		<wp:post_name><![CDATA[hero-shot]]></wp:post_name>
+		<wp:status><![CDATA[inherit]]></wp:status>
+		<wp:post_type><![CDATA[attachment]]></wp:post_type>
+		<wp:attachment_url>https://example.com/wp-content/uploads/hero-shot.jpg</wp:attachment_url>
+		<wp:comment>
+			<wp:comment_id>301</wp:comment_id>
+			<wp:comment_author><![CDATA[MediaGuest]]></wp:comment_author>
+			<wp:comment_author_email><![CDATA[media@example.com]]></wp:comment_author_email>
+			<wp:comment_author_url></wp:comment_author_url>
+			<wp:comment_date><![CDATA[2024-01-04 10:00:00]]></wp:comment_date>
+			<wp:comment_date_gmt><![CDATA[2024-01-04 15:00:00]]></wp:comment_date_gmt>
+			<wp:comment_content><![CDATA[Attachment comment]]></wp:comment_content>
+			<wp:comment_approved><![CDATA[1]]></wp:comment_approved>
+			<wp:comment_type><![CDATA[]]></wp:comment_type>
+			<wp:comment_parent>0</wp:comment_parent>
+			<wp:comment_user_id>0</wp:comment_user_id>
+		</wp:comment>
+	</item>
+	<item>
+		<title><![CDATA[Wildlife gallery]]></title>
+		<link>https://example.com/portfolio/wildlife/</link>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<content:encoded><![CDATA[<p>CPT body</p>]]></content:encoded>
+		<excerpt:encoded><![CDATA[]]></excerpt:encoded>
+		<wp:post_id>40</wp:post_id>
+		<wp:post_date><![CDATA[2024-01-01 12:00:00]]></wp:post_date>
+		<wp:post_date_gmt><![CDATA[2024-01-01 17:00:00]]></wp:post_date_gmt>
+		<wp:post_name><![CDATA[wildlife]]></wp:post_name>
+		<wp:status><![CDATA[publish]]></wp:status>
+		<wp:post_type><![CDATA[portfolio]]></wp:post_type>
+		<wp:comment>
+			<wp:comment_id>401</wp:comment_id>
+			<wp:comment_author><![CDATA[PortfolioGuest]]></wp:comment_author>
+			<wp:comment_author_email><![CDATA[folio@example.com]]></wp:comment_author_email>
+			<wp:comment_author_url></wp:comment_author_url>
+			<wp:comment_date><![CDATA[2024-01-05 10:00:00]]></wp:comment_date>
+			<wp:comment_date_gmt><![CDATA[2024-01-05 15:00:00]]></wp:comment_date_gmt>
+			<wp:comment_content><![CDATA[Portfolio CPT comment]]></wp:comment_content>
 			<wp:comment_approved><![CDATA[1]]></wp:comment_approved>
 			<wp:comment_type><![CDATA[]]></wp:comment_type>
 			<wp:comment_parent>0</wp:comment_parent>

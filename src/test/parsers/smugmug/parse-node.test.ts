@@ -78,6 +78,7 @@ describe("parse-node (nested fixture tree)", () => {
       albums: 1,
       assets: 1,
       portfolios: 2,
+      comments: 0,
     });
   });
 });

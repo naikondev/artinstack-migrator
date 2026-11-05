@@ -17,6 +17,7 @@ import { linkToPath, sanitizeSlug } from "../../lib/utility.js";
 import { flattenWordPressBuilders, parseSliderMetaValue, parseSliderShortcodeMarkup } from "./builders/flatten.js";
 import type {
   CommentModerationStatus,
+  CommentTarget,
   NormalizedAsset,
   NormalizedCategory,
   NormalizedComment,
@@ -189,7 +190,7 @@ function isImportableWpCommentType(commentType: string | undefined): boolean {
 
 function parseItemComments(
   item: WxrItem,
-  postSourceId: string,
+  target: CommentTarget,
   exportedAt?: string,
 ): NormalizedComment[] {
   const comments: NormalizedComment[] = [];
@@ -218,7 +219,9 @@ function parseItemComments(
       type: "comment",
       source: sourceMeta(commentId, undefined, exportedAt),
       sourceId: commentId,
-      postSourceId,
+      target,
+      // Legacy mirror for hosts still reading postSourceId (post targets only).
+      ...(target.type === "post" ? { postSourceId: target.sourceId } : {}),
       parentSourceId,
       contentHtml,
       status: moderation.status,
@@ -231,6 +234,30 @@ function parseItemComments(
   }
 
   return comments;
+}
+
+function countImportableWxrComments(
+  items: WxrItem[],
+  portfolioCptSlugs: Set<string> = new Set(DEFAULT_WORDPRESS_PORTFOLIO_CPT_SLUGS),
+): number {
+  let count = 0;
+  for (const item of items) {
+    const postType = textValue(item.post_type);
+    const eligible =
+      postType === "post" ||
+      postType === "page" ||
+      postType === "attachment" ||
+      isPortfolioCptPostType(postType, portfolioCptSlugs);
+    if (!eligible) continue;
+    for (const raw of asArray(item.comment)) {
+      if (!isImportableWpCommentType(textValue(raw.comment_type))) continue;
+      const commentId = textValue(raw.comment_id).trim();
+      const contentHtml = textValue(raw.comment_content);
+      if (!commentId || !contentHtml.trim()) continue;
+      count += 1;
+    }
+  }
+  return count;
 }
 
 function getContentEncoded(item: WxrItem): string {
@@ -704,7 +731,7 @@ export async function* enumerateWxrEntities(
     yield tag;
   }
 
-  // Emit attachment assets
+  // Emit attachment assets (+ attachment comments — OSS-37)
   for (const [id, entry] of attachmentIndex) {
     emittedAttachmentIds.add(id);
     seenAssetUrls.add(entry.sourceUrl);
@@ -717,6 +744,19 @@ export async function* enumerateWxrEntities(
       mimeType: entry.mimeType,
       caption: entry.title,
     } satisfies NormalizedAsset;
+  }
+
+  for (const item of items) {
+    if (textValue(item.post_type) !== "attachment") continue;
+    const id = textValue(item.post_id);
+    if (!id || !attachmentIndex.has(id)) continue;
+    for (const comment of parseItemComments(
+      item,
+      { type: "media", sourceId: id },
+      options.exportedAt,
+    )) {
+      yield comment;
+    }
   }
 
   const portfolioCptSlugs = resolvePortfolioCptSlugs(options);
@@ -809,7 +849,11 @@ export async function* enumerateWxrEntities(
       };
       yield post;
 
-      for (const comment of parseItemComments(item, id, options.exportedAt)) {
+      for (const comment of parseItemComments(
+        item,
+        { type: "post", sourceId: id },
+        options.exportedAt,
+      )) {
         yield comment;
       }
     } else {
@@ -844,6 +888,13 @@ export async function* enumerateWxrEntities(
         status: mapPublishStatus(textValue(item.status)),
       };
       yield page;
+
+      const commentTarget: CommentTarget = isPortfolioCpt
+        ? { type: "portfolio", sourceId: pageSourceId }
+        : { type: "page", sourceId: pageSourceId };
+      for (const comment of parseItemComments(item, commentTarget, options.exportedAt)) {
+        yield comment;
+      }
     }
   }
 }
@@ -892,9 +943,7 @@ export async function validateWxrFile(
     portfolioCpt: countWxrPortfolioCptItems(items),
     categories: 0,
     tags: 0,
-    comments: items
-      .filter((i) => textValue(i.post_type) === "post")
-      .reduce((count, item) => count + asArray(item.comment).length, 0),
+    comments: countImportableWxrComments(items),
     importableItemCount: importSummary.importableItemCount,
   };
 

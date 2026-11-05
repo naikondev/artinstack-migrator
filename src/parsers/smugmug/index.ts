@@ -61,6 +61,7 @@ export const smugmugAdapter: MigrationAdapter = {
             posts: 0,
             pages: 0,
             tags: 0,
+            comments: summary.comments,
           },
         };
       }
@@ -82,6 +83,7 @@ export const smugmugAdapter: MigrationAdapter = {
             posts: 0,
             pages: 0,
             tags: 0,
+            comments: summary.comments,
           },
         };
       }
@@ -128,6 +130,7 @@ export {
   createSmugMugOAuthSession,
   getSmugMugAccessToken,
   getSmugMugRequestToken,
+  mapSmugMugCommentWire,
   oauthPercentEncode,
   parseSmugMugOAuthFormBody,
   readSmugMugCredentialsFromEnv,
@@ -137,6 +140,7 @@ export {
   smugMugConsumerCredentialsSchema,
   smugMugCredentialsSchema,
 } from "./api.js";
+export type { SmugMugCommentWire } from "./api.js";
 export type {
   SmugMugAccessLevel,
   SmugMugAuthorizeUrlOptions,
@@ -153,6 +157,8 @@ export {
   enumerateSmugMugEntities,
   isSmugMugFlatExport,
   loadSmugMugExport,
+  mapSmugMugCommentModerationStatus,
+  smugMugCommentSourceId,
   summarizeSmugMugExport,
   validateSmugMugExportFile,
   validateSmugMugMockFile,

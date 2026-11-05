@@ -2,8 +2,11 @@ import { readFile } from "node:fs/promises";
 
 import { sanitizeSlug } from "../../lib/utility.js";
 import type {
+  CommentModerationStatus,
+  CommentTarget,
   NormalizedAsset,
   NormalizedAssetExif,
+  NormalizedComment,
   NormalizedEntity,
   NormalizedPortfolio,
   SourceMetadata,
@@ -11,15 +14,18 @@ import type {
 import { SmugMugApiClient, type SmugMugClientOptions, type SmugMugCredentials } from "./api.js";
 import type {
   SmugMugExportDocument,
+  SmugMugFlatComment,
   SmugMugFlatExport,
   SmugMugFlatImage,
   SmugMugMockAlbum,
+  SmugMugMockComment,
   SmugMugMockExport,
   SmugMugMockFolder,
 } from "./types.js";
 
 const PLATFORM = "smugmug" as const;
 const UNRESOLVED_URL_PREFIX = "unspecified://smugmug/";
+const COMMENT_SOURCE_ID_PREFIX = "smugmug:comment:";
 
 export interface SmugMugParseOptions {
   filePath?: string;
@@ -39,6 +45,147 @@ function sourceMeta(id: string, url?: string, exportedAt?: string): SourceMetada
     url,
     exportedAt,
   };
+}
+
+/** Stable provider-namespaced comment id (OSS-36). */
+export function smugMugCommentSourceId(rawId: string): string {
+  const id = rawId.trim();
+  if (!id) return id;
+  if (id.startsWith(COMMENT_SOURCE_ID_PREFIX)) return id;
+  return `${COMMENT_SOURCE_ID_PREFIX}${id}`;
+}
+
+/**
+ * SmugMug approval/status → AIS moderation (M-engagement / OSS-36).
+ * Distinguishes absent vs unmapped — hosts may warn `moderation_absent` / `moderation_unmapped`.
+ */
+export function mapSmugMugCommentModerationStatus(
+  approved: boolean | string | undefined | null,
+): {
+  status: CommentModerationStatus;
+  absent?: boolean;
+  unmapped?: boolean;
+  raw?: string;
+} {
+  if (approved === undefined || approved === null || approved === "") {
+    return { status: "pending", absent: true };
+  }
+  if (approved === true) {
+    return { status: "approved" };
+  }
+  if (approved === false) {
+    return { status: "pending" };
+  }
+
+  const value = String(approved).trim().toLowerCase();
+  switch (value) {
+    case "1":
+    case "true":
+    case "approve":
+    case "approved":
+    case "public":
+      return { status: "approved" };
+    case "0":
+    case "false":
+    case "hold":
+    case "unapproved":
+    case "pending":
+      return { status: "pending" };
+    case "spam":
+      return { status: "spam" };
+    case "trash":
+    case "deleted":
+    case "rejected":
+      return { status: "rejected" };
+    default:
+      return { status: "pending", unmapped: true, raw: String(approved) };
+  }
+}
+
+function normalizeCommentFromParts(input: {
+  rawSourceId: string;
+  target: CommentTarget;
+  parentRawId?: string;
+  contentHtml: string;
+  approved?: boolean | string | null;
+  authorName?: string;
+  authorEmail?: string;
+  authorUrl?: string;
+  publishedAt?: string;
+  exportedAt?: string;
+}): NormalizedComment | null {
+  const rawSourceId = input.rawSourceId.trim();
+  const contentHtml = input.contentHtml.trim();
+  if (!rawSourceId || !contentHtml) return null;
+
+  const sourceId = smugMugCommentSourceId(rawSourceId);
+  const parentTrimmed = input.parentRawId?.trim();
+  const parentSourceId =
+    parentTrimmed && parentTrimmed !== "0" && parentTrimmed !== rawSourceId
+      ? smugMugCommentSourceId(parentTrimmed)
+      : undefined;
+
+  const moderation = mapSmugMugCommentModerationStatus(input.approved);
+
+  return {
+    type: "comment",
+    source: sourceMeta(sourceId, undefined, input.exportedAt),
+    sourceId,
+    target: input.target,
+    parentSourceId,
+    contentHtml,
+    status: moderation.status,
+    authorType: "guest",
+    authorName: input.authorName?.trim() || undefined,
+    authorEmail: input.authorEmail?.trim() || undefined,
+    authorUrl: input.authorUrl?.trim() || undefined,
+    publishedAt: input.publishedAt?.trim() || undefined,
+  };
+}
+
+function* emitMockComments(
+  comments: SmugMugMockComment[] | undefined,
+  target: CommentTarget,
+  exportedAt?: string,
+): Generator<NormalizedComment> {
+  if (!comments?.length) return;
+  for (const comment of comments) {
+    const normalized = normalizeCommentFromParts({
+      rawSourceId: comment.id,
+      target,
+      parentRawId: comment.parentId,
+      contentHtml: comment.body,
+      approved: comment.approved,
+      authorName: comment.authorName,
+      authorEmail: comment.authorEmail,
+      authorUrl: comment.authorUrl,
+      publishedAt: comment.publishedAt,
+      exportedAt,
+    });
+    if (normalized) yield normalized;
+  }
+}
+
+function* emitFlatComments(
+  comments: SmugMugFlatComment[] | undefined,
+  exportedAt?: string,
+): Generator<NormalizedComment> {
+  if (!comments?.length) return;
+  for (const comment of comments) {
+    const normalized = normalizeCommentFromParts({
+      rawSourceId: comment.sourceId,
+      target: { type: comment.targetType, sourceId: comment.targetSourceId },
+      parentRawId: comment.parentSourceId,
+      contentHtml: comment.contentHtml,
+      approved: comment.approved,
+      authorName: comment.authorName,
+      authorEmail: comment.authorEmail,
+      authorUrl: comment.authorUrl,
+      publishedAt: comment.publishedAt,
+      exportedAt,
+    });
+    if (normalized) yield normalized;
+  }
 }
 
 function guessMime(filename: string): string | undefined {
@@ -159,7 +306,7 @@ function* emitNestedAlbumPortfolio(
 function* emitNestedAlbumAssets(
   album: SmugMugMockAlbum,
   exportedAt?: string,
-): Generator<NormalizedAsset> {
+): Generator<NormalizedAsset | NormalizedComment> {
   for (let index = 0; index < album.images.length; index++) {
     const image = album.images[index]!;
     yield {
@@ -175,6 +322,7 @@ function* emitNestedAlbumAssets(
       portfolioSourceId: album.id,
       sort: index,
     };
+    yield* emitMockComments(image.comments, { type: "media", sourceId: image.id }, exportedAt);
   }
 }
 
@@ -186,6 +334,11 @@ async function* enumerateNestedExport(
     yield* emitNestedFolderPortfolio(folder, exportedAt);
     for (const album of folder.albums) {
       yield* emitNestedAlbumPortfolio(folder, album, exportedAt);
+      yield* emitMockComments(
+        album.comments,
+        { type: "portfolio", sourceId: album.id },
+        exportedAt,
+      );
       yield* emitNestedAlbumAssets(album, exportedAt);
     }
   }
@@ -234,6 +387,8 @@ async function* enumerateFlatExport(doc: SmugMugFlatExport): AsyncGenerator<Norm
       sort: image.sort ?? 0,
     } satisfies NormalizedAsset;
   }
+
+  yield* emitFlatComments(doc.Comments, exportedAt);
 }
 
 async function resolveSmugMugDocument(options: SmugMugParseOptions): Promise<SmugMugExportDocument> {
@@ -258,11 +413,25 @@ export async function* enumerateSmugMugEntities(
   yield* enumerateNestedExport(doc);
 }
 
+function countNestedComments(doc: SmugMugMockExport): number {
+  let count = 0;
+  for (const folder of doc.folders) {
+    for (const album of folder.albums) {
+      count += album.comments?.length ?? 0;
+      for (const image of album.images) {
+        count += image.comments?.length ?? 0;
+      }
+    }
+  }
+  return count;
+}
+
 export function summarizeSmugMugExport(doc: SmugMugExportDocument): {
   folders: number;
   albums: number;
   assets: number;
   portfolios: number;
+  comments: number;
 } {
   if (isSmugMugFlatExport(doc)) {
     return {
@@ -270,6 +439,7 @@ export function summarizeSmugMugExport(doc: SmugMugExportDocument): {
       albums: doc.Albums.length,
       assets: doc.Images.length,
       portfolios: doc.Folders.length + doc.Albums.length,
+      comments: doc.Comments?.length ?? 0,
     };
   }
 
@@ -287,6 +457,7 @@ export function summarizeSmugMugExport(doc: SmugMugExportDocument): {
     albums,
     assets,
     portfolios: folders + albums,
+    comments: countNestedComments(doc),
   };
 }
 
@@ -331,6 +502,7 @@ export async function validateSmugMugExportFile(filePath: string): Promise<{
       posts: 0,
       pages: 0,
       tags: 0,
+      comments: summary.comments,
     },
   };
 }

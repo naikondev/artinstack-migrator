@@ -1,5 +1,18 @@
 /** Mock SmugMug export shape for CI fixtures (not raw API wire format). */
 
+/** Fixture / flat-export comment row (OSS-36). */
+export interface SmugMugMockComment {
+  id: string;
+  body: string;
+  parentId?: string;
+  authorName?: string;
+  authorEmail?: string;
+  authorUrl?: string;
+  publishedAt?: string;
+  /** When omitted, normalize as pending + treat as moderation-absent. */
+  approved?: boolean | "1" | "0" | "spam" | "trash" | string;
+}
+
 export interface SmugMugMockImage {
   id: string;
   fileName: string;
@@ -12,6 +25,8 @@ export interface SmugMugMockImage {
     shutter?: string;
     focalLength?: number;
   };
+  /** Image-level comments when the source exposes them. */
+  comments?: SmugMugMockComment[];
 }
 
 export interface SmugMugMockAlbum {
@@ -21,6 +36,8 @@ export interface SmugMugMockAlbum {
   description?: string;
   url?: string;
   images: SmugMugMockImage[];
+  /** Album/node-level comments. */
+  comments?: SmugMugMockComment[];
 }
 
 export interface SmugMugMockFolder {
@@ -72,12 +89,29 @@ export interface SmugMugFlatImage {
   };
 }
 
+/** Flat comment table from API crawl or fixture dump. */
+export interface SmugMugFlatComment {
+  sourceId: string;
+  targetType: "portfolio" | "media";
+  targetSourceId: string;
+  parentSourceId?: string;
+  contentHtml: string;
+  authorName?: string;
+  authorEmail?: string;
+  authorUrl?: string;
+  publishedAt?: string;
+  /** Raw approval/status from source when present. */
+  approved?: boolean | string;
+}
+
 export interface SmugMugFlatExport {
   exportVersion: string | number;
   exportedAt?: string;
   Folders: SmugMugFlatFolder[];
   Albums: SmugMugFlatAlbum[];
   Images: SmugMugFlatImage[];
+  /** OSS-36 — album/node + image comments (may be empty). */
+  Comments?: SmugMugFlatComment[];
 }
 
 export type SmugMugExportDocument = SmugMugMockExport | SmugMugFlatExport;

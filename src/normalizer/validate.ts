@@ -34,11 +34,40 @@ export const normalizedPostSchema = z.object({
 
 const commentModerationStatusSchema = z.enum(["approved", "pending", "spam", "rejected"]);
 
-export const normalizedCommentSchema = z.object({
+const commentTargetTypeSchema = z.enum(["post", "page", "portfolio", "media"]);
+
+export const commentTargetSchema = z.object({
+  type: commentTargetTypeSchema,
+  sourceId: z.string().min(1),
+});
+
+/** Fill `target` from legacy OSS-35 `postSourceId`-only payloads. */
+function coerceLegacyCommentTarget(value: unknown): unknown {
+  if (!value || typeof value !== "object") return value;
+  const row = value as Record<string, unknown>;
+  const existing = row.target;
+  if (existing && typeof existing === "object") {
+    const target = existing as Record<string, unknown>;
+    if (typeof target.type === "string" && typeof target.sourceId === "string") {
+      return value;
+    }
+  }
+  if (typeof row.postSourceId === "string" && row.postSourceId.length > 0) {
+    return {
+      ...row,
+      target: { type: "post", sourceId: row.postSourceId },
+    };
+  }
+  return value;
+}
+
+/** Plain object — required by `z.discriminatedUnion` (no ZodEffects). */
+const normalizedCommentObjectSchema = z.object({
   type: z.literal("comment"),
   source: sourceMetadataSchema,
   sourceId: z.string().min(1),
-  postSourceId: z.string().min(1),
+  target: commentTargetSchema,
+  postSourceId: z.string().min(1).optional(),
   parentSourceId: z.string().min(1).optional(),
   contentHtml: z.string().min(1),
   status: commentModerationStatusSchema,
@@ -48,6 +77,34 @@ export const normalizedCommentSchema = z.object({
   authorUrl: z.string().optional(),
   publishedAt: z.string().optional(),
 });
+
+function refineCommentPostSourceMirror(
+  data: z.infer<typeof normalizedCommentObjectSchema>,
+  ctx: z.RefinementCtx,
+): void {
+  if (data.postSourceId == null) return;
+  if (data.target.type !== "post") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "postSourceId is only valid when target.type is \"post\"",
+      path: ["postSourceId"],
+    });
+    return;
+  }
+  if (data.postSourceId !== data.target.sourceId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "postSourceId must equal target.sourceId when target.type is \"post\"",
+      path: ["postSourceId"],
+    });
+  }
+}
+
+/** Public comment schema — coerces legacy `postSourceId`-only rows, then validates. */
+export const normalizedCommentSchema = z.preprocess(
+  coerceLegacyCommentTarget,
+  normalizedCommentObjectSchema.superRefine(refineCommentPostSourceMirror),
+);
 
 const pageHeroSliderHintSchema = z.object({
   plugin: z.enum(["revslider", "masterslider"]),
@@ -124,15 +181,24 @@ export const normalizedTagSchema = z.object({
   slug: z.string().min(1),
 });
 
-export const normalizedEntitySchema = z.discriminatedUnion("type", [
-  normalizedPostSchema,
-  normalizedPageSchema,
-  normalizedAssetSchema,
-  normalizedPortfolioSchema,
-  normalizedCategorySchema,
-  normalizedTagSchema,
-  normalizedCommentSchema,
-]);
+/** Entity union uses the object comment schema; coerce legacy comments first. */
+export const normalizedEntitySchema = z.preprocess(
+  (value) => {
+    if (value && typeof value === "object" && (value as { type?: string }).type === "comment") {
+      return coerceLegacyCommentTarget(value);
+    }
+    return value;
+  },
+  z.discriminatedUnion("type", [
+    normalizedPostSchema,
+    normalizedPageSchema,
+    normalizedAssetSchema,
+    normalizedPortfolioSchema,
+    normalizedCategorySchema,
+    normalizedTagSchema,
+    normalizedCommentObjectSchema,
+  ]),
+);
 
 function zodIssuesToValidationIssues(issues: z.ZodIssue[]): ValidationIssue[] {
   return issues.map((issue) => ({

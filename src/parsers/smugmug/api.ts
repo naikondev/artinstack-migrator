@@ -2,7 +2,13 @@ import { createHmac, randomBytes } from "node:crypto";
 
 import { z } from "zod";
 
-import type { SmugMugFlatAlbum, SmugMugFlatExport, SmugMugFlatFolder, SmugMugFlatImage } from "./types.js";
+import type {
+  SmugMugFlatAlbum,
+  SmugMugFlatComment,
+  SmugMugFlatExport,
+  SmugMugFlatFolder,
+  SmugMugFlatImage,
+} from "./types.js";
 
 /** SmugMug API v2 base (OAuth 1.0a). No secrets — inject credentials at runtime. */
 export const SMUGMUG_API_HOST = "api.smugmug.com";
@@ -149,7 +155,36 @@ interface SmugMugNodeWire {
   UrlName?: string;
   WebUri?: string;
   Uri: string;
-  Uris?: { Album?: SmugMugUriLink; ChildNodes?: SmugMugUriLink };
+  Uris?: {
+    Album?: SmugMugUriLink;
+    ChildNodes?: SmugMugUriLink;
+    /** Follow when present — do not invent `!comments` (OSS-36). */
+    NodeComments?: SmugMugUriLink;
+  };
+}
+
+/** Comment list item from NodeComments / ImageComments (OSS-36). */
+export interface SmugMugCommentWire {
+  CommentID?: number | string;
+  Uri?: string;
+  Text?: string;
+  Comment?: string;
+  Name?: string;
+  Email?: string;
+  EmailAddress?: string;
+  Url?: string;
+  URL?: string;
+  Date?: string;
+  DateTime?: string;
+  ParentID?: number | string;
+  CommentParentID?: number | string;
+  Approved?: boolean | string;
+  Status?: string;
+  IsApproved?: boolean;
+  Uris?: { ParentComment?: SmugMugUriLink };
+  FormattedValues?: {
+    Text?: { html?: string; text?: string };
+  };
 }
 
 interface SmugMugImageMetadataWire {
@@ -183,6 +218,10 @@ type SmugMugInlineUri<T> = SmugMugUriLink | (Record<string, unknown> & { Uri?: s
   [locator: string]: T | string | undefined;
 });
 
+interface SmugMugImageCommentsHost {
+  Uris?: { ImageComments?: SmugMugUriLink };
+}
+
 interface SmugMugAlbumImageWire {
   ImageKey: string;
   Caption?: string;
@@ -192,11 +231,13 @@ interface SmugMugAlbumImageWire {
   ArchivedUri?: string;
   KeywordArray?: string[];
   KeywordsArray?: string[];
-  Image?: SmugMugImageWire;
+  Image?: SmugMugImageWire & SmugMugImageCommentsHost;
   LargestImage?: { Url?: string };
   ImageMetadata?: SmugMugImageMetadataWire;
   ImageSizeDetails?: SmugMugImageSizeDetailsWire;
   Uris?: {
+    Image?: SmugMugUriLink;
+    ImageComments?: SmugMugUriLink;
     ImageSizeDetails?: SmugMugInlineUri<SmugMugImageSizeDetailsWire>;
     LargestImage?: SmugMugInlineUri<{ Url?: string }>;
     ImageMetadata?: SmugMugInlineUri<SmugMugImageMetadataWire>;
@@ -656,6 +697,80 @@ function mapAlbumImage(
   };
 }
 
+function commentIdFromUri(uri: string | undefined): string | undefined {
+  if (!uri) return undefined;
+  const match = uri.match(/\/comment\/([^/?!]+)/i) ?? uri.match(/!comments?\/([^/?!]+)/i);
+  return match?.[1]?.trim() || undefined;
+}
+
+function parentCommentIdFromLink(link: SmugMugUriLink | null | undefined): string | undefined {
+  if (link == null) return undefined;
+  try {
+    return commentIdFromUri(resolveSmugMugUriLink(link, "ParentComment"));
+  } catch {
+    return undefined;
+  }
+}
+
+function readCommentBody(comment: SmugMugCommentWire): string {
+  const html = comment.FormattedValues?.Text?.html?.trim();
+  if (html) return html;
+  const text = comment.FormattedValues?.Text?.text?.trim();
+  if (text) return text;
+  const raw = (comment.Text ?? comment.Comment ?? "").trim();
+  return raw;
+}
+
+function readCommentApproved(comment: SmugMugCommentWire): boolean | string | undefined {
+  if (comment.Approved !== undefined && comment.Approved !== null) return comment.Approved;
+  if (comment.IsApproved !== undefined && comment.IsApproved !== null) return comment.IsApproved;
+  if (typeof comment.Status === "string" && comment.Status.trim()) return comment.Status.trim();
+  return undefined;
+}
+
+/** Map a SmugMug Comment wire object into a flat export row (OSS-36). */
+export function mapSmugMugCommentWire(
+  comment: SmugMugCommentWire,
+  target: { type: "portfolio" | "media"; sourceId: string },
+): SmugMugFlatComment | null {
+  const rawId =
+    (comment.CommentID !== undefined && comment.CommentID !== null
+      ? String(comment.CommentID).trim()
+      : undefined) || commentIdFromUri(comment.Uri);
+  const contentHtml = readCommentBody(comment);
+  if (!rawId || !contentHtml) return null;
+
+  const parentRaw =
+    (comment.CommentParentID !== undefined && comment.CommentParentID !== null
+      ? String(comment.CommentParentID).trim()
+      : undefined) ||
+    (comment.ParentID !== undefined && comment.ParentID !== null
+      ? String(comment.ParentID).trim()
+      : undefined) ||
+    parentCommentIdFromLink(comment.Uris?.ParentComment);
+
+  const parentSourceId =
+    parentRaw && parentRaw !== "0" && parentRaw !== rawId ? parentRaw : undefined;
+
+  const authorName = comment.Name?.trim() || undefined;
+  const authorEmail = (comment.Email ?? comment.EmailAddress)?.trim() || undefined;
+  const authorUrl = (comment.Url ?? comment.URL)?.trim() || undefined;
+  const publishedAt = (comment.Date ?? comment.DateTime)?.trim() || undefined;
+
+  return {
+    sourceId: rawId,
+    targetType: target.type,
+    targetSourceId: target.sourceId,
+    parentSourceId,
+    contentHtml,
+    authorName,
+    authorEmail,
+    authorUrl,
+    publishedAt,
+    approved: readCommentApproved(comment),
+  };
+}
+
 /** Signed SmugMug API client — recursively discovers folders, albums, and images. */
 export class SmugMugApiClient {
   readonly credentials: SmugMugCredentials;
@@ -694,9 +809,10 @@ export class SmugMugApiClient {
     const folders: SmugMugFlatFolder[] = [];
     const albums: SmugMugFlatAlbum[] = [];
     const images: SmugMugFlatImage[] = [];
+    const comments: SmugMugFlatComment[] = [];
 
     const rootNodeUri = resolveSmugMugUriLink(user.Uris.Node, "User.Uris.Node");
-    await this.walkNode(rootNodeUri, undefined, folders, albums, images);
+    await this.walkNode(rootNodeUri, undefined, folders, albums, images, comments);
 
     return {
       exportVersion: 1,
@@ -704,6 +820,7 @@ export class SmugMugApiClient {
       Folders: folders,
       Albums: albums,
       Images: images,
+      Comments: comments,
     };
   }
 
@@ -725,6 +842,7 @@ export class SmugMugApiClient {
     folders: SmugMugFlatFolder[],
     albums: SmugMugFlatAlbum[],
     images: SmugMugFlatImage[],
+    comments: SmugMugFlatComment[],
   ): Promise<void> {
     const childrenPath = `${nodeUri}!children`;
     for await (const child of this.paginateNodes(childrenPath)) {
@@ -738,7 +856,8 @@ export class SmugMugApiClient {
           slug: child.UrlName,
           description: child.Description,
         });
-        await this.walkNode(child.Uri, child.NodeID, folders, albums, images);
+        await this.collectNodeComments(child, child.NodeID, comments);
+        await this.walkNode(child.Uri, child.NodeID, folders, albums, images, comments);
         continue;
       }
 
@@ -751,11 +870,81 @@ export class SmugMugApiClient {
           description: child.Description,
           url: child.WebUri,
         });
+        await this.collectNodeComments(child, child.NodeID, comments);
         const albumUri = await this.resolveAlbumUri(child);
         if (albumUri) {
-          await this.collectAlbumImages(albumUri, child.NodeID, images);
+          await this.collectAlbumImages(albumUri, child.NodeID, images, comments);
         }
       }
+    }
+  }
+
+  /**
+   * Follow `Uris.NodeComments` when SmugMug returns it. Never invent `node/…!comments`.
+   */
+  private async collectNodeComments(
+    node: SmugMugNodeWire,
+    portfolioSourceId: string,
+    comments: SmugMugFlatComment[],
+  ): Promise<void> {
+    if (node.Uris?.NodeComments == null) return;
+    let commentsUri: string;
+    try {
+      commentsUri = resolveSmugMugUriLink(node.Uris.NodeComments, "Node.Uris.NodeComments");
+    } catch {
+      return;
+    }
+    await this.collectCommentsAtUri(commentsUri, { type: "portfolio", sourceId: portfolioSourceId }, comments);
+  }
+
+  /**
+   * Follow ImageComments only when a relation URI is present on AlbumImage / Image.
+   * May GET `Uris.Image` with `_filteruri=ImageComments` — never invents `image/…!comments`.
+   */
+  private async resolveImageCommentsUri(
+    albumImage: SmugMugAlbumImageWire,
+  ): Promise<string | null> {
+    if (albumImage.Uris?.ImageComments != null) {
+      try {
+        return resolveSmugMugUriLink(albumImage.Uris.ImageComments, "AlbumImage.Uris.ImageComments");
+      } catch {
+        // fall through
+      }
+    }
+
+    const inlineImage = albumImage.Image;
+    if (inlineImage?.Uris?.ImageComments != null) {
+      try {
+        return resolveSmugMugUriLink(inlineImage.Uris.ImageComments, "Image.Uris.ImageComments");
+      } catch {
+        // fall through
+      }
+    }
+
+    if (albumImage.Uris?.Image == null) return null;
+    try {
+      const imageUri = resolveSmugMugUriLink(albumImage.Uris.Image, "AlbumImage.Uris.Image");
+      const envelope = await this.requestJson<
+        SmugMugImageCommentsHost & { Image?: SmugMugImageCommentsHost }
+      >(`${imageUri}?_filteruri=ImageComments`);
+      const image = envelope.Response.Image ?? envelope.Response;
+      if (image.Uris?.ImageComments != null) {
+        return resolveSmugMugUriLink(image.Uris.ImageComments, "Image.Uris.ImageComments");
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }
+
+  private async collectCommentsAtUri(
+    commentsUri: string,
+    target: { type: "portfolio" | "media"; sourceId: string },
+    comments: SmugMugFlatComment[],
+  ): Promise<void> {
+    for await (const comment of this.paginateComments(commentsUri)) {
+      const mapped = mapSmugMugCommentWire(comment, target);
+      if (mapped) comments.push(mapped);
     }
   }
 
@@ -784,6 +973,7 @@ export class SmugMugApiClient {
     albumUri: string,
     portfolioSourceId: string,
     images: SmugMugFlatImage[],
+    comments: SmugMugFlatComment[],
   ): Promise<void> {
     const albumKey = albumKeyFromUri(albumUri);
     const configQuery = `_config=${encodeURIComponent(JSON.stringify(ALBUM_IMAGES_CONFIG))}`;
@@ -793,6 +983,14 @@ export class SmugMugApiClient {
     let sort = 0;
     for await (const albumImage of this.paginateAlbumImages(initialPath)) {
       images.push(mapAlbumImage(albumImage, portfolioSourceId, sort));
+      const imageCommentsUri = await this.resolveImageCommentsUri(albumImage);
+      if (imageCommentsUri) {
+        await this.collectCommentsAtUri(
+          imageCommentsUri,
+          { type: "media", sourceId: albumImage.ImageKey },
+          comments,
+        );
+      }
       sort += 1;
     }
   }
@@ -811,6 +1009,16 @@ export class SmugMugApiClient {
     }>(path)) {
       for (const albumImage of asSmugMugList(page.AlbumImage)) {
         yield albumImage;
+      }
+    }
+  }
+
+  private async *paginateComments(path: string): AsyncGenerator<SmugMugCommentWire> {
+    for await (const page of this.paginate<{
+      Comment?: SmugMugCommentWire | SmugMugCommentWire[];
+    }>(path)) {
+      for (const comment of asSmugMugList(page.Comment)) {
+        yield comment;
       }
     }
   }

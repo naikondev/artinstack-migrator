@@ -1,0 +1,61 @@
+{
+  "exportVersion": "1",
+  "exportedAt": "2026-11-05T00:00:00.000Z",
+  "folders": [
+    {
+      "id": "folder-travel",
+      "name": "Travel",
+      "slug": "travel",
+      "albums": [
+        {
+          "id": "album-iceland",
+          "name": "Iceland",
+          "slug": "iceland",
+          "url": "https://demo.smugmug.com/Iceland",
+          "comments": [
+            {
+              "id": "c-album-root",
+              "body": "Beautiful album — love the aurora set.",
+              "authorName": "Alex Visitor",
+              "authorEmail": "alex@example.com",
+              "publishedAt": "2024-06-01T12:00:00Z",
+              "approved": true
+            },
+            {
+              "id": "c-album-reply",
+              "body": "Thanks Alex!",
+              "parentId": "c-album-root",
+              "authorName": "Gallery Owner",
+              "publishedAt": "2024-06-01T13:00:00Z",
+              "approved": "approved"
+            },
+            {
+              "id": "c-album-pending",
+              "body": "No moderation field on this one.",
+              "authorName": "Mystery Guest",
+              "publishedAt": "2024-06-02T09:00:00Z"
+            }
+          ],
+          "images": [
+            {
+              "id": "img-aurora",
+              "fileName": "aurora.jpg",
+              "originalUrl": "https://photos.smugmug.com/aurora.jpg",
+              "caption": "Aurora",
+              "comments": [
+                {
+                  "id": "c-image-1",
+                  "body": "Stunning capture of the lights.",
+                  "authorName": "Photo Fan",
+                  "authorUrl": "https://example.com/fan",
+                  "publishedAt": "2024-06-03T18:00:00Z",
+                  "approved": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

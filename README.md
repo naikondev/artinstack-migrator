@@ -65,10 +65,10 @@ These files contain runtime theme binaries, core PHP files, and raw database dum
 
 | Platform | Accepted input |
 |----------|----------------|
-| **WordPress** | **WXR (XML)** — Tools → Export in wp-admin |
+| **WordPress** | **WXR (XML)** — Tools → Export in wp-admin (includes comments on posts, pages, attachments, and portfolio CPTs) |
 | **Wix** | Blog RSS/Atom, REST export, static HTML snapshots |
 | **Squarespace** | json-pretty export |
-| **SmugMug** | API crawl or export JSON |
+| **SmugMug** | API crawl or export JSON (albums/folders + images; comments when the API exposes them) |
 
 ### Recommended workflow (`.wpress` → WXR)
 
@@ -141,11 +141,14 @@ output/
   portfolio-media.json
   categories.json
   tags.json
+  comments.json
   conflicts.json          # when generated
   migration-report.json   # when generated
 ```
 
-Each file contains an array of normalized DTOs (`NormalizedPost`, `NormalizedPage`, `NormalizedAsset`, etc.). See [docs/architecture.md](./docs/architecture.md) for schema and per-platform input formats.
+Each file contains an array of normalized DTOs (`NormalizedPost`, `NormalizedPage`, `NormalizedAsset`, `NormalizedComment`, etc.). See [docs/architecture.md](./docs/architecture.md) for schema and per-platform input formats.
+
+**Comments:** WordPress WXR and SmugMug emit independent `NormalizedComment` rows (not nested under posts). Each comment has a `target` (`post` | `page` | `portfolio` | `media`) plus optional `parentSourceId` for replies. Hosts choose which targets to import via `MigrationSink.createComment`.
 
 **`--format json`** prints the same entities as one combined JSON object to stdout.
 
@@ -200,6 +203,7 @@ pnpm dev          # watch build
 | Page `layoutHints` (e.g. theme hero slider alias) | Yes — on `NormalizedPage` when meta references chrome outside body | Rebuild slider / hero at import |
 | CLI + filesystem JSON export | Yes | No |
 | `MigrationSink` interface | Yes | Implementation |
+| Emit `NormalizedComment` (WP + SmugMug) | Yes | Import subset via `createComment` (filter by `target`) |
 | Map `data-wp-widget` stubs → platform blocks; populate slider heroes from hints | No | Yes |
 | Jobs, worker, credentials, UI | No | Your host — [example: ArtInStack Import Site](https://www.artinstack.com/docs/platform-migration/platform-migration-overview) |
 
