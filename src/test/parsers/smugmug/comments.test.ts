@@ -349,7 +349,103 @@ describe("SmugMug API crawl comments (OSS-36)", () => {
     });
   });
 
-  it("does not invent !comments when relation URIs are absent", async () => {
+  it("rediscovers NodeComments via _filteruri when !children omits the link", async () => {
+    const fetchImpl: typeof fetch = async (input) => {
+      const url =
+        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+
+      if (url === "https://api.smugmug.com/api/v2!authuser") {
+        return json({
+          Code: 200,
+          Message: "Ok",
+          Response: {
+            NickName: "demo",
+            Uri: "/api/v2/user/demo",
+            Uris: { Node: "/api/v2/node/root-node" },
+          },
+        });
+      }
+
+      if (url.startsWith("https://api.smugmug.com/api/v2/node/root-node!children")) {
+        return json({
+          Code: 200,
+          Message: "Ok",
+          Response: {
+            Node: {
+              NodeID: "6TrZhT",
+              Type: "Album",
+              Name: "wildlife",
+              Uri: "/api/v2/node/6TrZhT",
+              Uris: { Album: "/api/v2/album/WZTmc4" },
+            },
+            Pages: { Total: 1, Start: 1, Count: 1 },
+          },
+        });
+      }
+
+      if (url === "https://api.smugmug.com/api/v2/node/6TrZhT?_filteruri=NodeComments") {
+        return json({
+          Code: 200,
+          Message: "Ok",
+          Response: {
+            NodeID: "6TrZhT",
+            Type: "Album",
+            Name: "wildlife",
+            Uri: "/api/v2/node/6TrZhT",
+            Uris: {
+              Album: "/api/v2/album/WZTmc4",
+              NodeComments: "/api/v2/node/6TrZhT!comments",
+            },
+          },
+        });
+      }
+
+      if (url.startsWith("https://api.smugmug.com/api/v2/node/6TrZhT!comments")) {
+        return json({
+          Code: 200,
+          Message: "Ok",
+          Response: {
+            Comment: {
+              Uri: "/api/v2/comment/13689262",
+              Comment: "Dogfood comment.",
+              Name: "Prashant Naik",
+              Status: "Approved",
+            },
+            Pages: { Total: 1, Start: 1, Count: 1 },
+          },
+        });
+      }
+
+      if (url.includes("/api/v2/album/WZTmc4!images")) {
+        return json({
+          Code: 200,
+          Message: "Ok",
+          Response: { AlbumImage: [], Pages: { Total: 0, Start: 1, Count: 0 } },
+        });
+      }
+
+      return new Response(`missing mock for ${url}`, { status: 404 });
+    };
+
+    const client = new SmugMugApiClient({
+      credentials,
+      fetchImpl,
+      requestIntervalMs: 0,
+    });
+    const exportDoc = await client.crawlExport();
+    expect(exportDoc.Comments).toHaveLength(1);
+    expect(exportDoc.Comments?.[0]).toMatchObject({
+      sourceId: "13689262",
+      targetType: "portfolio",
+      targetSourceId: "6TrZhT",
+    });
+
+    const bundle = await collectEntities(enumerateSmugMugEntities({ client }));
+    expect(bundleCounts(bundle).comments).toBe(1);
+    expect(bundle.comments[0]?.target).toEqual({ type: "portfolio", sourceId: "6TrZhT" });
+  });
+
+  it("does not invent !comments when relation URIs are absent after filteruri", async () => {
     const requested: string[] = [];
     const fetchImpl: typeof fetch = async (input) => {
       const url =
@@ -385,6 +481,19 @@ describe("SmugMug API crawl comments (OSS-36)", () => {
           },
         });
       }
+      if (url === "https://api.smugmug.com/api/v2/node/album-a?_filteruri=NodeComments") {
+        return json({
+          Code: 200,
+          Message: "Ok",
+          Response: {
+            NodeID: "album-a",
+            Type: "Album",
+            Name: "A",
+            Uri: "/api/v2/node/album-a",
+            Uris: { Album: { Uri: "/api/v2/album/alb-a" } },
+          },
+        });
+      }
       if (url.includes("/api/v2/album/alb-a!images")) {
         return json({
           Code: 200,
@@ -409,6 +518,7 @@ describe("SmugMug API crawl comments (OSS-36)", () => {
     });
     const doc = await client.crawlExport();
     expect(doc.Comments).toEqual([]);
+    expect(requested.some((u) => u.includes("_filteruri=NodeComments"))).toBe(true);
     expect(requested.some((u) => u.includes("!comments"))).toBe(false);
   });
 });

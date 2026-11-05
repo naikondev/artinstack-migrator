@@ -880,21 +880,42 @@ export class SmugMugApiClient {
   }
 
   /**
-   * Follow `Uris.NodeComments` when SmugMug returns it. Never invent `node/…!comments`.
+   * Follow `Uris.NodeComments` when SmugMug returns it.
+   * `!children` often omits the link — rediscover with `_filteruri=NodeComments`
+   * (same pattern as Album / ImageComments). Never invent `node/…!comments`.
    */
   private async collectNodeComments(
     node: SmugMugNodeWire,
     portfolioSourceId: string,
     comments: SmugMugFlatComment[],
   ): Promise<void> {
-    if (node.Uris?.NodeComments == null) return;
-    let commentsUri: string;
-    try {
-      commentsUri = resolveSmugMugUriLink(node.Uris.NodeComments, "Node.Uris.NodeComments");
-    } catch {
-      return;
-    }
+    const commentsUri = await this.resolveNodeCommentsUri(node);
+    if (!commentsUri) return;
     await this.collectCommentsAtUri(commentsUri, { type: "portfolio", sourceId: portfolioSourceId }, comments);
+  }
+
+  private async resolveNodeCommentsUri(node: SmugMugNodeWire): Promise<string | null> {
+    if (node.Uris?.NodeComments != null) {
+      try {
+        return resolveSmugMugUriLink(node.Uris.NodeComments, "Node.Uris.NodeComments");
+      } catch {
+        // fall through to rediscovery
+      }
+    }
+
+    if (!node.Uri?.trim()) return null;
+    try {
+      const envelope = await this.requestJson<
+        SmugMugNodeWire & { Node?: SmugMugNodeWire }
+      >(`${node.Uri}?_filteruri=NodeComments`);
+      const resolved = envelope.Response.Node ?? envelope.Response;
+      if (resolved.Uris?.NodeComments != null) {
+        return resolveSmugMugUriLink(resolved.Uris.NodeComments, "Node.Uris.NodeComments");
+      }
+    } catch {
+      return null;
+    }
+    return null;
   }
 
   /**
